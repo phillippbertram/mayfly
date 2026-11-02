@@ -1,0 +1,48 @@
+---
+title: Share a file
+description: The intended choose, scan, and download workflow.
+---
+
+## Planned sharing workflow
+
+Real file sharing is still in development. These steps describe the intended
+workflow, rather than a transfer you can complete in the current build.
+
+1. Connect your computer and phone to the same trusted Wi-Fi or reachable local network.
+2. Open FileHop and confirm that the server reports a usable network address.
+3. Drop a PDF, photo, or another individual file into the window, or select **Choose files**.
+4. Select the resulting share to open its QR code and details.
+5. Scan the QR code with your phone's camera and open the link.
+6. Check the filename and size on the mobile page, then select **Download**.
+
+Each selected file will have its own share and token. Files are intended to stream
+from their original location rather than being copied into a cloud service.
+
+## Before choosing a file
+
+Share readable individual files. Directory sharing is outside the MVP.
+Keep the computer awake and FileHop running. Moving, deleting, or changing the
+source file may make it unavailable; the implemented backend must handle this safely.
+
+The current browser preview's file-selection action adds sample metadata only.
+A displayed share in that preview is not a working download.
+
+## Keep the right address
+
+With multiple network interfaces, choose the address reachable by your phone.
+A guest Wi-Fi network, VPN, or client-isolation setting can prevent access even
+when both devices appear to use the same router.
+
+The intended URL looks like this:
+
+```text
+http://192.168.1.20:8765/s/EXAMPLE_TOKEN
+```
+
+This is an example, not a live share.
+
+## Stop when you are done
+
+Use **Stop sharing** to revoke a share before its deadline. Expiration and download
+limits will also block new downloads. See [Expiration and limits](../expiration/)
+for the policy and the difference between starting a download and saving a file.

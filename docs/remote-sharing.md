@@ -9,6 +9,14 @@ are not implemented or tested. This guide explains optional approaches to evalua
 after the local sharing workflow is complete; it is not a working setup tutorial
 for the current app.
 
+## Built-in relay proposal
+
+The [Cloudflare relay concept](concepts/cloudflare-relay.md) describes a possible
+built-in internet-sharing mode using Workers, Durable Objects, and an outbound
+connection from the Rust backend. It would stream files without permanent cloud
+storage. This is a separate architecture proposal, not an implemented alternative
+to the external services below.
+
 ## Choose an access model
 
 | Approach                          | Who can reach the service?                                           | Recipient setup                            | Best fit                                          |

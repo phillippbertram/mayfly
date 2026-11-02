@@ -51,8 +51,42 @@ scripts that report success without building or testing an application.
 Install Rust with [rustup](https://rustup.rs/) and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for the host OS.
 The root `rust-toolchain.toml` selects stable Rust with rustfmt and Clippy. Rust
-must be on PATH; on macOS/Linux, `. "$HOME/.cargo/env"` loads a standard rustup
-installation when the shell has not loaded it yet.
+must be available on the shell's PATH before running native pnpm commands.
+
+On macOS, install the Xcode Command Line Tools with `xcode-select --install` if
+needed. Check that an installed developer directory is selected:
+
+```sh
+xcode-select -p
+```
+
+When installing Rust through rustup, allow the installer to configure your shell's
+PATH. For a standard installation on macOS/Linux, load Cargo's environment into
+the current terminal and verify the tools:
+
+```sh
+. "$HOME/.cargo/env"
+cargo --version
+rustc --version
+rustup show active-toolchain
+```
+
+If this fixes `failed to run 'cargo metadata' ... No such file or directory`, Rust
+was installed but unavailable to the process starting Tauri. Installing pnpm
+dependencies does not install Rust or configure the shell. Ensure your shell's
+startup configuration loads Cargo's environment for future sessions; rustup
+normally configures this during installation. For zsh, its standard setup uses
+`~/.zshenv` to load `. "$HOME/.cargo/env"`. Restart your terminal and development
+tools after changing PATH so child processes inherit it, then check that
+`cargo --version` works in a fresh terminal without manually loading the file.
+
+Once the prerequisites are available, run from the repository root:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm check:rust
+pnpm dev
+```
 
 `pnpm dev` starts Vite on loopback port 1420, then compiles/opens FileHop. The
 frontend's status and version are returned by the real `get_app_info` Rust command.
@@ -60,6 +94,9 @@ The capability file grants only native file-drop event listening and title-bar
 dragging; it grants no filesystem, shell, network, or plugin permissions.
 Production CSP is restrictive; development CSP adds the local Vite/HMR origins.
 Window close currently exits the process; tray behavior remains a separate feature.
+
+Port 1420 must be available when starting `pnpm dev`. Stop a running `pnpm dev:web`
+or a previous desktop development process first; Tauri starts Vite itself.
 
 `pnpm build` uses release mode and the current host's supported bundle formats.
 For a quicker macOS debug app bundle, use

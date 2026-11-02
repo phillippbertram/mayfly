@@ -1,0 +1,40 @@
+---
+title: Expiration and limits
+description: Designed for a handoff, not a permanent public link.
+---
+
+## Planned lifetime options
+
+The settings interface offers **5 minutes**, **10 minutes** (default),
+**30 minutes**, **1 hour**, and **Until stopped**. The Rust backend will be
+authoritative for expiration; the interface's countdown is informational.
+
+Until stopped means no scheduled deadline. It does not mean a permanent link:
+revocation, full application exit, or a restart will invalidate the in-memory share.
+
+## Download limits
+
+An optional positive download limit is intended to make a share unavailable after
+its allowed download reservations are used. A count of one is not proof that the
+recipient saved the file successfully.
+
+The backend's exact treatment of aborted transfers, retries, HEAD, and range requests
+must be finalized and tested in the core-sharing issue. The preview's counters
+demonstrate the interface only and cannot establish secure limit enforcement.
+
+## Stop sharing early
+
+Use **Stop sharing** in share details or the share's action menu. The intended
+behavior blocks new page/download requests immediately after revocation. In-flight
+transfer cancellation policy still requires backend implementation and testing.
+
+Expired and stopped shares may remain in the list for clarity. Sharing again
+creates a fresh share and token; it does not reactivate the old URL.
+
+<Screenshot name="settings" alt="FileHop's General settings preview with a default lifetime selector and download-limit switch" />
+
+## Start over safely
+
+Settings and profiles are intended to persist; active shares and tokens are not.
+After a full restart, recipients need fresh links. The current build does not yet
+provide verified sharing persistence, server enforcement, or background lifecycle.

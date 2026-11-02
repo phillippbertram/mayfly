@@ -12,6 +12,11 @@ inside that package. Add shared packages only when there is a concrete consumer;
 no task orchestrator, microservices, or separate daemon is required. Core Rust
 services should be testable without starting a webview.
 
+The separate `apps/website` workspace contains the Next.js/Fumadocs product site
+and English manual. It exports static assets for GitHub Pages; search and release
+metadata are prepared at build time. It has no file-transfer backend and does not
+participate in desktop-to-phone sharing. See [ADR 0003](decisions/0003-static-product-website.md).
+
 ## Repository layout
 
 ```text

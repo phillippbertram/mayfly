@@ -4,6 +4,10 @@ dist/
 target/
 apps/desktop/src-tauri/gen/
 coverage/
+.next/
+.source/
+.release/
+out/
 *.tsbuildinfo
 
 # Local credentials and machine state

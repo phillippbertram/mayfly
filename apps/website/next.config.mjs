@@ -6,6 +6,19 @@ if (basePath && !/^\/[a-zA-Z0-9_-]+$/.test(basePath)) {
 }
 
 const withMDX = createMDX();
+const origin = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://phillippbertram.github.io");
+if (
+  origin.protocol !== "https:" ||
+  origin.pathname !== "/" ||
+  origin.search ||
+  origin.hash ||
+  origin.username ||
+  origin.password
+) {
+  throw new Error(
+    "NEXT_PUBLIC_SITE_URL must be a public HTTPS origin without a project path or credentials.",
+  );
+}
 export default withMDX({
   output: "export",
   basePath,

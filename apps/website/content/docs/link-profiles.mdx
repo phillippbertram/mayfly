@@ -1,0 +1,48 @@
+---
+title: Link profiles
+description: Let a QR code open a compatible app instead of the browser.
+---
+
+## Browser first
+
+The built-in HTTP profile is the standard path to the mobile download page.
+Custom profiles describe how a compatible application expects to receive a file URL.
+They do not install an application, register a scheme, or create network connectivity.
+
+## Create a profile
+
+In the interface preview, open **Settings → Link profiles**, choose **New profile**,
+and enter a name and template. For example:
+
+```text
+Name: My import app
+Template: myapp://import?url={encodedUrl}&name={encodedFilename}
+```
+
+`myapp` is an example scheme, not a claim about an installed application. Use the
+scheme and import format documented by your actual target app.
+
+<Screenshot name="profiles" alt="The real Link profiles settings interface showing a default HTTP profile and a sample app template" />
+
+## Available placeholders
+
+| Placeholder | Value |
+| --- | --- |
+| `{url}` | Full mobile download-page URL |
+| `{encodedUrl}` | That URL encoded as a single URI component |
+| `{filename}` | Original filename |
+| `{encodedFilename}` | Filename encoded as a single URI component |
+| `{token}` | Share token |
+
+Prefer encoded values inside query parameters. Templates are resolved once:
+braces in inserted filenames must not become a second round of placeholders.
+Unknown placeholders and executable schemes are rejected by the intended backend.
+
+## Select a default or switch per share
+
+The interface lets you mark a default profile and choose a different one in the
+share inspector. Deleting the default should fall back to HTTP. Profile persistence
+and actual deep-link handoffs still need Rust implementation and compatible-device tests.
+
+A custom profile does not turn a local address into a public one.
+See [Remote sharing](../remote-sharing/) for that separate topic.

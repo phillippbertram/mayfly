@@ -11,9 +11,12 @@
   "scripts": {
     "dev": "pnpm --filter @filehop/desktop dev",
     "dev:web": "pnpm --filter @filehop/desktop dev:web",
+    "dev:website": "pnpm --filter @filehop/website dev",
+    "build:website": "pnpm --filter @filehop/website build",
+    "test:website": "pnpm --filter @filehop/website test",
     "build": "pnpm --filter @filehop/desktop build",
     "build:web": "pnpm --filter @filehop/desktop build:web",
-    "typecheck": "pnpm --filter @filehop/desktop typecheck",
+    "typecheck": "pnpm --filter @filehop/desktop typecheck && pnpm --filter @filehop/website typecheck",
     "check:rust": "pnpm --filter @filehop/desktop check:rust",
     "check": "biome ci --error-on-warnings . && pnpm typecheck",
     "lint": "biome lint --error-on-warnings .",

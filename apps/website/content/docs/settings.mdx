@@ -1,0 +1,46 @@
+---
+title: Settings and desktop behavior
+description: Network, appearance, defaults, and what happens when the window closes.
+---
+
+## Find your settings
+
+Open the settings button in the header. The interface groups controls into
+General, Network, Appearance, and Link profiles. On macOS, the interface also
+provides the familiar Command-comma shortcut.
+
+## General
+
+Choose the default lifetime and optional download limit for new shares.
+Existing shares should keep the values they were created with.
+See [Expiration and limits](../expiration/) for intended server behavior.
+
+## Network
+
+Port **8765** is the planned file-download default. The separate developer
+preview runs on loopback port **1420** and is not a file-sharing server.
+
+Choose the network address your phone can reach. When a port cannot bind or an
+interface disappears, FileHop must report the problem instead of claiming to be online.
+A failed settings change should preserve the last usable configuration.
+
+## Appearance
+
+System, Light, and Dark options let the interface follow your desktop or use a
+specific appearance. The QR itself retains a clear light background for scanning.
+
+## Window and tray
+
+The planned tray has **Open FileHop** and **Quit FileHop** actions. Once implemented,
+closing the window will keep active shares running, while explicit Quit will stop
+sharing and shut down listeners.
+
+The current app has no tray service. Do not rely on it to continue a transfer after
+closing the window. Saved settings/profile persistence and restart behavior remain
+backend features, not guarantees of the browser simulator.
+
+## Keyboard access
+
+Use Tab and Shift-Tab to move between controls, and Escape to dismiss dialogs.
+The interface provides keyboard hints for its actions. Native shortcuts, clipboard
+images, and file saving need verification on each supported operating system.

@@ -49,9 +49,11 @@ pnpm check
 
 For the native desktop app, also install Rust with [rustup](https://rustup.rs/) and
 the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
-`rust-toolchain.toml` selects stable Rust, rustfmt, and Clippy. If Rust was installed
-without modifying your shell's PATH on macOS/Linux, run `. "$HOME/.cargo/env"` in
-your terminal first.
+`rust-toolchain.toml` selects stable Rust, rustfmt, and Clippy. Rust must be on your
+shell's PATH. For a standard rustup installation on macOS/Linux, load it into the
+current terminal with `. "$HOME/.cargo/env"`. See
+[Native development](docs/development.md#native-development) for persistent shell
+setup and prerequisite checks.
 
 ## Start FileHop
 
@@ -65,6 +67,10 @@ This starts Vite and opens the native FileHop desktop window. On the first run,
 Cargo downloads and compiles Tauri's native dependencies, which can take a few minutes.
 The start screen confirms the real Rust connection when the native app is ready.
 Closing the window currently exits the app; background tray behavior is a later issue.
+
+If port 1420 is already in use, stop the running `pnpm dev:web` or previous
+`pnpm dev` process before starting the desktop app. Tauri starts its own Vite server
+on that port.
 
 For a browser-only preview without Rust:
 
@@ -109,6 +115,15 @@ bundles live under `apps/desktop/src-tauri/target/release/bundle/`. Cross-platfo
 release CI, signing, and notarization remain separate tickets; local bundles are
 development artifacts rather than signed public releases. The desktop package
 lives at `apps/desktop`; shared packages will be introduced only when needed.
+
+## Product website and user manual
+
+The Next.js/Fumadocs website lives in `apps/website`, with a Motion-enhanced product
+page, real interface-preview screenshots, and an English user manual. Run it with
+`pnpm dev:website` or create a static export with `pnpm build:website`.
+See the [website guide](apps/website/README.md) for GitHub Pages base paths, local
+export preview, static search, release metadata, and the prepared publishing workflow.
+The website hosts product information and installers, not shared user files.
 
 ## Network and security model
 

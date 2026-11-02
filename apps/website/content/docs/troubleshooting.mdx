@@ -1,0 +1,54 @@
+---
+title: Troubleshooting
+description: Find the missing connection, one small check at a time.
+---
+
+## The app says sharing is unavailable
+
+That is expected in the current desktop build. The interface is implemented; the
+Rust sharing server is not. The browser preview's online state and sample shares
+are a simulator, not a workaround for real transfers.
+
+## The QR opens a link, but my phone cannot connect
+
+For a future working sharing build, check:
+
+1. Both devices can reach each other on the same trusted network.
+2. The desktop is awake, FileHop is running, and the server shows a usable address.
+3. You selected the Wi-Fi/interface address reachable from the phone.
+4. A guest Wi-Fi or router client-isolation setting is not separating the devices.
+5. The desktop firewall permits FileHop on the intended private network.
+
+A VPN may change routing or the advertised interface. Re-select the correct address
+and generate a new code. Do not disable the firewall globally or forward the port
+to the internet to fix a local-sharing problem.
+
+## The camera will not recognize the QR
+
+Show the entire code and its border, increase display brightness, and hold the phone
+steadily. You can copy the link as an alternative. Verify that a custom scheme's
+target app is installed and supports the template you configured.
+
+## A download expires or reaches its limit
+
+Ask for a new share. An old URL should not become valid again after expiry or
+revocation. Browser previews, security scanners, retries, and interrupted transfers
+may affect a counter according to the eventual reservation policy.
+
+## A large transfer stops
+
+Keep the computer awake and connected. Check that the original file is still
+available and that enough space exists on the receiving device. If using an optional
+tunnel, check its transfer limits and timeouts separately.
+
+## The development server cannot start
+
+Port 1420 may already be used by another preview. Stop the preview you own before
+starting another; do not terminate unrelated processes. Check Node/pnpm versions
+and load Rust's environment if `cargo` is not found.
+
+## Report a reproducible problem
+
+Include the FileHop version/commit, OS and architecture, browser/device, sanitized
+steps, expected result, and observed result. State whether you used the native app
+or sample-data browser preview. Remove tokens, private filenames, and local paths.

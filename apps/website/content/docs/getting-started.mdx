@@ -1,0 +1,55 @@
+---
+title: Get started
+description: Availability, installation, and your first look around.
+---
+
+## What you can use today
+
+The desktop interface is available in the source checkout. There are no public
+stable installers yet, and the Rust sharing server has not been implemented.
+The browser preview contains sample files; it does not transfer their contents.
+
+For future installers, use the website's [Downloads](../../#download) section.
+Choose Apple Silicon or Intel on macOS, Windows x64, or the supported Linux package.
+Minimum supported OS versions will be listed with verified release assets.
+
+## Run from source
+
+You need Node.js 24, pnpm 11.15.1, Rust through rustup, and the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your operating
+system. The source repository is currently private, so an authorized checkout is required.
+
+From the repository root:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+On macOS/Linux, if `cargo` is not on PATH after installing Rust:
+
+```sh
+. "$HOME/.cargo/env"
+pnpm dev
+```
+
+The first native build downloads and compiles dependencies. Allow a few minutes.
+The desktop build uses Rust and truthfully reports that file sharing is unavailable.
+
+## Explore without Rust
+
+```sh
+pnpm dev:web
+```
+
+Open `http://127.0.0.1:1420`. The browser preview uses clearly labeled sample data.
+You can inspect the share list, QR inspector, settings, and profiles. Changes here
+do not prove real filesystem, network, persistence, or tray behavior.
+
+<Screenshot name="dashboard" alt="FileHop's actual browser-preview dashboard with labeled sample files and a share inspector" />
+
+## Your first real transfer
+
+Once a verified sharing build is available, put your computer and phone on the same
+reachable, trusted network and follow [Share a file](../sharing/).
+No router port forwarding is needed for local sharing.
