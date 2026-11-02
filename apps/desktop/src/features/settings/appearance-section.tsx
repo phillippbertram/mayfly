@@ -2,9 +2,9 @@ import { Check } from "lucide-react";
 import { motion } from "motion/react";
 import { RadioGroup } from "radix-ui";
 import { useToast } from "../../components/ui/toast";
-import { useBackend } from "../../hooks/use-backend";
-import type { Settings, ThemePreference } from "../../lib/backend";
+import type { ThemePreference } from "../../lib/backend";
 import { cn } from "../../lib/cn";
+import { errorMessage, useSettings, useUpdateSettings } from "../../lib/queries";
 import { SectionHeader } from "./field";
 
 const THEMES: { value: ThemePreference; label: string }[] = [
@@ -44,8 +44,9 @@ function Miniature({ dark }: { dark: boolean }) {
   );
 }
 
-export function AppearanceSection({ settings }: { settings: Settings }) {
-  const backend = useBackend();
+export function AppearanceSection() {
+  const settings = useSettings();
+  const mutation = useUpdateSettings();
   const toast = useToast();
   return (
     <div>
@@ -57,10 +58,12 @@ export function AppearanceSection({ settings }: { settings: Settings }) {
         aria-label="Theme"
         orientation="horizontal"
         value={settings.theme}
-        onValueChange={async (value) => {
-          const result = await backend.updateSettings({ theme: value as ThemePreference });
-          if (!result.ok) toast(result.error, "error");
-        }}
+        onValueChange={(value) =>
+          mutation.mutate(
+            { theme: value as ThemePreference },
+            { onError: (error) => toast(errorMessage(error), "error") },
+          )
+        }
         className="grid grid-cols-3 gap-3"
       >
         {THEMES.map((theme) => {

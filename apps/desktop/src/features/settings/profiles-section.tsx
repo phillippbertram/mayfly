@@ -7,20 +7,17 @@ import { Switch } from "../../components/ui/switch";
 import { useToast } from "../../components/ui/toast";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useBackend } from "../../hooks/use-backend";
-import type { LinkProfile, Settings, TemplatePreview } from "../../lib/backend";
+import type { LinkProfile, TemplatePreview } from "../../lib/backend";
 import { HTTP_PROFILE_ID } from "../../lib/backend/types";
 import { cn } from "../../lib/cn";
+import { errorMessage, useProfiles, useSettings, useUpdateSettings } from "../../lib/queries";
 import { Field, InlineMessage, inputClass, SectionHeader } from "./field";
 
 const PLACEHOLDERS = ["{url}", "{encodedUrl}", "{filename}", "{encodedFilename}", "{token}"];
 
-export function ProfilesSection({
-  settings,
-  profiles,
-}: {
-  settings: Settings;
-  profiles: LinkProfile[];
-}) {
+export function ProfilesSection() {
+  const settings = useSettings();
+  const profiles = useProfiles();
   const [editing, setEditing] = useState<LinkProfile | "new" | null>(null);
 
   return (
@@ -48,7 +45,11 @@ export function ProfilesSection({
           exit={{ opacity: 0, x: -24 }}
           transition={{ type: "spring", stiffness: 420, damping: 36 }}
         >
-          <ProfileList settings={settings} profiles={profiles} onEdit={setEditing} />
+          <ProfileList
+            defaultProfileId={settings.defaultProfileId}
+            profiles={profiles}
+            onEdit={setEditing}
+          />
         </motion.div>
       )}
     </AnimatePresence>
@@ -56,11 +57,11 @@ export function ProfilesSection({
 }
 
 function ProfileList({
-  settings,
+  defaultProfileId,
   profiles,
   onEdit,
 }: {
-  settings: Settings;
+  defaultProfileId: string;
   profiles: LinkProfile[];
   onEdit: (profile: LinkProfile | "new") => void;
 }) {
@@ -68,10 +69,12 @@ function ProfileList({
   const toast = useToast();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const setDefault = async (id: string) => {
-    const result = await backend.updateSettings({ defaultProfileId: id });
-    if (!result.ok) toast(result.error, "error");
-  };
+  const updateSettings = useUpdateSettings();
+  const setDefault = (id: string) =>
+    updateSettings.mutate(
+      { defaultProfileId: id },
+      { onError: (e) => toast(errorMessage(e), "error") },
+    );
 
   return (
     <div>
@@ -82,7 +85,7 @@ function ProfileList({
       <ul className="flex flex-col gap-1.5">
         <AnimatePresence initial={false}>
           {profiles.map((profile) => {
-            const isDefault = settings.defaultProfileId === profile.id;
+            const isDefault = defaultProfileId === profile.id;
             const builtIn = profile.id === HTTP_PROFILE_ID;
             return (
               <motion.li
@@ -157,8 +160,11 @@ function ProfileList({
                         variant="dangerSolid"
                         onBlur={() => setConfirmDelete(null)}
                         onClick={async () => {
-                          const result = await backend.deleteProfile(profile.id);
-                          if (!result.ok) toast(result.error, "error");
+                          try {
+                            await backend.deleteProfile(profile.id);
+                          } catch (error) {
+                            toast(errorMessage(error), "error");
+                          }
                           setConfirmDelete(null);
                         }}
                         autoFocus
@@ -208,7 +214,9 @@ function ProfileEditor({
   useEffect(() => {
     let current = true;
     const handle = setTimeout(async () => {
-      const result = await backend.previewTemplate(template);
+      const result = await backend
+        .previewTemplate(template)
+        .catch((error: unknown): TemplatePreview => ({ ok: false, error: errorMessage(error) }));
       if (current) setPreview(result);
     }, 140);
     return () => {
@@ -234,15 +242,19 @@ function ProfileEditor({
 
   const save = async () => {
     setSaving(true);
-    const result = await backend.saveProfile({
-      ...(profile ? { id: profile.id } : {}),
-      name,
-      template,
-      makeDefault,
-    });
-    setSaving(false);
-    if (result.ok) onDone();
-    else setSaveError(result.error);
+    try {
+      await backend.saveProfile({
+        ...(profile ? { id: profile.id } : {}),
+        name,
+        template,
+        makeDefault,
+      });
+      onDone();
+    } catch (error) {
+      setSaveError(errorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

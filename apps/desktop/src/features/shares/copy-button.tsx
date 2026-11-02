@@ -1,3 +1,4 @@
+import type { Hotkey } from "@tanstack/react-hotkeys";
 import { Check, Copy, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -13,7 +14,7 @@ export function CopyButton({
   iconOnly,
   variant = "secondary",
   size = "md",
-  shortcut,
+  hotkey,
   className,
   disabled,
 }: {
@@ -24,7 +25,7 @@ export function CopyButton({
   iconOnly?: boolean;
   variant?: ButtonVariant;
   size?: ButtonSize;
-  shortcut?: string;
+  hotkey?: Hotkey | null;
   className?: string;
   disabled?: boolean;
 }) {
@@ -85,7 +86,7 @@ export function CopyButton({
   );
 
   return iconOnly ? (
-    <Tooltip label={copied ? copiedLabel : label} {...(shortcut ? { shortcut } : {})}>
+    <Tooltip label={copied ? copiedLabel : label} {...(hotkey ? { hotkey } : {})}>
       {button}
     </Tooltip>
   ) : (

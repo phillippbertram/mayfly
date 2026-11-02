@@ -1,6 +1,6 @@
+import type { Hotkey } from "@tanstack/react-hotkeys";
 import { Tooltip as T } from "radix-ui";
 import type { ReactElement, ReactNode } from "react";
-import { shortcutLabel } from "../../lib/platform";
 import { Kbd } from "./kbd";
 
 export const TooltipProvider = ({ children }: { children: ReactNode }) => (
@@ -11,12 +11,12 @@ export const TooltipProvider = ({ children }: { children: ReactNode }) => (
 
 export function Tooltip({
   label,
-  shortcut,
+  hotkey,
   side = "top",
   children,
 }: {
   label: ReactNode;
-  shortcut?: string;
+  hotkey?: Hotkey | null;
   side?: "top" | "bottom" | "left" | "right";
   children: ReactElement;
 }) {
@@ -31,7 +31,7 @@ export function Tooltip({
           className="pop z-50 flex max-w-64 items-center gap-2 rounded-md bg-fg px-2 py-1 text-[12px] leading-4 text-bg shadow-[var(--shadow-pop)]"
         >
           {label}
-          {shortcut && <Kbd inverted>{shortcutLabel(shortcut)}</Kbd>}
+          {hotkey && <Kbd hotkey={hotkey} inverted />}
         </T.Content>
       </T.Portal>
     </T.Root>

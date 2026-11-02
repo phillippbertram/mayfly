@@ -1,6 +1,7 @@
 import { Ban, CircleStop, LoaderCircle, TimerOff } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useAnimate } from "motion/react";
 import { Tooltip } from "../../components/ui/tooltip";
+import { useSignal } from "../../hooks/use-signal";
 import type { Share } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { QrCode } from "./qr-code";
@@ -24,17 +25,19 @@ export function QrCard({
   const ended = share.status === "active" ? null : ENDED[share.status];
   const size = 196;
   const interactive = Boolean(share.link) && !ended;
+  const [scope, animate] = useAnimate<HTMLButtonElement>();
+  useSignal(pulse, () => {
+    if (scope.current)
+      animate(scope.current, { scale: [1, 1.045, 0.99, 1] }, { duration: 0.5, ease: "easeOut" });
+  });
 
   const body = (
     <motion.button
+      ref={scope}
       type="button"
       disabled={!interactive}
       onClick={onCopy}
       aria-label="Copy QR image"
-      key={pulse}
-      initial={pulse > 0 ? { scale: 1 } : false}
-      animate={pulse > 0 ? { scale: [1, 1.045, 0.99, 1] } : {}}
-      transition={{ duration: 0.5, ease: "easeOut" }}
       whileHover={interactive ? { y: -2 } : {}}
       whileTap={interactive ? { scale: 0.98 } : {}}
       className={cn(

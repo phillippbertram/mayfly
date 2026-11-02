@@ -1,42 +1,36 @@
-import { Globe, Link2, Palette, Settings2, X } from "lucide-react";
+import { Globe, Keyboard, Link2, Palette, Settings2, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { IconButton } from "../../components/ui/icon-button";
 import { Modal } from "../../components/ui/modal";
-import { useSnapshot } from "../../hooks/use-backend";
-import { cn } from "../../lib/cn";
+import { appHotkeys } from "../../lib/hotkeys";
+import { useUi } from "../../store/ui";
+import { ShortcutList } from "../commands/shortcut-list";
 import { AppearanceSection } from "./appearance-section";
+import { SectionHeader } from "./field";
 import { GeneralSection } from "./general-section";
 import { NetworkSection } from "./network-section";
 import { ProfilesSection } from "./profiles-section";
-
-export type SettingsSection = "general" | "network" | "appearance" | "profiles";
 
 const SECTIONS = [
   { id: "general", label: "General", icon: Settings2 },
   { id: "network", label: "Network", icon: Globe },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "profiles", label: "Link profiles", icon: Link2 },
+  { id: "shortcuts", label: "Shortcuts", icon: Keyboard },
 ] as const;
 
-export function SettingsDialog({
-  open,
-  section,
-  onSectionChange,
-  onClose,
-}: {
-  open: boolean;
-  section: SettingsSection;
-  onSectionChange: (section: SettingsSection) => void;
-  onClose: () => void;
-}) {
-  const snapshot = useSnapshot();
+export function SettingsDialog() {
+  const open = useUi((s) => s.settingsOpen);
+  const section = useUi((s) => s.settingsSection);
+  const setSection = useUi((s) => s.setSettingsSection);
+  const close = useUi((s) => s.closeSettings);
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={close}
       labelledBy="settings-title"
-      className="flex h-[480px] w-[720px] overflow-hidden"
+      className="flex h-[500px] w-[760px] overflow-hidden"
     >
       <nav
         aria-label="Settings sections"
@@ -52,11 +46,10 @@ export function SettingsDialog({
               key={item.id}
               type="button"
               aria-current={active ? "page" : undefined}
-              onClick={() => onSectionChange(item.id)}
-              className={cn(
-                "relative flex h-8 items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium transition-colors duration-150",
-                active ? "text-fg" : "text-muted hover:bg-surface/60 hover:text-fg",
-              )}
+              onClick={() => setSection(item.id)}
+              className={`relative flex h-8 items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium transition-colors duration-150 ${
+                active ? "text-fg" : "text-muted hover:bg-surface/60 hover:text-fg"
+              }`}
             >
               {active && (
                 <motion.span
@@ -69,7 +62,7 @@ export function SettingsDialog({
                 aria-hidden="true"
                 size={15}
                 strokeWidth={1.7}
-                className={cn("relative transition-colors", active && "text-accent")}
+                className={`relative transition-colors ${active ? "text-accent" : ""}`}
               />
               <span className="relative">{item.label}</span>
             </button>
@@ -81,7 +74,12 @@ export function SettingsDialog({
         className="relative min-w-0 flex-1 overflow-y-auto px-7 py-6"
       >
         <div className="absolute top-3 right-3 z-10">
-          <IconButton icon={X} label="Close settings" shortcut="Escape" onClick={onClose} />
+          <IconButton
+            icon={X}
+            label="Close settings"
+            hotkey={appHotkeys["inspector.close"].hotkey}
+            onClick={close}
+          />
         </div>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -92,17 +90,18 @@ export function SettingsDialog({
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
             className="h-full"
           >
-            {section === "general" && <GeneralSection settings={snapshot.settings} />}
-            {section === "network" && (
-              <NetworkSection
-                settings={snapshot.settings}
-                server={snapshot.server}
-                interfaces={snapshot.interfaces}
-              />
-            )}
-            {section === "appearance" && <AppearanceSection settings={snapshot.settings} />}
-            {section === "profiles" && (
-              <ProfilesSection settings={snapshot.settings} profiles={snapshot.profiles} />
+            {section === "general" && <GeneralSection />}
+            {section === "network" && <NetworkSection />}
+            {section === "appearance" && <AppearanceSection />}
+            {section === "profiles" && <ProfilesSection />}
+            {section === "shortcuts" && (
+              <div>
+                <SectionHeader
+                  title="Shortcuts"
+                  description="FileHop works from the keyboard. Single-letter keys act on the selected share."
+                />
+                <ShortcutList columns={1} />
+              </div>
             )}
           </motion.div>
         </AnimatePresence>

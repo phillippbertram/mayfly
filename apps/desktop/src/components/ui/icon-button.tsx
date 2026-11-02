@@ -1,3 +1,4 @@
+import type { Hotkey } from "@tanstack/react-hotkeys";
 import type { LucideIcon } from "lucide-react";
 import { Button, type ButtonProps } from "./button";
 import { Tooltip } from "./tooltip";
@@ -5,7 +6,7 @@ import { Tooltip } from "./tooltip";
 export function IconButton({
   icon: Icon,
   label,
-  shortcut,
+  hotkey,
   size = "iconSm",
   variant = "ghost",
   tooltipSide,
@@ -13,14 +14,14 @@ export function IconButton({
 }: Omit<ButtonProps, "children" | "size"> & {
   icon: LucideIcon;
   label: string;
-  shortcut?: string;
+  hotkey?: Hotkey | null;
   size?: "icon" | "iconSm";
   tooltipSide?: "top" | "bottom" | "left" | "right";
 }) {
   return (
     <Tooltip
       label={label}
-      {...(shortcut ? { shortcut } : {})}
+      {...(hotkey ? { hotkey } : {})}
       {...(tooltipSide ? { side: tooltipSide } : {})}
     >
       <Button aria-label={label} size={size} variant={variant} {...props}>

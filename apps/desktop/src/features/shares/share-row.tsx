@@ -2,15 +2,17 @@ import {
   Copy,
   Download,
   Ellipsis,
+  Hash,
   ImageDown,
   Link2,
   QrCode,
   RotateCcw,
   Square,
+  TimerReset,
   Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, memo, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
 import {
@@ -35,6 +37,7 @@ import {
   formatRemaining,
   remainingMs,
 } from "../../lib/format";
+import { appHotkeys } from "../../lib/hotkeys";
 import { CopyButton } from "./copy-button";
 import { FileGlyph } from "./file-glyph";
 import { FileName } from "./file-name";
@@ -58,6 +61,22 @@ function secondaryLine(share: Share, now: number): string {
   }
 }
 
+export function limitOptions(share: Share) {
+  const min = share.downloadCount + 1;
+  const values = [...new Set([1, 3, 5, 10, 25].map((n) => Math.max(n, min)))];
+  return [
+    { value: "none", label: "No limit" },
+    ...values.map((n) => ({ value: String(n), label: n === 1 ? "1 download" : `${n} downloads` })),
+  ];
+}
+
+export const EXTEND_OPTIONS = [
+  { minutes: 5, label: "Add 5 minutes" },
+  { minutes: 10, label: "Add 10 minutes" },
+  { minutes: 30, label: "Add 30 minutes" },
+  { minutes: 60, label: "Add 1 hour" },
+] as const;
+
 function focusSibling(current: HTMLElement, step: number | "first" | "last") {
   const rows = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-share-row]"));
   const index = rows.indexOf(current as HTMLButtonElement);
@@ -66,9 +85,10 @@ function focusSibling(current: HTMLElement, step: number | "first" | "last") {
   target?.click();
 }
 
-export function ShareRow({
+export const ShareRow = memo(function ShareRow({
   share,
   now,
+  position,
   selected,
   fresh,
   profiles,
@@ -78,12 +98,13 @@ export function ShareRow({
 }: {
   share: Share;
   now: number;
+  position: number;
   selected: boolean;
   fresh: boolean;
   profiles: LinkProfile[];
   actions: ShareActions;
-  onSelect: () => void;
-  onShowQr: () => void;
+  onSelect: (id: string) => void;
+  onShowQr: (id: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const status = displayStatus(share, now);
@@ -145,22 +166,29 @@ export function ShareRow({
         <button
           type="button"
           data-share-row
+          data-share-id={share.id}
           aria-current={selected ? "true" : undefined}
           aria-label={`${share.fileName}, ${secondary}, ${STATUS_LABEL[status]}, ${formatDownloads(share)}`}
-          onClick={onSelect}
+          onClick={() => onSelect(share.id)}
           onKeyDown={onKeyDown}
           onContextMenu={(event) => {
             event.preventDefault();
-            onSelect();
+            onSelect(share.id);
             if (!ended) setMenuOpen(true);
           }}
           className="absolute inset-0 rounded-[10px] outline-offset-[-2px]"
         />
-        <FileGlyph
-          kind={share.kind}
-          muted={ended}
-          className={cn("pointer-events-none", selected && "bg-surface")}
-        />
+        <span className="pointer-events-none relative">
+          <FileGlyph kind={share.kind} muted={ended} className={cn(selected && "bg-surface")} />
+          {position <= 9 && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-1 -left-1 flex size-4 items-center justify-center rounded-[5px] border border-line bg-surface text-[10px] font-semibold text-faint opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            >
+              {position}
+            </span>
+          )}
+        </span>
         <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5">
           <FileName
             name={share.fileName}
@@ -185,10 +213,12 @@ export function ShareRow({
         >
           {ended ? (
             <>
-              <Button size="sm" variant="ghost" onClick={() => actions.shareAgain(share)}>
-                <RotateCcw aria-hidden="true" size={13} strokeWidth={1.8} />
-                Share again
-              </Button>
+              <Tooltip label="Share again" hotkey={appHotkeys["share.again"].hotkey}>
+                <Button size="sm" variant="ghost" onClick={() => actions.shareAgain(share)}>
+                  <RotateCcw aria-hidden="true" size={13} strokeWidth={1.8} />
+                  Share again
+                </Button>
+              </Tooltip>
               <IconButton icon={Trash2} label="Remove" onClick={() => actions.remove(share)} />
             </>
           ) : (
@@ -198,11 +228,16 @@ export function ShareRow({
                 variant="ghost"
                 label="Copy link"
                 copiedLabel="Link copied"
-                shortcut="Mod+C"
+                hotkey={appHotkeys["share.copyLink"].hotkey}
                 disabled={!share.link}
                 onCopy={() => actions.copyLink(share)}
               />
-              <IconButton icon={QrCode} label="Show QR code" onClick={onShowQr} />
+              <IconButton
+                icon={QrCode}
+                label="Show QR code"
+                hotkey={appHotkeys["share.showQr"].hotkey}
+                onClick={() => onShowQr(share.id)}
+              />
               <MenuRoot modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
                 <Tooltip label="More actions">
                   <MenuTrigger asChild>
@@ -212,12 +247,16 @@ export function ShareRow({
                   </MenuTrigger>
                 </Tooltip>
                 <MenuContent>
-                  <MenuItem icon={Copy} shortcut="Mod+C" onSelect={() => actions.copyLink(share)}>
+                  <MenuItem
+                    icon={Copy}
+                    hotkey={appHotkeys["share.copyLink"].hotkey}
+                    onSelect={() => actions.copyLink(share)}
+                  >
                     Copy link
                   </MenuItem>
                   <MenuItem
                     icon={QrCode}
-                    shortcut="Mod+Shift+C"
+                    hotkey={appHotkeys["share.copyQr"].hotkey}
                     disabled={!share.link}
                     onSelect={() => actions.copyQr(share)}
                   >
@@ -225,12 +264,45 @@ export function ShareRow({
                   </MenuItem>
                   <MenuItem
                     icon={ImageDown}
-                    shortcut="Mod+S"
+                    hotkey={appHotkeys["share.savePng"].hotkey}
                     disabled={!share.link}
                     onSelect={() => actions.saveQr(share)}
                   >
                     Save QR as PNG…
                   </MenuItem>
+                  <MenuSeparator />
+                  <MenuSub>
+                    <MenuSubTrigger icon={TimerReset}>Lifetime</MenuSubTrigger>
+                    <MenuSubContent>
+                      {EXTEND_OPTIONS.map((option) => (
+                        <MenuItem
+                          key={option.minutes}
+                          {...(option.minutes === 10
+                            ? { hotkey: appHotkeys["share.extend"].hotkey }
+                            : {})}
+                          onSelect={() => actions.extend(share, option.minutes)}
+                        >
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                      <MenuSeparator />
+                      <MenuItem onSelect={() => actions.extend(share, null)}>
+                        Keep until stopped
+                      </MenuItem>
+                    </MenuSubContent>
+                  </MenuSub>
+                  <MenuSub>
+                    <MenuSubTrigger icon={Hash}>Download limit</MenuSubTrigger>
+                    <MenuSubContent>
+                      <MenuRadioGroup
+                        value={share.downloadLimit === null ? "none" : String(share.downloadLimit)}
+                        onValueChange={(v) =>
+                          actions.setLimit(share, v === "none" ? null : Number(v))
+                        }
+                        options={limitOptions(share)}
+                      />
+                    </MenuSubContent>
+                  </MenuSub>
                   <MenuSub>
                     <MenuSubTrigger icon={Link2}>Link profile</MenuSubTrigger>
                     <MenuSubContent>
@@ -245,7 +317,7 @@ export function ShareRow({
                   <MenuItem
                     icon={Square}
                     danger
-                    shortcut="Delete"
+                    hotkey={appHotkeys["share.stop"].hotkey}
                     onSelect={() => actions.stop(share)}
                   >
                     Stop sharing
@@ -258,4 +330,4 @@ export function ShareRow({
       </div>
     </motion.li>
   );
-}
+});

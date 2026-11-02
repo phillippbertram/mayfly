@@ -12,18 +12,18 @@ features remain planned. GitHub Issues track delivery.
 
 ## MVP scope
 
-| Area        | Required behavior                                                                                    |
-| ----------- | ---------------------------------------------------------------------------------------------------- |
-| Files       | Native multi-file picker and drag and drop; one share per selected regular file                      |
-| Shares      | Unique ID, filename, byte size, internal path, random token, URL, timestamps, status, download count |
-| HTTP        | Embedded LAN server; configurable port, default 8765; mobile page and streamed attachment download   |
-| QR          | Per-share QR; copy image, save PNG, copy URL; update when the selected network address changes       |
-| Lifetime    | 5, 10 (default), 30, or 60 minutes, or manual revocation; optional positive download limit           |
-| Desktop     | Dashboard, empty state, share details, settings, light/dark themes, accessible keyboard actions      |
-| Tray        | Open and Quit actions; closing the window keeps sharing active                                       |
-| Profiles    | Create, edit, delete, select, and set a default link profile                                         |
-| Persistence | Local settings and profiles; no persisted active shares, file contents, or access tokens             |
-| Targets     | macOS Apple Silicon and Intel, Windows, Linux                                                        |
+| Area        | Required behavior                                                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Files       | Native multi-file picker and drag and drop; one share per selected regular file                                                                                 |
+| Shares      | Unique ID, filename, byte size, internal path, random token, URL, timestamps, status, download count                                                            |
+| HTTP        | Embedded LAN server; configurable port, default 8765; mobile page and streamed attachment download                                                              |
+| QR          | Per-share QR; copy image, save PNG, copy URL; update when the selected network address changes                                                                  |
+| Lifetime    | Per share: 5, 10 (default), 30, 60, or custom minutes, or until revoked; optional positive download limit; active shares can be extended and their limit raised |
+| Desktop     | Dashboard, empty state, share details, settings, light/dark themes, accessible keyboard actions                                                                 |
+| Tray        | Open and Quit actions; closing the window keeps sharing active                                                                                                  |
+| Profiles    | Create, edit, delete, select, and set a default link profile                                                                                                    |
+| Persistence | Local settings and profiles; no persisted active shares, file contents, or access tokens                                                                        |
+| Targets     | macOS Apple Silicon and Intel, Windows, Linux                                                                                                                   |
 
 The internal share status is active, expired, or disabled. Reaching a download limit
 must make a share unavailable and expose a clear reason to both desktop and browser

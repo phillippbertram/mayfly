@@ -1,29 +1,38 @@
 import { Plus } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Kbd } from "../../components/ui/kbd";
 import type { ServerState } from "../../lib/backend";
 import { cn } from "../../lib/cn";
-import { shortcutLabel } from "../../lib/platform";
+import { appHotkeys } from "../../lib/hotkeys";
 import { HopIllustration } from "./hop-illustration";
+
+const stagger: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+};
+const rise: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 24 } },
+};
 
 export function EmptyState({
   server,
   dragging,
   onChoose,
 }: {
-  server: ServerState;
+  server: ServerState | undefined;
   dragging: boolean;
   onChoose: () => void;
 }) {
   const [hover, setHover] = useState(false);
-  const online = server.kind === "online";
+  const online = server?.kind === "online";
   const active = online && (hover || dragging);
   const blocked =
-    server.kind === "unavailable"
+    server?.kind === "unavailable"
       ? server.message
-      : server.kind === "starting"
+      : !server || server.kind === "starting"
         ? "Starting the local server…"
         : !online
           ? "Sharing resumes when the server is back online."
@@ -59,50 +68,57 @@ export function EmptyState({
           )}
         />
       </svg>
-      <div
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="show"
         className={cn(
-          "flex flex-1 flex-col items-center justify-center gap-3.5 rounded-[14px] px-10 text-center transition-colors duration-300",
-          active && "bg-accent-soft/40",
+          "flex flex-1 flex-col items-center justify-center gap-3 rounded-[14px] px-10 text-center transition-colors duration-500",
+          active && "bg-accent-soft/35",
         )}
       >
-        <motion.div
-          animate={{ y: active ? -4 : 0 }}
-          transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        >
-          <HopIllustration active={active} />
+        <motion.div variants={rise}>
+          <motion.div
+            animate={{ y: active ? -4 : 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
+          >
+            <HopIllustration active={active} dimmed={!online} />
+          </motion.div>
         </motion.div>
-        <h1 className="mt-1 text-[22px] leading-7 font-semibold tracking-[-0.015em]">
+        <motion.h1
+          variants={rise}
+          className="mt-2 text-[22px] leading-7 font-semibold tracking-[-0.015em]"
+        >
           {dragging ? "Drop to share" : "Share a file with your phone"}
-        </h1>
-        <p className="max-w-[380px] text-[13px] leading-5 text-muted">
+        </motion.h1>
+        <motion.p variants={rise} className="max-w-[380px] text-[13px] leading-5 text-muted">
           Drop files here or choose them. Nothing leaves your network, and every share ends on its
           own.
-        </p>
-        <Button
-          variant="primary"
-          size="lg"
-          className="mt-1.5"
-          disabled={!online}
-          onClick={onChoose}
-        >
-          <Plus aria-hidden="true" size={16} strokeWidth={2} />
-          Choose files…
-        </Button>
-        {blocked ? (
-          <motion.p
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            role="status"
-            className="max-w-[360px] text-[12px] text-muted"
-          >
-            {blocked}
-          </motion.p>
-        ) : (
-          <span className="flex items-center gap-1.5 text-[12px] text-faint">
-            or press <Kbd>{shortcutLabel("Mod+O")}</Kbd>
-          </span>
-        )}
-      </div>
+        </motion.p>
+        <motion.div variants={rise} className="mt-1.5">
+          <Button variant="primary" size="lg" disabled={!online} onClick={onChoose}>
+            <Plus aria-hidden="true" size={16} strokeWidth={2} />
+            Choose files…
+          </Button>
+        </motion.div>
+        <motion.div variants={rise}>
+          {blocked ? (
+            <p role="status" className="max-w-[360px] text-[12px] text-muted">
+              {blocked}
+            </p>
+          ) : (
+            <span className="flex items-center gap-2 text-[12px] text-faint">
+              <span className="flex items-center gap-1.5">
+                or press <Kbd hotkey={appHotkeys["files.choose"].hotkey} />
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="flex items-center gap-1.5">
+                commands <Kbd hotkey={appHotkeys["palette.open"].hotkey} />
+              </span>
+            </span>
+          )}
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }

@@ -35,7 +35,7 @@ export function Segmented<T extends string>({
             key={option.value}
             value={option.value}
             className={cn(
-              "relative h-7 rounded-md px-3 text-[12px] font-medium outline-offset-0 transition-colors duration-150",
+              "relative h-7 rounded-md px-2.5 text-[12px] font-medium whitespace-nowrap outline-offset-0 transition-colors duration-150",
               active ? "text-fg" : "text-muted hover:text-fg",
             )}
           >

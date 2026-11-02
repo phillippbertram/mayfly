@@ -2,20 +2,14 @@ import { OctagonX } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "../../components/ui/button";
 import { Modal } from "../../components/ui/modal";
+import { useUi } from "../../store/ui";
 
-export function StopAllDialog({
-  open,
-  count,
-  onConfirm,
-  onClose,
-}: {
-  open: boolean;
-  count: number;
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
+export function StopAllDialog({ count, onConfirm }: { count: number; onConfirm: () => void }) {
+  const open = useUi((s) => s.overlay === "stopAll");
+  const setOverlay = useUi((s) => s.setOverlay);
+  const close = () => setOverlay(null);
   return (
-    <Modal open={open} onClose={onClose} labelledBy="stop-all-title" className="w-[380px] p-5">
+    <Modal open={open} onClose={close} labelledBy="stop-all-title" className="w-[380px] p-5">
       <div className="flex gap-3.5">
         <motion.span
           initial={{ scale: 0.6, rotate: -20 }}
@@ -36,12 +30,12 @@ export function StopAllDialog({
         </div>
       </div>
       <div className="mt-5 flex justify-end gap-2">
-        <Button onClick={onClose}>Keep sharing</Button>
+        <Button onClick={close}>Keep sharing</Button>
         <Button
           variant="dangerSolid"
           onClick={() => {
             onConfirm();
-            onClose();
+            close();
           }}
         >
           Stop all

@@ -1,8 +1,9 @@
+import type { Hotkey } from "@tanstack/react-hotkeys";
 import { Check, ChevronRight, type LucideIcon } from "lucide-react";
 import { DropdownMenu as M } from "radix-ui";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/cn";
-import { shortcutLabel } from "../../lib/platform";
+import { hotkeyLabel } from "../../lib/hotkeys";
 
 export const MenuRoot = M.Root;
 export const MenuTrigger = M.Trigger;
@@ -35,14 +36,14 @@ export function MenuContent({
 export function MenuItem({
   icon: Icon,
   children,
-  shortcut,
+  hotkey,
   danger,
   onSelect,
   disabled,
 }: {
   icon?: LucideIcon;
   children: ReactNode;
-  shortcut?: string;
+  hotkey?: Hotkey | null;
   danger?: boolean;
   onSelect?: () => void;
   disabled?: boolean;
@@ -55,7 +56,7 @@ export function MenuItem({
     >
       {Icon && <Icon aria-hidden="true" size={15} strokeWidth={1.6} className="opacity-80" />}
       <span className="flex-1">{children}</span>
-      {shortcut && <span className="text-[11px] text-faint tnum">{shortcutLabel(shortcut)}</span>}
+      {hotkey && <span className="text-[11px] text-faint tnum">{hotkeyLabel(hotkey)}</span>}
     </M.Item>
   );
 }

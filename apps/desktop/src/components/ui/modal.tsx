@@ -1,3 +1,4 @@
+import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn";
@@ -5,12 +6,14 @@ import { cn } from "../../lib/cn";
 /**
  * Native modal <dialog> (focus containment, inert background, Escape) with
  * Motion-driven enter and exit. The dialog closes only after the exit animation.
+ * Mark the element that should receive focus with `data-autofocus`.
  */
 export function Modal({
   open,
   onClose,
   labelledBy,
   side = "center",
+  align = "center",
   className,
   children,
 }: {
@@ -18,6 +21,8 @@ export function Modal({
   onClose: () => void;
   labelledBy: string;
   side?: "center" | "right";
+  /** Vertical placement for centered dialogs; command palettes sit near the top. */
+  align?: "center" | "top";
   className?: string;
   children: ReactNode;
 }) {
@@ -32,7 +37,11 @@ export function Modal({
 
   useLayoutEffect(() => {
     const dialog = ref.current;
-    if (open && mounted && dialog && !dialog.open) dialog.showModal();
+    if (open && mounted && dialog && !dialog.open) {
+      dialog.showModal();
+      // showModal() resets focus; hand it to the element the content asked for.
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
   }, [open, mounted]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the dialog element exists only while mounted.
@@ -74,7 +83,14 @@ export function Modal({
       ref={ref}
       aria-labelledby={labelledBy}
       data-visible={open}
-      className={cn("modal", side === "center" ? "items-center justify-center" : "justify-end")}
+      className={cn(
+        "modal",
+        side === "right"
+          ? "justify-end"
+          : align === "top"
+            ? "items-start justify-center pt-[12vh]"
+            : "items-center justify-center",
+      )}
     >
       <AnimatePresence
         onExitComplete={() => {
@@ -94,7 +110,9 @@ export function Modal({
               className,
             )}
           >
-            {children}
+            <HotkeysProvider scope={labelledBy} exclusive>
+              {children}
+            </HotkeysProvider>
           </motion.div>
         )}
       </AnimatePresence>

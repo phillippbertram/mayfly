@@ -1,63 +1,60 @@
 import { getAppInfo } from "../desktop";
 import { DEFAULT_SETTINGS, HTTP_PROFILE } from "./defaults";
-import { SnapshotStore } from "./store";
-import type { Backend, Result, Settings, TemplatePreview } from "./types";
+import { createEmitter } from "./emitter";
+import { type Backend, BackendError, type ServerState, type Settings } from "./types";
 
 const NOT_YET = "Sharing isn't available in this build yet.";
 
-function unavailable<T>(): Promise<Result<T>> {
-  return Promise.resolve({ ok: false, error: NOT_YET });
-}
+const unavailable = (): Promise<never> => Promise.reject(new BackendError(NOT_YET));
 
 /**
  * Desktop adapter. The Rust share, server, and network services do not exist yet,
- * so this adapter reports that truthfully instead of pretending to be online.
- * Replace each method with its Tauri command as the backend issues land.
+ * so it reports that truthfully instead of pretending to be online. As each
+ * backend issue lands, replace a method with `invoke(...)` and parse the result
+ * with its schema from `./schemas`.
  */
 export function createDesktopBackend(): Backend {
-  const store = new SnapshotStore({
-    server: { kind: "starting" },
-    shares: [],
-    settings: DEFAULT_SETTINGS,
-    profiles: [HTTP_PROFILE],
-    interfaces: [],
-  });
+  const events = createEmitter();
+  let settings: Settings = DEFAULT_SETTINGS;
 
-  getAppInfo()
-    .then(() => {
-      store.set((s) => ({ ...s, server: { kind: "unavailable", message: NOT_YET } }));
-    })
-    .catch(() => {
-      store.set((s) => ({
-        ...s,
-        server: { kind: "unavailable", message: "FileHop can't reach its desktop backend." },
-      }));
-    });
+  const server: Promise<ServerState> = getAppInfo().then(
+    (): ServerState => ({ kind: "unavailable", message: NOT_YET }),
+    (): ServerState => ({
+      kind: "unavailable",
+      message: "FileHop can't reach its desktop backend.",
+    }),
+  );
 
   return {
     mode: "desktop",
-    getSnapshot: store.get,
-    subscribe: store.subscribe,
-    onEvent: store.onEvent,
-    chooseFiles: unavailable,
-    shareDropped: unavailable,
+    subscribe: events.subscribe,
+    getServer: () => server,
+    listShares: async () => [],
+    getSettings: async () => settings,
+    listProfiles: async () => [HTTP_PROFILE],
+    listInterfaces: async () => [],
+    pickFiles: unavailable,
+    stageDropped: unavailable,
+    discardStaged: async () => {},
+    createShares: unavailable,
     shareAgain: unavailable,
+    updateShare: unavailable,
     stopShare: unavailable,
     stopAll: unavailable,
     removeShare: unavailable,
     clearFinished: unavailable,
-    setShareProfile: unavailable,
-    async updateSettings(patch: Partial<Settings>): Promise<Result> {
+    async updateSettings(patch) {
       // Only the theme is a pure UI preference; it applies for this session until
       // the Rust settings service persists it.
       const { theme, ...rest } = patch;
-      if (Object.keys(rest).length > 0) return { ok: false, error: NOT_YET };
-      if (theme) store.set((s) => ({ ...s, settings: { ...s.settings, theme } }));
-      return { ok: true, value: undefined };
+      if (Object.keys(rest).length > 0) throw new BackendError(NOT_YET);
+      if (theme) settings = { ...settings, theme };
+      events.emit({ kind: "changed", topics: ["settings"] });
+      return settings;
     },
     saveProfile: unavailable,
     deleteProfile: unavailable,
-    previewTemplate: (): Promise<TemplatePreview> => Promise.resolve({ ok: false, error: NOT_YET }),
+    previewTemplate: async () => ({ ok: false, error: NOT_YET }),
     savePng: unavailable,
   };
 }

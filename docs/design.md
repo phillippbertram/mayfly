@@ -43,7 +43,8 @@ Three words guide every decision: **calm**, **temporary**, **truthful**.
    conventions, and keyboard shortcuts of the host platform. No imitation of
    another operating system's chrome, no decorative blur.
 6. **Restrained motion.** Motion confirms an action in 120 to 180 ms and then
-   stops. Nothing animates while idle. Reduced-motion preferences disable all
+   stops. Nothing animates while idle, except the empty-state illustration, which
+   loops calmly to invite the first share. Reduced-motion preferences disable all
    non-essential transitions.
 
 ## Audience and core flows
@@ -113,10 +114,32 @@ leaves your network."), and a primary button "Choose files..." with its shortcut
 shown as a hint. The header already shows the real server status so the user knows
 scanning will work before the first file is added.
 
+The illustration loops gently while idle: a soft glow breathes behind it, a file
+card lifts off the laptop screen, travels the dashed arc with a short trail, and
+the phone lights up with a drawn check mark and a ripple. Hover or an incoming drag
+speeds the loop up and brightens the accent. Heading, text, and button rise in with
+a short stagger.
+
 Drag feedback: the dashed border becomes solid in the accent color, the background
 tints by a few percent, and the heading changes to "Drop to share". Rejected items
 such as folders show an inline explanation ("Folders can't be shared. Drop single
 files.") without a modal.
+
+### Share options
+
+Choosing or dropping files opens a compact options sheet before anything is shared.
+It lists the files, with a remove button for each when there are several, and
+offers the lifetime (5, 10, 30, or 60 minutes, until stopped, or a custom number
+of minutes), the download limit (none, 1, 3, 5, or custom), and the link profile.
+Every field starts from the defaults in settings, and the primary Share button has
+focus, so Return shares with the defaults in one keystroke; Cmd/Ctrl+Return shares
+from anywhere in the sheet. A live summary reads like "Until about 14:42 · up to 3
+downloads". The "Ask before sharing" switch, also in General settings, skips the
+sheet for users who always want the defaults.
+
+While a share is active, the inspector can extend its lifetime (add 5, 10, 30, or
+60 minutes, or keep it until stopped) and change its download limit to any value
+above the downloads already started. Rust validates and applies both changes.
 
 ### Dashboard with shares
 
@@ -328,22 +351,41 @@ With reduced motion enabled, transitions are replaced by immediate state changes
 
 ### Keyboard
 
-| Shortcut           | Action                                    |
-| ------------------ | ----------------------------------------- |
-| Cmd/Ctrl+O         | Choose files                              |
-| Up / Down          | Move the selection in the share list      |
-| Enter              | Open the selected share in the inspector  |
-| Cmd/Ctrl+C         | Copy the selected share's link            |
-| Cmd/Ctrl+Shift+C   | Copy the selected share's QR image        |
-| Cmd/Ctrl+S         | Save the selected share's QR as PNG       |
-| Backspace / Delete | Stop sharing after inline confirmation    |
-| Cmd/Ctrl+,         | Open settings                             |
-| Escape             | Close the inspector, sheet, or dialog     |
-| Cmd/Ctrl+W         | Hide the window (sharing continues)       |
-| Cmd/Ctrl+Q         | Quit with confirmation while shares exist |
+FileHop works from the keyboard. Every shortcut is declared once with TanStack
+Hotkeys and feeds three places: the global key handling, the Cmd/Ctrl+K command
+palette, and the shortcut overview (Cmd/Ctrl+/ and Settings › Shortcuts). Labels use
+the platform's symbols. Single-letter keys act on the selected share and are
+ignored while typing or while a menu is open; dialogs suspend global shortcuts.
 
-Shortcuts also appear in the native application menu so the platform shows them
-in its own conventions.
+| Shortcut                 | Action                                      |
+| ------------------------ | ------------------------------------------- |
+| Cmd/Ctrl+K               | Command palette: search shares and commands |
+| Cmd/Ctrl+/               | Keyboard shortcut overview                  |
+| Cmd/Ctrl+O               | Choose files to share                       |
+| Cmd/Ctrl+,               | Settings                                    |
+| Cmd/Ctrl+Shift+L         | Switch light and dark                       |
+| J / K, Up / Down         | Next or previous share                      |
+| G G / Shift+G            | First or last share                         |
+| 1 – 9                    | Select a share by position                  |
+| I                        | Show or hide details                        |
+| Escape                   | Close the inspector, sheet, or dialog       |
+| Cmd/Ctrl+C               | Copy the selected share's link              |
+| Cmd/Ctrl+Shift+C         | Copy the selected share's QR image          |
+| Cmd/Ctrl+S               | Save the selected share's QR as PNG         |
+| Q                        | Highlight the QR code                       |
+| E                        | Add 10 minutes                              |
+| L                        | Change the download limit                   |
+| P                        | Change the link profile                     |
+| R                        | Share an ended file again                   |
+| Backspace / Delete       | Stop sharing after inline confirmation      |
+| Cmd/Ctrl+Backspace       | Clear finished shares                       |
+| Cmd/Ctrl+Shift+Backspace | Stop all shares after confirmation          |
+| Cmd/Ctrl+Return          | Share from the options sheet                |
+| Cmd/Ctrl+W               | Hide the window (sharing continues)         |
+| Cmd/Ctrl+Q               | Quit with confirmation while shares exist   |
+
+Window and quit shortcuts belong to the native application menu, which is part of
+the tray and lifecycle work.
 
 ### Feedback
 
@@ -431,6 +473,4 @@ key/value details, only where they do not change that balance.
 ## Open design questions
 
 - Final empty-state illustration and application icon artwork.
-- Whether to offer extending a share's lifetime from the inspector in a later
-  iteration; the MVP keeps lifetimes fixed at creation.
 - The exact tray glyph per platform after testing light and dark menu bars.

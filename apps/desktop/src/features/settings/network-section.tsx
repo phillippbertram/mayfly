@@ -3,9 +3,16 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Select } from "../../components/ui/select";
-import { useBackend } from "../../hooks/use-backend";
-import type { NetworkInterface, ServerState, Settings } from "../../lib/backend";
+import type { ServerState } from "../../lib/backend";
+import { PortSchema } from "../../lib/backend/schemas";
 import { cn } from "../../lib/cn";
+import {
+  errorMessage,
+  useInterfaces,
+  useServer,
+  useSettings,
+  useUpdateSettings,
+} from "../../lib/queries";
 import { Field, InlineMessage, inputClass, SectionHeader } from "./field";
 
 function statusLine(server: ServerState): {
@@ -28,19 +35,13 @@ function statusLine(server: ServerState): {
   }
 }
 
-export function NetworkSection({
-  settings,
-  server,
-  interfaces,
-}: {
-  settings: Settings;
-  server: ServerState;
-  interfaces: NetworkInterface[];
-}) {
-  const backend = useBackend();
+export function NetworkSection() {
+  const settings = useSettings();
+  const server: ServerState = useServer().data ?? { kind: "starting" };
+  const interfaces = useInterfaces();
+  const mutation = useUpdateSettings();
   const [port, setPort] = useState(String(settings.port));
   const [iface, setIface] = useState(settings.interfaceId ?? interfaces[0]?.id ?? "");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
 
@@ -49,24 +50,28 @@ export function NetworkSection({
     setIface(settings.interfaceId ?? interfaces[0]?.id ?? "");
   }, [settings.port, settings.interfaceId, interfaces]);
 
-  const portNumber = Number(port);
-  const portValid = /^\d{1,5}$/.test(port) && portNumber >= 1 && portNumber <= 65535;
+  const parsed = PortSchema.safeParse(Number(port));
+  const portValid = port !== "" && parsed.success;
+  const portError = portValid ? null : (parsed.error?.issues[0]?.message ?? "Enter a port.");
   const dirty =
     port !== String(settings.port) || iface !== (settings.interfaceId ?? interfaces[0]?.id ?? "");
   const status = statusLine(server);
 
-  const apply = async () => {
-    setBusy(true);
+  const busy = mutation.isPending;
+  const apply = () => {
+    if (!parsed.success) return;
     setError(null);
     setApplied(false);
-    const result = await backend.updateSettings({ port: portNumber, interfaceId: iface || null });
-    setBusy(false);
-    if (result.ok) {
-      setApplied(true);
-      setTimeout(() => setApplied(false), 2400);
-    } else {
-      setError(result.error);
-    }
+    mutation.mutate(
+      { port: parsed.data, interfaceId: iface || null },
+      {
+        onSuccess: () => {
+          setApplied(true);
+          setTimeout(() => setApplied(false), 2400);
+        },
+        onError: (e) => setError(errorMessage(e)),
+      },
+    );
   };
 
   return (
@@ -116,10 +121,7 @@ export function NetworkSection({
               </AnimatePresence>
             </span>
           </div>
-          <InlineMessage
-            message={portValid ? null : "Enter a port between 1 and 65535."}
-            tone="error"
-          />
+          <InlineMessage message={portError} tone="error" />
         </Field>
 
         <Field

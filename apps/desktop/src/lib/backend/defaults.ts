@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS: Settings = {
   interfaceId: null,
   defaultLifetimeMinutes: 10,
   defaultDownloadLimit: null,
+  confirmBeforeSharing: true,
   theme: "system",
   defaultProfileId: HTTP_PROFILE_ID,
 };

@@ -1,5 +1,5 @@
-import { createContext, type ReactNode, useContext, useSyncExternalStore } from "react";
-import type { Backend, Snapshot } from "../lib/backend";
+import { createContext, type ReactNode, useContext } from "react";
+import type { Backend } from "../lib/backend";
 
 const BackendContext = createContext<Backend | null>(null);
 
@@ -11,9 +11,4 @@ export function useBackend(): Backend {
   const backend = useContext(BackendContext);
   if (!backend) throw new Error("useBackend must be used inside BackendProvider.");
   return backend;
-}
-
-export function useSnapshot(): Snapshot {
-  const backend = useBackend();
-  return useSyncExternalStore(backend.subscribe, backend.getSnapshot);
 }

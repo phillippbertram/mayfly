@@ -2,6 +2,7 @@ import { Square, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
+import { useSignal } from "../../hooks/use-signal";
 
 /** Stop sharing with an inline confirmation instead of a dialog. */
 export function StopButton({
@@ -16,9 +17,7 @@ export function StopButton({
   const confirmRef = useRef<HTMLButtonElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => {
-    if (armedSignal > 0) setArmed(true);
-  }, [armedSignal]);
+  useSignal(armedSignal, () => setArmed(true));
 
   useEffect(() => {
     clearTimeout(timer.current);

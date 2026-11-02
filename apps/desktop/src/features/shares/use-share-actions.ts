@@ -1,25 +1,73 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useToast } from "../../components/ui/toast";
 import { useBackend } from "../../hooks/use-backend";
-import type { Result, Share } from "../../lib/backend";
+import type { DroppedFiles, Share, ShareOptions, StagedFiles } from "../../lib/backend";
 import { splitFileName } from "../../lib/format";
 import { copyQrImage, qrPng } from "../../lib/qr";
+import { errorMessage, queryKeys, useSettings } from "../../lib/queries";
+import { useUi } from "../../store/ui";
 
-export function useShareActions(onCreated?: (share: Share) => void) {
+/** All share commands, with errors reported as toasts. */
+export function useShareActions() {
   const backend = useBackend();
   const toast = useToast();
+  const client = useQueryClient();
+  const settings = useSettings();
 
   return useMemo(() => {
-    const report = <T>(result: Result<T>): result is { ok: true; value: T } => {
-      if (!result.ok) toast(result.error, "error");
-      return result.ok;
+    const run = async <T>(task: () => Promise<T>): Promise<T | undefined> => {
+      try {
+        return await task();
+      } catch (error) {
+        toast(errorMessage(error), "error");
+        return undefined;
+      }
     };
 
+    const defaults = (): ShareOptions => ({
+      lifetimeMinutes: settings.defaultLifetimeMinutes,
+      downloadLimit: settings.defaultDownloadLimit,
+      profileId: settings.defaultProfileId,
+    });
+
+    /** Select the newest share once the list contains it. */
+    const reveal = async (shares: Share[]) => {
+      await client.invalidateQueries({ queryKey: queryKeys.shares });
+      const first = shares[0];
+      if (first) useUi.getState().select(first.id);
+      if (shares.length > 1) toast(`${shares.length} files are now shared.`, "success");
+    };
+
+    const createShares = async (stageIds: string[], options: ShareOptions) => {
+      const shares = await run(() => backend.createShares(stageIds, options));
+      if (shares) await reveal(shares);
+      return Boolean(shares);
+    };
+
+    const handleStaged = async (staged: StagedFiles | null | undefined) => {
+      if (!staged) return;
+      for (const item of staged.rejected) toast(`${item.name}: ${item.reason}`, "error");
+      if (staged.files.length === 0) return;
+      if (settings.confirmBeforeSharing) useUi.getState().openComposer(staged);
+      else
+        await createShares(
+          staged.files.map((f) => f.stageId),
+          defaults(),
+        );
+    };
+
+    const update = (share: Share, patch: Parameters<typeof backend.updateShare>[1]) =>
+      run(() => backend.updateShare(share.id, patch));
+
     return {
-      async chooseFiles() {
-        const result = await backend.chooseFiles();
-        if (report(result) && result.value[0]) onCreated?.(result.value[0]);
-      },
+      defaults,
+      createShares,
+      chooseFiles: async () => handleStaged(await run(() => backend.pickFiles())),
+      drop: async (files: DroppedFiles) =>
+        handleStaged(await run(() => backend.stageDropped(files))),
+      discardStaged: (ids: string[]) => run(() => backend.discardStaged(ids)),
+
       async copyLink(share: Share): Promise<boolean> {
         if (!share.link) {
           toast(share.linkError ?? "This share has no link right now.", "error");
@@ -45,35 +93,35 @@ export function useShareActions(onCreated?: (share: Share) => void) {
       },
       async saveQr(share: Share) {
         if (!share.link) return;
-        try {
-          const png = await qrPng(share.link);
-          const result = await backend.savePng(`${splitFileName(share.fileName).base}-qr.png`, png);
-          if (report(result)) toast("QR code saved.", "success");
-        } catch {
-          toast("The QR image couldn't be created.", "error");
-        }
+        const link = share.link;
+        const saved = await run(async () => {
+          const png = await qrPng(link);
+          await backend.savePng(`${splitFileName(share.fileName).base}-qr.png`, png);
+          return true;
+        });
+        if (saved) toast("QR code saved.", "success");
       },
-      async stop(share: Share) {
-        report(await backend.stopShare(share.id));
+
+      extend: async (share: Share, minutes: number | null) => {
+        const updated = await update(share, { extendMinutes: minutes });
+        if (updated)
+          toast(
+            minutes === null ? "Shared until you stop it." : `Added ${minutes} minutes.`,
+            "success",
+          );
       },
-      async stopAll() {
-        report(await backend.stopAll());
-      },
-      async remove(share: Share) {
-        report(await backend.removeShare(share.id));
-      },
-      async clearFinished() {
-        report(await backend.clearFinished());
-      },
+      setLimit: (share: Share, downloadLimit: number | null) => update(share, { downloadLimit }),
+      setProfile: (share: Share, profileId: string) => update(share, { profileId }),
+      stop: (share: Share) => run(() => backend.stopShare(share.id)),
+      stopAll: () => run(() => backend.stopAll()),
+      remove: (share: Share) => run(() => backend.removeShare(share.id)),
+      clearFinished: () => run(() => backend.clearFinished()),
       async shareAgain(share: Share) {
-        const result = await backend.shareAgain(share.id);
-        if (report(result)) onCreated?.(result.value);
-      },
-      async setProfile(share: Share, profileId: string) {
-        report(await backend.setShareProfile(share.id, profileId));
+        const created = await run(() => backend.shareAgain(share.id));
+        if (created) await reveal([created]);
       },
     };
-  }, [backend, toast, onCreated]);
+  }, [backend, client, settings, toast]);
 }
 
 export type ShareActions = ReturnType<typeof useShareActions>;

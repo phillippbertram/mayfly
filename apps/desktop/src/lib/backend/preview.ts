@@ -1,26 +1,28 @@
 /**
- * Browser-preview simulator. It is loaded only when the frontend runs outside
- * Tauri (`pnpm dev:web`) so the interface can be designed and reviewed without the
- * Rust services. It never ships behavior to the desktop build, and the UI labels
- * it as sample data. Rust remains the source of truth for the real application.
+ * Browser-preview simulator. It loads only when the frontend runs outside Tauri
+ * (`pnpm dev:web`) so the interface can be designed and reviewed without the Rust
+ * services. The UI labels it as sample data. It never ships behavior to the
+ * desktop build; Rust remains the source of truth for the real application.
  */
 import { DEFAULT_SETTINGS, HTTP_PROFILE } from "./defaults";
-import { SnapshotStore } from "./store";
-import type {
-  Backend,
-  DroppedFiles,
-  FileKind,
-  LinkProfile,
-  NetworkInterface,
-  ProfileInput,
-  Result,
-  ServerState,
-  Settings,
-  Share,
-  Snapshot,
-  TemplatePreview,
+import { createEmitter } from "./emitter";
+import {
+  type Backend,
+  BackendError,
+  type DroppedFiles,
+  type FileKind,
+  HTTP_PROFILE_ID,
+  type LinkProfile,
+  type NetworkInterface,
+  type ServerState,
+  type Settings,
+  type Share,
+  type ShareOptions,
+  type StagedFile,
+  type StagedFiles,
+  type TemplatePreview,
+  type Topic,
 } from "./types";
-import { HTTP_PROFILE_ID } from "./types";
 
 const INTERFACES: NetworkInterface[] = [
   { id: "en0", name: "Wi‑Fi (en0)", address: "192.168.1.24" },
@@ -31,17 +33,21 @@ const PLACEHOLDERS = ["url", "encodedUrl", "filename", "encodedFilename", "token
 type Placeholder = (typeof PLACEHOLDERS)[number];
 const BLOCKED_SCHEMES = new Set(["javascript", "data", "vbscript", "file", "blob", "about"]);
 
-const SAMPLE_FILES: { name: string; size: number; type: string }[] = [
-  { name: "Boarding-pass.pdf", size: 312_000, type: "application/pdf" },
-  { name: "Holiday-video.mov", size: 184_300_000, type: "video/quicktime" },
-  { name: "Screenshot 2026-11-02 at 14.08.31.png", size: 1_420_000, type: "image/png" },
-  { name: "Project-assets.zip", size: 48_900_000, type: "application/zip" },
-  { name: "Voice memo.m4a", size: 2_100_000, type: "audio/mp4" },
+const SAMPLE_PICKS: { name: string; size: number; type: string }[][] = [
+  [{ name: "Boarding-pass.pdf", size: 312_000, type: "application/pdf" }],
+  [
+    { name: "Screenshot 2026-11-02 at 14.08.31.png", size: 1_420_000, type: "image/png" },
+    { name: "Holiday-video.mov", size: 184_300_000, type: "video/quicktime" },
+  ],
+  [{ name: "Project-assets.zip", size: 48_900_000, type: "application/zip" }],
+  [{ name: "Voice memo.m4a", size: 2_100_000, type: "audio/mp4" }],
 ];
 
-const ok = <T = void>(value: T): Result<T> => ({ ok: true, value });
-const fail = <T = void>(error: string): Result<T> => ({ ok: false, error });
+const MINUTE = 60_000;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const fail = (message: string): never => {
+  throw new BackendError(message);
+};
 
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -73,12 +79,10 @@ export function validateTemplate(template: string): { ok: true } | { ok: false; 
   if (!scheme) return { ok: false, error: "Start with a scheme, such as myapp:// or https://." };
   if (BLOCKED_SCHEMES.has(scheme))
     return { ok: false, error: `The ${scheme}: scheme isn't allowed.` };
-  const tokens = trimmed.match(/\{[^{}]*\}|[{}]/g) ?? [];
-  for (const token of tokens) {
+  for (const token of trimmed.match(/\{[^{}]*\}|[{}]/g) ?? []) {
     if (token === "{" || token === "}")
       return { ok: false, error: "A brace is unmatched. Use placeholders like {encodedUrl}." };
-    const name = token.slice(1, -1);
-    if (!PLACEHOLDERS.includes(name as Placeholder))
+    if (!PLACEHOLDERS.includes(token.slice(1, -1) as Placeholder))
       return { ok: false, error: `Unknown placeholder ${token}.` };
   }
   return { ok: true };
@@ -91,15 +95,21 @@ function substitute(template: string, values: Record<Placeholder, string>): stri
   );
 }
 
-interface PreviewShareState {
-  share: Share;
+interface Entry {
+  share: Omit<Share, "link" | "linkError">;
   token: string;
 }
 
+interface Staged extends StagedFile {
+  mediaType: string;
+}
+
 export function createPreviewBackend(): Backend {
-  const now = Date.now();
-  const minute = 60_000;
-  let shares: PreviewShareState[] = [];
+  const events = createEmitter();
+  const changed = (...topics: Topic[]) => events.emit({ kind: "changed", topics });
+
+  let server: ServerState = { kind: "starting" };
+  let settings: Settings = { ...DEFAULT_SETTINGS, interfaceId: "en0" };
   let profiles: LinkProfile[] = [
     HTTP_PROFILE,
     {
@@ -108,292 +118,339 @@ export function createPreviewBackend(): Backend {
       template: "myapp://import?url={encodedUrl}&name={encodedFilename}",
     },
   ];
-  let settings: Settings = { ...DEFAULT_SETTINGS, interfaceId: "en0" };
-  let server: ServerState = { kind: "starting" };
-  let sampleIndex = 0;
+  let entries: Entry[] = [];
+  const staged = new Map<string, Staged>();
+  let pickIndex = 0;
 
-  const store = new SnapshotStore(build());
+  const address = () =>
+    server.kind === "online" ? { address: server.address, port: server.port } : null;
 
-  function currentAddress(): { address: string; port: number } | null {
-    return server.kind === "online" ? { address: server.address, port: server.port } : null;
-  }
-
-  function resolveLink(state: PreviewShareState): Pick<Share, "link" | "linkError"> {
-    const address = currentAddress();
-    if (!address) return { link: null, linkError: null };
-    const url = `http://${address.address}:${address.port}/s/${state.token}`;
-    const profile = profiles.find((p) => p.id === state.share.profileId) ?? HTTP_PROFILE;
-    if (!profile.template) return { link: url, linkError: null };
+  function resolve(entry: Entry): Share {
+    const at = address();
+    if (!at) return { ...entry.share, link: null, linkError: null };
+    const url = `http://${at.address}:${at.port}/s/${entry.token}`;
+    const profile = profiles.find((p) => p.id === entry.share.profileId) ?? HTTP_PROFILE;
+    if (!profile.template) return { ...entry.share, link: url, linkError: null };
     const valid = validateTemplate(profile.template);
-    if (!valid.ok) return { link: null, linkError: valid.error };
-    return {
-      link: substitute(profile.template, {
-        url,
-        encodedUrl: encodeURIComponent(url),
-        filename: state.share.fileName,
-        encodedFilename: encodeURIComponent(state.share.fileName),
-        token: state.token,
-      }),
-      linkError: null,
-    };
+    if (!valid.ok) return { ...entry.share, link: null, linkError: valid.error };
+    const link = substitute(profile.template, {
+      url,
+      encodedUrl: encodeURIComponent(url),
+      filename: entry.share.fileName,
+      encodedFilename: encodeURIComponent(entry.share.fileName),
+      token: entry.token,
+    });
+    return { ...entry.share, link, linkError: null };
   }
 
-  function build(): Snapshot {
-    return {
-      server,
-      settings,
-      profiles,
-      interfaces: INTERFACES,
-      shares: shares.map((state) => ({ ...state.share, ...resolveLink(state) })),
-    };
-  }
-
-  const commit = () => store.set(build);
-
-  function makeShare(
-    file: { name: string; size: number; type: string },
-    overrides: Partial<Share> = {},
-  ): PreviewShareState {
+  function makeEntry(
+    file: { fileName: string; byteSize: number; mediaType: string; kind: FileKind },
+    options: ShareOptions,
+    overrides: Partial<Entry["share"]> = {},
+  ): Entry {
     const createdAt = Date.now();
-    const share: Share = {
-      id: crypto.randomUUID(),
-      fileName: file.name,
-      byteSize: file.size,
-      mediaType: file.type || "application/octet-stream",
-      kind: kindOf(file.type, file.name),
-      createdAt,
-      expiresAt:
-        settings.defaultLifetimeMinutes === null
-          ? null
-          : createdAt + settings.defaultLifetimeMinutes * minute,
-      endedAt: null,
-      downloadCount: 0,
-      downloadLimit: settings.defaultDownloadLimit,
-      status: "active",
-      profileId: settings.defaultProfileId,
-      link: null,
-      linkError: null,
-      ...overrides,
+    return {
+      token: randomToken(),
+      share: {
+        id: crypto.randomUUID(),
+        fileName: file.fileName,
+        byteSize: file.byteSize,
+        mediaType: file.mediaType,
+        kind: file.kind,
+        createdAt,
+        expiresAt:
+          options.lifetimeMinutes === null ? null : createdAt + options.lifetimeMinutes * MINUTE,
+        endedAt: null,
+        downloadCount: 0,
+        downloadLimit: options.downloadLimit,
+        status: "active",
+        profileId: options.profileId,
+        ...overrides,
+      },
     };
-    return { share, token: randomToken() };
   }
 
-  // Sample shares so every row state is visible right away.
-  shares = [
-    makeShare(
-      { name: "Quarterly-report-2026.pdf", size: 2_400_000, type: "application/pdf" },
-      {
-        createdAt: now - 2.3 * minute,
-        expiresAt: now + 7.7 * minute,
-        downloadCount: 1,
-        downloadLimit: 3,
-      },
-    ),
-    makeShare(
-      { name: "IMG_4821.heic", size: 3_100_000, type: "image/heic" },
-      { createdAt: now - 1 * minute, expiresAt: now + 9 * minute },
-    ),
-    makeShare(
-      { name: "Invoice-0342.pdf", size: 184_000, type: "application/pdf" },
-      {
-        createdAt: now - 9.2 * minute,
-        expiresAt: now + 48_000,
-        downloadCount: 1,
-        downloadLimit: 2,
-      },
-    ),
-    makeShare(
-      { name: "export-2026-11-02.csv", size: 812_000, type: "text/csv" },
-      {
-        createdAt: now - 25 * minute,
-        expiresAt: now - 15 * minute,
-        endedAt: now - 15 * minute,
-        status: "expired",
-        downloadCount: 1,
-      },
-    ),
+  const sample = (name: string, size: number, type: string) => ({
+    fileName: name,
+    byteSize: size,
+    mediaType: type,
+    kind: kindOf(type, name),
+  });
+  const now = Date.now();
+  const base: ShareOptions = {
+    lifetimeMinutes: 10,
+    downloadLimit: null,
+    profileId: HTTP_PROFILE_ID,
+  };
+  entries = [
+    makeEntry(sample("Quarterly-report-2026.pdf", 2_400_000, "application/pdf"), base, {
+      createdAt: now - 2.3 * MINUTE,
+      expiresAt: now + 7.7 * MINUTE,
+      downloadCount: 1,
+      downloadLimit: 3,
+    }),
+    makeEntry(sample("IMG_4821.heic", 3_100_000, "image/heic"), base, {
+      createdAt: now - MINUTE,
+      expiresAt: now + 9 * MINUTE,
+    }),
+    makeEntry(sample("Invoice-0342.pdf", 184_000, "application/pdf"), base, {
+      createdAt: now - 9.2 * MINUTE,
+      expiresAt: now + 48_000,
+      downloadCount: 1,
+      downloadLimit: 2,
+    }),
+    makeEntry(sample("export-2026-11-02.csv", 812_000, "text/csv"), base, {
+      createdAt: now - 25 * MINUTE,
+      expiresAt: now - 15 * MINUTE,
+      endedAt: now - 15 * MINUTE,
+      status: "expired",
+      downloadCount: 1,
+    }),
   ];
-  commit();
 
-  // The server "binds" shortly after launch, like the real listener would.
   setTimeout(() => {
     server = { kind: "online", address: "192.168.1.24", port: 8765, interfaceName: "Wi‑Fi (en0)" };
-    commit();
+    changed("server", "shares");
   }, 900);
 
   // Expiration is enforced by the backend; the UI only renders the result.
   setInterval(() => {
     const t = Date.now();
-    let expired = 0;
-    shares = shares.map((state) => {
-      const { share } = state;
+    let dirty = false;
+    entries = entries.map((entry) => {
+      const { share } = entry;
       if (share.status === "active" && share.expiresAt !== null && share.expiresAt <= t) {
-        expired += 1;
-        return { ...state, share: { ...share, status: "expired", endedAt: share.expiresAt } };
+        dirty = true;
+        return { ...entry, share: { ...share, status: "expired", endedAt: share.expiresAt } };
       }
-      return state;
+      return entry;
     });
-    if (expired > 0) {
-      commit();
-      store.emit({ kind: "sharesExpired", count: expired });
-    }
+    if (dirty) changed("shares");
   }, 500);
 
-  function findState(id: string): PreviewShareState | undefined {
-    return shares.find((s) => s.share.id === id);
+  // Now and then a "phone" downloads the selected sample, so counters move.
+  setInterval(() => {
+    const candidates = entries.filter((e) => e.share.status === "active");
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!target || Math.random() < 0.6) return;
+    const count = target.share.downloadCount + 1;
+    const limitReached = target.share.downloadLimit !== null && count >= target.share.downloadLimit;
+    update(target.share.id, {
+      downloadCount: count,
+      ...(limitReached ? { status: "limitReached", endedAt: Date.now() } : {}),
+    });
+  }, 9000);
+
+  function update(id: string, patch: Partial<Entry["share"]>) {
+    entries = entries.map((e) =>
+      e.share.id === id ? { ...e, share: { ...e.share, ...patch } } : e,
+    );
+    changed("shares");
   }
 
-  function addShares(files: { name: string; size: number; type: string }[]): Result<Share[]> {
-    if (server.kind !== "online") return fail("Sharing resumes once the server is back online.");
-    const created = files.map((file) => makeShare(file));
-    shares = [...created.reverse(), ...shares];
-    commit();
-    const snapshot = store.get();
-    return ok(created.map((c) => snapshot.shares.find((s) => s.id === c.share.id) ?? c.share));
+  function find(id: string): Entry {
+    return entries.find((e) => e.share.id === id) ?? fail("This share no longer exists.");
+  }
+
+  function stage(files: { name: string; size: number; type: string }[]): StagedFiles {
+    const rejected: StagedFiles["rejected"] = [];
+    const accepted: StagedFile[] = [];
+    for (const file of files) {
+      if (file.type === "" && !file.name.includes(".")) {
+        rejected.push({ name: file.name, reason: "Folders can't be shared." });
+        continue;
+      }
+      const item: Staged = {
+        stageId: crypto.randomUUID(),
+        fileName: file.name,
+        byteSize: file.size,
+        kind: kindOf(file.type, file.name),
+        mediaType: file.type || "application/octet-stream",
+      };
+      staged.set(item.stageId, item);
+      accepted.push({
+        stageId: item.stageId,
+        fileName: item.fileName,
+        byteSize: item.byteSize,
+        kind: item.kind,
+      });
+    }
+    return { files: accepted, rejected };
+  }
+
+  function requireOnline() {
+    if (server.kind !== "online") fail("Sharing resumes once the server is back online.");
   }
 
   return {
     mode: "preview",
-    getSnapshot: store.get,
-    subscribe: store.subscribe,
-    onEvent: store.onEvent,
+    subscribe: events.subscribe,
 
-    async chooseFiles() {
-      await wait(250);
-      const file = SAMPLE_FILES[sampleIndex % SAMPLE_FILES.length];
-      sampleIndex += 1;
-      if (!file) return fail("No sample file available.");
-      return addShares([file]);
+    getServer: async () => server,
+    listShares: async () => entries.map(resolve),
+    getSettings: async () => settings,
+    listProfiles: async () => profiles,
+    listInterfaces: async () => INTERFACES,
+
+    async pickFiles() {
+      requireOnline();
+      await wait(200);
+      const pick = SAMPLE_PICKS[pickIndex % SAMPLE_PICKS.length] ?? [];
+      pickIndex += 1;
+      return stage(pick);
     },
 
-    async shareDropped(files: DroppedFiles) {
+    async stageDropped(files: DroppedFiles) {
+      requireOnline();
       if (files.kind !== "preview") return fail("Paths can only be shared by the desktop app.");
-      const regular = files.files.filter((f) => f.type !== "" || f.name.includes("."));
-      if (regular.length === 0) return fail("Folders can't be shared. Drop single files.");
-      return addShares(regular);
+      return stage(files.files);
     },
 
-    async shareAgain(id) {
-      const state = findState(id);
-      if (!state) return fail("This share no longer exists.");
-      const result = addShares([
-        { name: state.share.fileName, size: state.share.byteSize, type: state.share.mediaType },
-      ]);
-      if (!result.ok) return result;
-      const first = result.value[0];
-      return first ? ok(first) : fail("The share could not be created.");
+    async discardStaged(ids) {
+      for (const id of ids) staged.delete(id);
+    },
+
+    async createShares(ids, options) {
+      requireOnline();
+      if (!profiles.some((p) => p.id === options.profileId)) fail("That profile no longer exists.");
+      const created = ids.map((id) => {
+        const file = staged.get(id) ?? fail("A file is no longer available. Add it again.");
+        staged.delete(id);
+        return makeEntry(file, options);
+      });
+      entries = [...[...created].reverse(), ...entries];
+      changed("shares");
+      return created.map(resolve);
+    },
+
+    async shareAgain(id, options) {
+      requireOnline();
+      const old = find(id).share;
+      const entry = makeEntry(
+        old,
+        options ?? {
+          lifetimeMinutes: settings.defaultLifetimeMinutes,
+          downloadLimit: settings.defaultDownloadLimit,
+          profileId: old.profileId,
+        },
+      );
+      entries = [entry, ...entries];
+      changed("shares");
+      return resolve(entry);
+    },
+
+    async updateShare(id, patch) {
+      const { share } = find(id);
+      if (share.status !== "active") fail("Only active shares can be changed.");
+      const next: Partial<Entry["share"]> = {};
+      if (patch.extendMinutes !== undefined) {
+        next.expiresAt =
+          patch.extendMinutes === null
+            ? null
+            : Math.max(Date.now(), share.expiresAt ?? Date.now()) + patch.extendMinutes * MINUTE;
+      }
+      if (patch.downloadLimit !== undefined) {
+        if (patch.downloadLimit !== null && patch.downloadLimit <= share.downloadCount)
+          fail(
+            `The limit must be higher than the ${share.downloadCount} downloads already started.`,
+          );
+        next.downloadLimit = patch.downloadLimit;
+      }
+      if (patch.profileId !== undefined) {
+        if (!profiles.some((p) => p.id === patch.profileId)) fail("That profile no longer exists.");
+        next.profileId = patch.profileId;
+      }
+      update(id, next);
+      return resolve(find(id));
     },
 
     async stopShare(id) {
-      shares = shares.map((s) =>
-        s.share.id === id && s.share.status === "active"
-          ? { ...s, share: { ...s.share, status: "stopped", endedAt: Date.now() } }
-          : s,
-      );
-      commit();
-      return ok(undefined);
+      if (find(id).share.status === "active")
+        update(id, { status: "stopped", endedAt: Date.now() });
     },
 
     async stopAll() {
       const t = Date.now();
-      shares = shares.map((s) =>
-        s.share.status === "active"
-          ? { ...s, share: { ...s.share, status: "stopped", endedAt: t } }
-          : s,
+      entries = entries.map((e) =>
+        e.share.status === "active"
+          ? { ...e, share: { ...e.share, status: "stopped", endedAt: t } }
+          : e,
       );
-      commit();
-      return ok(undefined);
+      changed("shares");
     },
 
     async removeShare(id) {
-      shares = shares.filter((s) => s.share.id !== id || s.share.status === "active");
-      commit();
-      return ok(undefined);
+      entries = entries.filter((e) => e.share.id !== id || e.share.status === "active");
+      changed("shares");
     },
 
     async clearFinished() {
-      shares = shares.filter((s) => s.share.status === "active");
-      commit();
-      return ok(undefined);
-    },
-
-    async setShareProfile(id, profileId) {
-      if (!profiles.some((p) => p.id === profileId)) return fail("That profile no longer exists.");
-      shares = shares.map((s) =>
-        s.share.id === id ? { ...s, share: { ...s.share, profileId } } : s,
-      );
-      commit();
-      return ok(undefined);
+      entries = entries.filter((e) => e.share.status === "active");
+      changed("shares");
     },
 
     async updateSettings(patch) {
       const next = { ...settings, ...patch };
       const networkChanged =
-        patch.port !== undefined && patch.port !== settings.port
-          ? true
-          : patch.interfaceId !== undefined && patch.interfaceId !== settings.interfaceId;
+        (patch.port !== undefined && patch.port !== settings.port) ||
+        (patch.interfaceId !== undefined && patch.interfaceId !== settings.interfaceId);
       if (networkChanged) {
         await wait(450);
-        if (!Number.isInteger(next.port) || next.port < 1 || next.port > 65_535)
-          return fail("Enter a port between 1 and 65535.");
         if (next.port < 1024)
-          return fail(`Port ${next.port} needs administrator rights. Kept ${settings.port}.`);
+          fail(`Port ${next.port} needs administrator rights. Kept ${settings.port}.`);
         if (next.port === 8000 || next.port === 3000)
-          return fail(`Port ${next.port} is in use by another app. Kept ${settings.port}.`);
+          fail(`Port ${next.port} is in use by another app. Kept ${settings.port}.`);
         const iface = INTERFACES.find((i) => i.id === next.interfaceId) ?? INTERFACES[0];
-        if (!iface) return fail("No network address is available.");
-        const previous = currentAddress();
+        if (!iface) fail("No network address is available.");
+        const before = address();
         settings = next;
         server = {
           kind: "online",
-          address: iface.address,
+          address: iface?.address ?? "",
           port: next.port,
-          interfaceName: iface.name,
+          interfaceName: iface?.name ?? "",
         };
-        commit();
-        if (previous?.address !== iface.address || previous.port !== next.port)
-          store.emit({ kind: "addressChanged", address: `${iface.address}:${next.port}` });
-        return ok(undefined);
+        changed("settings", "server", "shares");
+        if (before?.address !== iface?.address || before?.port !== next.port)
+          events.emit({ kind: "addressChanged", address: `${iface?.address}:${next.port}` });
+        return settings;
       }
       settings = next;
-      commit();
-      return ok(undefined);
+      changed("settings");
+      return settings;
     },
 
-    async saveProfile(input: ProfileInput) {
-      const name = input.name.trim();
-      if (!name) return fail("Give the profile a name.");
+    async saveProfile(input) {
       const valid = validateTemplate(input.template);
       if (!valid.ok) return fail(valid.error);
       const id = input.id ?? crypto.randomUUID();
-      const profile: LinkProfile = { id, name, template: input.template.trim() };
+      const profile: LinkProfile = { id, name: input.name.trim(), template: input.template.trim() };
       profiles = input.id
-        ? profiles.map((p) => (p.id === input.id ? profile : p))
+        ? profiles.map((p) => (p.id === id ? profile : p))
         : [...profiles, profile];
       if (input.makeDefault) settings = { ...settings, defaultProfileId: id };
       else if (settings.defaultProfileId === id)
         settings = { ...settings, defaultProfileId: HTTP_PROFILE_ID };
-      commit();
-      return ok(profile);
+      changed("profiles", "settings", "shares");
+      return profile;
     },
 
     async deleteProfile(id) {
-      if (id === HTTP_PROFILE_ID) return fail("The HTTP profile is always available.");
+      if (id === HTTP_PROFILE_ID) fail("The HTTP profile is always available.");
       profiles = profiles.filter((p) => p.id !== id);
       if (settings.defaultProfileId === id)
         settings = { ...settings, defaultProfileId: HTTP_PROFILE_ID };
-      shares = shares.map((s) =>
-        s.share.profileId === id ? { ...s, share: { ...s.share, profileId: HTTP_PROFILE_ID } } : s,
+      entries = entries.map((e) =>
+        e.share.profileId === id ? { ...e, share: { ...e.share, profileId: HTTP_PROFILE_ID } } : e,
       );
-      commit();
-      return ok(undefined);
+      changed("profiles", "settings", "shares");
     },
 
     async previewTemplate(template): Promise<TemplatePreview> {
       const valid = validateTemplate(template);
       if (!valid.ok) return valid;
-      const address = currentAddress() ?? { address: "192.168.1.24", port: settings.port };
-      const url = `http://${address.address}:${address.port}/s/qY3xN8vLpW2dR7tK0mZcA5bH`;
+      const at = address() ?? { address: "192.168.1.24", port: settings.port };
+      const url = `http://${at.address}:${at.port}/s/qY3xN8vLpW2dR7tK0mZcA5bH`;
       const filename = "Quarterly-report-2026.pdf";
       const scheme = template.trim().split(":")[0]?.toLowerCase() ?? "";
       return {
@@ -416,7 +473,6 @@ export function createPreviewBackend(): Backend {
       anchor.download = suggestedName;
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return ok(undefined);
     },
   };
 }

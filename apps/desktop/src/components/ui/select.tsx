@@ -17,6 +17,8 @@ export function Select<T extends string>({
   className,
   disabled,
   id,
+  open,
+  onOpenChange,
 }: {
   value: T;
   onValueChange: (value: T) => void;
@@ -26,10 +28,16 @@ export function Select<T extends string>({
   className?: string;
   disabled?: boolean;
   id?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const current = options.find((o) => o.value === value);
   return (
-    <M.Root modal={false}>
+    <M.Root
+      modal={false}
+      {...(open !== undefined ? { open } : {})}
+      {...(onOpenChange ? { onOpenChange } : {})}
+    >
       <M.Trigger
         {...(id ? { id } : {})}
         disabled={disabled}
