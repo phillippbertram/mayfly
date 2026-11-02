@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Kbd } from "../../components/ui/kbd";
 import { Modal } from "../../components/ui/modal";
+import { Segmented } from "../../components/ui/segmented";
 import { Select } from "../../components/ui/select";
 import { Switch } from "../../components/ui/switch";
 import type { ShareOptions } from "../../lib/backend";
@@ -27,13 +28,17 @@ export function Composer({ actions }: { actions: ShareActions }) {
   const profiles = useProfiles();
   const updateSettings = useUpdateSettings();
   const [options, setOptions] = useState<ShareOptions>(actions.defaults);
+  const [grouping, setGrouping] = useState<"one" | "separate">("one");
   const [busy, setBusy] = useState(false);
   const open = staged !== null;
   const files = staged?.files ?? [];
 
-  // Every new batch starts from the current defaults.
+  // Every new batch starts from the current defaults, with one link for all files.
   useEffect(() => {
-    if (open) setOptions(actions.defaults());
+    if (open) {
+      setOptions(actions.defaults());
+      setGrouping("one");
+    }
   }, [open, actions]);
 
   const cancel = () => {
@@ -47,6 +52,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
     const ok = await actions.createShares(
       files.map((f) => f.stageId),
       options,
+      grouping === "one",
     );
     setBusy(false);
     if (ok) close();
@@ -59,7 +65,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
       : `Until about ${formatClock(now + options.lifetimeMinutes * 60_000)}`,
     options.downloadLimit === null
       ? "unlimited downloads"
-      : `up to ${options.downloadLimit} ${options.downloadLimit === 1 ? "download" : "downloads"}`,
+      : `${files.length > 1 && grouping === "one" ? "each file " : ""}up to ${options.downloadLimit} ${options.downloadLimit === 1 ? "download" : "downloads"}`,
   ].join(" · ");
 
   return (
@@ -127,6 +133,28 @@ export function Composer({ actions }: { actions: ShareActions }) {
       )}
 
       <div className="grid grid-cols-[96px_1fr] items-start gap-x-4 gap-y-4 px-6 pt-5">
+        {files.length > 1 && (
+          <>
+            <span className="pt-1.5 text-[13px] font-medium">Links</span>
+            <div className="flex flex-col gap-1.5">
+              <Segmented
+                label="How to share these files"
+                value={grouping}
+                onValueChange={setGrouping}
+                options={[
+                  { value: "one", label: "One link for all" },
+                  { value: "separate", label: `${files.length} separate links` },
+                ]}
+                className="self-start"
+              />
+              <span className="text-[12px] text-muted">
+                {grouping === "one"
+                  ? "One page lists every file, with a ZIP of all of them."
+                  : "Each file gets its own link and QR code."}
+              </span>
+            </div>
+          </>
+        )}
         <span className="pt-1.5 text-[13px] font-medium">Lifetime</span>
         <LifetimeField
           value={options.lifetimeMinutes}

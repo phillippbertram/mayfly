@@ -6,15 +6,16 @@ FileHop will let a desktop user temporarily share selected files with a browser
 on the same trusted local network, particularly Safari on an iPhone. No account,
 cloud service, external server, or mobile application is required.
 
-This document defines the intended product. The current implementation is a minimal
-desktop starter with a native window and read-only app-info IPC; file-sharing
-features remain planned. GitHub Issues track delivery.
+This document defines the intended product. Local sharing is implemented: native
+selection and drop, in-memory shares and bundles, the LAN listener, landing pages,
+streamed downloads, and ZIP downloads. Persistence, custom link profiles, QR PNG
+export, and the tray remain planned. GitHub Issues track delivery.
 
 ## MVP scope
 
 | Area        | Required behavior                                                                                                                                               |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Files       | Native multi-file picker and drag and drop; one share per selected regular file                                                                                 |
+| Files       | Native multi-file picker and drag and drop; several files share one link (bundle) by default, or get one link each                                              |
 | Shares      | Unique ID, filename, byte size, internal path, random token, URL, timestamps, status, download count                                                            |
 | HTTP        | Embedded LAN server; configurable port, default 8765; mobile page and streamed attachment download                                                              |
 | QR          | Per-share QR; copy image, save PNG, copy URL; update when the selected network address changes                                                                  |
@@ -43,14 +44,19 @@ and restrained motion. Never show an online state when binding the server failed
 
 ## Mobile experience
 
-`GET /s/{token}` opens a responsive, self-contained page showing the escaped
-filename, formatted size, and a download button. `GET /d/{token}` streams the file
-with appropriate media type and attachment headers. The mobile page must not
-depend on CDNs, third-party scripts, external fonts, or an account.
+`GET /s/{token}` opens a responsive, self-contained landing page that works on a
+phone or on another computer. For one file it shows the escaped filename, size,
+type, remaining time, and a download button; `GET /d/{token}` streams the file
+with appropriate media type and attachment headers. For a bundle it lists every
+file with its own download (`GET /d/{token}/{index}`) and offers "Download all" as
+a ZIP (`GET /z/{token}`), streamed without compression or temporary files. The
+page must not depend on CDNs, third-party scripts, external fonts, or an account.
 
 Expired, disabled, exhausted, invalid, and unavailable-file requests receive
 understandable pages and suitable HTTP status codes without revealing local paths.
-Define request and download-count semantics in the core-sharing issue.
+Download counting is defined in [security.md](security.md#tokens-lifetime-and-limits)
+and [ADR 0005](decisions/0005-share-bundles-and-landing-page.md). In-browser file
+previews are not part of the MVP.
 
 ## Link profiles
 

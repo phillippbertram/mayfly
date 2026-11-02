@@ -3,6 +3,7 @@ import {
   FileArchive,
   FileAudio,
   FileImage,
+  Files,
   FileText,
   FileVideo,
   type LucideIcon,
@@ -17,6 +18,7 @@ const ICONS: Record<FileKind, LucideIcon> = {
   audio: FileAudio,
   video: FileVideo,
   other: File,
+  bundle: Files,
 };
 
 const TINTS: Record<FileKind, string> = {
@@ -26,6 +28,7 @@ const TINTS: Record<FileKind, string> = {
   audio: "text-[#c2437b] dark:text-[#f19ac0]",
   video: "text-[#c24a3a] dark:text-[#f2998c]",
   other: "text-muted",
+  bundle: "text-accent-strong",
 };
 
 export function FileGlyph({

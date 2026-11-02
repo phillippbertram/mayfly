@@ -39,8 +39,11 @@ export function useShareActions() {
       if (shares.length > 1) toast(`${shares.length} files are now shared.`, "success");
     };
 
-    const createShares = async (stageIds: string[], options: ShareOptions) => {
-      const shares = await run(() => backend.createShares(stageIds, options));
+    /** Several files share one link unless `bundle` is false. */
+    const createShares = async (stageIds: string[], options: ShareOptions, bundle = true) => {
+      const shares = await run(() =>
+        backend.createShares(stageIds, options, bundle && stageIds.length > 1),
+      );
       if (shares) await reveal(shares);
       return Boolean(shares);
     };

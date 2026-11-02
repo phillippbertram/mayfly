@@ -85,7 +85,7 @@ Tray menu
 └── Quit FileHop
 
 Mobile page (served by the Rust HTTP service)
-├── Download page: filename, size, download button
+├── Download page: filename, size, download button; bundles list files and a ZIP
 └── Error pages: expired, revoked, limit reached, not found, file unavailable
 ```
 
@@ -271,10 +271,19 @@ no scripts, no external fonts, and no third-party requests. It uses the system
 font stack and respects `prefers-color-scheme`.
 
 Layout, top to bottom: a small FileHop wordmark, a file-type glyph, the escaped
-filename in large type with word breaking allowed, the formatted size, a
-full-width 52-point "Download" button pointing to `/d/{token}`, and a footer line
-"Shared temporarily from a computer on your network." Nothing on the page
-identifies the computer, its path, or its user.
+filename in large type with word breaking allowed, the formatted size and type, a
+full-width 52-point "Download" button pointing to `/d/{token}`, the remaining time
+and downloads, and a footer line "Shared temporarily from a computer on your
+network." with a short trusted-network note. Nothing on the page identifies the
+computer, its path, or its user. The content sits on a card at most 560 points
+wide, so the same page reads well when the link is opened on another computer.
+
+A bundle (several files behind one link) shows a stacked-files glyph, "N files"
+with the total size, a primary "Download all .zip" button pointing to
+`/z/{token}`, and below a divider one 56-point row per file: glyph, name, size,
+and a 44-point download button pointing to `/d/{token}/{index}`. A file that
+reached its limit shows "Limit reached" instead of a button, and the ZIP button
+is disabled once any file is exhausted.
 
 Error pages share the same frame and replace the content with one glyph, one
 headline, and one sentence:

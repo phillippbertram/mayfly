@@ -35,6 +35,7 @@ import {
 import { appHotkeys } from "../../lib/hotkeys";
 import { useProfiles } from "../../lib/queries";
 import { useUi } from "../../store/ui";
+import { BundleFiles } from "./bundle-files";
 import { CopyButton } from "./copy-button";
 import { CountdownRing } from "./countdown-ring";
 import { FileGlyph } from "./file-glyph";
@@ -140,6 +141,8 @@ export function InspectorBody({
           onClick={onClose}
         />
       </div>
+
+      {share.files.length > 1 && <BundleFiles share={share} />}
 
       <div className="flex flex-col items-center gap-2">
         <QrCard

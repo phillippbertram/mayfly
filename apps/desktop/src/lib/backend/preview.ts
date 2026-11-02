@@ -100,10 +100,6 @@ interface Entry {
   token: string;
 }
 
-interface Staged extends StagedFile {
-  mediaType: string;
-}
-
 export function createPreviewBackend(): Backend {
   const events = createEmitter();
   const changed = (...topics: Topic[]) => events.emit({ kind: "changed", topics });
@@ -119,7 +115,7 @@ export function createPreviewBackend(): Backend {
     },
   ];
   let entries: Entry[] = [];
-  const staged = new Map<string, Staged>();
+  const staged = new Map<string, StagedFile>();
   let pickIndex = 0;
 
   const address = () =>
@@ -143,20 +139,28 @@ export function createPreviewBackend(): Backend {
     return { ...entry.share, link, linkError: null };
   }
 
+  /** One share for one file, or a bundle when given several. */
   function makeEntry(
-    file: { fileName: string; byteSize: number; mediaType: string; kind: FileKind },
+    files: { fileName: string; byteSize: number; kind: FileKind }[],
     options: ShareOptions,
     overrides: Partial<Entry["share"]> = {},
   ): Entry {
     const createdAt = Date.now();
+    const [first] = files;
+    const bundle = files.length > 1 || !first;
     return {
       token: randomToken(),
       share: {
         id: crypto.randomUUID(),
-        fileName: file.fileName,
-        byteSize: file.byteSize,
-        mediaType: file.mediaType,
-        kind: file.kind,
+        fileName: bundle ? `${files.length} files` : first.fileName,
+        byteSize: files.reduce((sum, f) => sum + f.byteSize, 0),
+        kind: bundle ? "bundle" : first.kind,
+        files: files.map((f) => ({
+          name: f.fileName,
+          byteSize: f.byteSize,
+          kind: f.kind,
+          downloadCount: overrides.downloadCount ?? 0,
+        })),
         createdAt,
         expiresAt:
           options.lifetimeMinutes === null ? null : createdAt + options.lifetimeMinutes * MINUTE,
@@ -170,12 +174,9 @@ export function createPreviewBackend(): Backend {
     };
   }
 
-  const sample = (name: string, size: number, type: string) => ({
-    fileName: name,
-    byteSize: size,
-    mediaType: type,
-    kind: kindOf(type, name),
-  });
+  const sample = (name: string, size: number, type: string) => [
+    { fileName: name, byteSize: size, kind: kindOf(type, name) },
+  ];
   const now = Date.now();
   const base: ShareOptions = {
     lifetimeMinutes: 10,
@@ -193,6 +194,15 @@ export function createPreviewBackend(): Backend {
       createdAt: now - MINUTE,
       expiresAt: now + 9 * MINUTE,
     }),
+    makeEntry(
+      [
+        ...sample("Beach.jpg", 4_200_000, "image/jpeg"),
+        ...sample("Sunset.jpg", 3_800_000, "image/jpeg"),
+        ...sample("Itinerary.pdf", 220_000, "application/pdf"),
+      ],
+      base,
+      { createdAt: now - 4 * MINUTE, expiresAt: now + 26 * MINUTE },
+    ),
     makeEntry(sample("Invoice-0342.pdf", 184_000, "application/pdf"), base, {
       createdAt: now - 9.2 * MINUTE,
       expiresAt: now + 48_000,
@@ -233,10 +243,12 @@ export function createPreviewBackend(): Backend {
     const candidates = entries.filter((e) => e.share.status === "active");
     const target = candidates[Math.floor(Math.random() * candidates.length)];
     if (!target || Math.random() < 0.6) return;
+    // Bundles behave as if the phone fetched the ZIP: every file counts once.
     const count = target.share.downloadCount + 1;
     const limitReached = target.share.downloadLimit !== null && count >= target.share.downloadLimit;
     update(target.share.id, {
       downloadCount: count,
+      files: target.share.files.map((f) => ({ ...f, downloadCount: f.downloadCount + 1 })),
       ...(limitReached ? { status: "limitReached", endedAt: Date.now() } : {}),
     });
   }, 9000);
@@ -260,12 +272,11 @@ export function createPreviewBackend(): Backend {
         rejected.push({ name: file.name, reason: "Folders can't be shared." });
         continue;
       }
-      const item: Staged = {
+      const item: StagedFile = {
         stageId: crypto.randomUUID(),
         fileName: file.name,
         byteSize: file.size,
         kind: kindOf(file.type, file.name),
-        mediaType: file.type || "application/octet-stream",
       };
       staged.set(item.stageId, item);
       accepted.push({
@@ -310,14 +321,17 @@ export function createPreviewBackend(): Backend {
       for (const id of ids) staged.delete(id);
     },
 
-    async createShares(ids, options) {
+    async createShares(ids, options, bundle) {
       requireOnline();
       if (!profiles.some((p) => p.id === options.profileId)) fail("That profile no longer exists.");
-      const created = ids.map((id) => {
+      const files = ids.map((id) => {
         const file = staged.get(id) ?? fail("A file is no longer available. Add it again.");
         staged.delete(id);
-        return makeEntry(file, options);
+        return file;
       });
+      const created = bundle
+        ? [makeEntry(files, options)]
+        : files.map((file) => makeEntry([file], options));
       entries = [...[...created].reverse(), ...entries];
       changed("shares");
       return created.map(resolve);
@@ -327,7 +341,7 @@ export function createPreviewBackend(): Backend {
       requireOnline();
       const old = find(id).share;
       const entry = makeEntry(
-        old,
+        old.files.map((f) => ({ fileName: f.name, byteSize: f.byteSize, kind: f.kind })),
         options ?? {
           lifetimeMinutes: settings.defaultLifetimeMinutes,
           downloadLimit: settings.defaultDownloadLimit,

@@ -2,9 +2,13 @@
 
 ## Status and decisions
 
-The desktop shell and read-only app-info IPC are implemented. Sharing services
-below remain the target architecture, not implemented services. See
-[ADR 0001](decisions/0001-desktop-foundation.md) for the foundation decision.
+The desktop shell, share service, HTTP service, network discovery, and in-memory
+settings are implemented in `apps/desktop/src-tauri/src/` (`shares/`, `server/`,
+`network.rs`, `settings.rs`, `app.rs`, `commands.rs`). Settings persistence, link
+profiles, and the tray lifecycle remain target architecture. See
+[ADR 0001](decisions/0001-desktop-foundation.md) for the foundation decision and
+[ADR 0005](decisions/0005-share-bundles-and-landing-page.md) for bundles, routes,
+and download counting.
 
 FileHop uses a lightweight pnpm workspace with one desktop package at `apps/desktop`
 and root development tooling. React/TypeScript and its Tauri Rust crate stay together

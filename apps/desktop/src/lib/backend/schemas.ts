@@ -6,7 +6,16 @@
  */
 import { z } from "zod";
 
-export const FileKindSchema = z.enum(["image", "document", "archive", "audio", "video", "other"]);
+/** `bundle` only describes a share that contains several files. */
+export const FileKindSchema = z.enum([
+  "image",
+  "document",
+  "archive",
+  "audio",
+  "video",
+  "other",
+  "bundle",
+]);
 
 export const ShareStatusSchema = z.enum(["active", "expired", "stopped", "limitReached"]);
 
@@ -18,17 +27,31 @@ export const LifetimeSchema = z
   .nullable();
 export const DownloadLimitSchema = z.int().min(1).max(999).nullable();
 
+export const ShareFileSchema = z.object({
+  name: z.string().min(1),
+  byteSize: z.int().nonnegative(),
+  kind: FileKindSchema,
+  /** Downloads started of this file, including those inside ZIP downloads. */
+  downloadCount: z.int().nonnegative(),
+});
+
+/**
+ * One link for one or more files. A bundle (several files) summarizes them:
+ * `fileName` is "3 files", `byteSize` the total, and `kind` is `bundle`.
+ */
 export const ShareSchema = z.object({
   id: z.string().min(1),
   fileName: z.string().min(1),
   byteSize: z.int().nonnegative(),
-  mediaType: z.string(),
   kind: FileKindSchema,
+  files: z.array(ShareFileSchema).min(1),
   /** Wall-clock milliseconds for display. Rust enforces lifetimes with a monotonic clock. */
   createdAt: z.number(),
   expiresAt: z.number().nullable(),
   endedAt: z.number().nullable(),
+  /** Bundles count downloads per file; this is the most-downloaded file's count. */
   downloadCount: z.int().nonnegative(),
+  /** Bundles apply the limit to each file. */
   downloadLimit: DownloadLimitSchema,
   status: ShareStatusSchema,
   profileId: z.string(),
@@ -131,6 +154,7 @@ export const ProfileInputSchema = z.object({
 
 export type FileKind = z.infer<typeof FileKindSchema>;
 export type ShareStatus = z.infer<typeof ShareStatusSchema>;
+export type ShareFile = z.infer<typeof ShareFileSchema>;
 export type Share = z.infer<typeof ShareSchema>;
 export type ServerState = z.infer<typeof ServerStateSchema>;
 export type NetworkInterface = z.infer<typeof NetworkInterfaceSchema>;

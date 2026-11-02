@@ -52,7 +52,8 @@ export interface Backend {
   pickFiles(): Promise<StagedFiles | null>;
   stageDropped(files: DroppedFiles): Promise<StagedFiles>;
   discardStaged(stageIds: string[]): Promise<void>;
-  createShares(stageIds: string[], options: ShareOptions): Promise<Share[]>;
+  /** `bundle` puts several files behind one link; otherwise each file gets its own. */
+  createShares(stageIds: string[], options: ShareOptions, bundle: boolean): Promise<Share[]>;
   shareAgain(id: string, options?: ShareOptions): Promise<Share>;
   updateShare(id: string, patch: SharePatch): Promise<Share>;
   stopShare(id: string): Promise<void>;

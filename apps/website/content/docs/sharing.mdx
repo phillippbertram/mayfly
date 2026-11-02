@@ -1,39 +1,48 @@
 ---
-title: Share a file
-description: The intended choose, scan, and download workflow.
+title: Share files
+description: Choose files, open the link on another device, and download.
 ---
 
-## Planned sharing workflow
+## Sharing workflow
 
-Real file sharing is still in development. These steps describe the intended
-workflow, rather than a transfer you can complete in the current build.
+FileHop's desktop development build serves real files over your local network.
+There are no published installers yet, and the flow has been checked on a Mac
+with a browser on the same computer, not yet on a phone or a second device.
 
-1. Connect your computer and phone to the same trusted Wi-Fi or reachable local network.
+1. Connect your computer and the receiving device to the same trusted Wi-Fi or local network.
 2. Open FileHop and confirm that the server reports a usable network address.
-3. Drop a PDF, photo, or another individual file into the window, or select **Choose files**.
-4. Select the resulting share to open its QR code and details.
-5. Scan the QR code with your phone's camera and open the link.
-6. Check the filename and size on the mobile page, then select **Download**.
+3. Drop one or more files into the window, or select **Choose files**.
+4. With several files, choose **One link for all** or separate links, then select **Share**.
+5. Scan the QR code with a phone's camera, or open the link in any browser on another computer.
+6. Check the files on the page, then select **Download**, or **Download all** for a ZIP.
 
-Each selected file will have its own share and token. Files are intended to stream
-from their original location rather than being copied into a cloud service.
+Files stream from their original location. Nothing is uploaded to a cloud service,
+and FileHop doesn't copy the files; a ZIP is assembled while it downloads.
 
-## Before choosing a file
+## One link for several files
 
-Share readable individual files. Directory sharing is outside the MVP.
-Keep the computer awake and FileHop running. Moving, deleting, or changing the
-source file may make it unavailable; the implemented backend must handle this safely.
+When you share several files with one link, the page lists every file with its
+own download button, plus **Download all** as a ZIP. A download limit applies to
+each file: a limit of 1 lets someone fetch every file once, either one by one or
+as the ZIP. Once any file has reached its limit, the ZIP is no longer offered.
 
-The current browser preview's file-selection action adds sample metadata only.
-A displayed share in that preview is not a working download.
+## Before choosing files
+
+Share readable individual files. Folders are skipped; directory sharing is outside the MVP.
+Keep the computer awake and FileHop running. FileHop keeps serving the file you
+selected even if its name or location changes. If the file's contents change size,
+the page reports it as unavailable instead of sending a mismatched file.
+
+The browser-only preview (`pnpm dev:web`) adds sample metadata only. A share shown
+in that preview is not a working download.
 
 ## Keep the right address
 
-With multiple network interfaces, choose the address reachable by your phone.
-A guest Wi-Fi network, VPN, or client-isolation setting can prevent access even
-when both devices appear to use the same router.
+With multiple network interfaces, choose the address the other device can reach
+in **Settings → Network**. A guest Wi-Fi network, VPN, or client-isolation setting can
+prevent access even when both devices appear to use the same router.
 
-The intended URL looks like this:
+A link looks like this:
 
 ```text
 http://192.168.1.20:8765/s/EXAMPLE_TOKEN
@@ -43,6 +52,6 @@ This is an example, not a live share.
 
 ## Stop when you are done
 
-Use **Stop sharing** to revoke a share before its deadline. Expiration and download
-limits will also block new downloads. See [Expiration and limits](../expiration/)
+Use **Stop sharing** to revoke a share before its deadline; running downloads stop too.
+Expiration and download limits block new downloads. See [Expiration and limits](../expiration/)
 for the policy and the difference between starting a download and saving a file.

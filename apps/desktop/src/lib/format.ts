@@ -59,9 +59,11 @@ const KIND_LABEL: Record<FileKind, string> = {
   audio: "Audio",
   video: "Video",
   other: "File",
+  bundle: "Files",
 };
 
 export function describeType(share: Share): string {
+  if (share.files.length > 1) return "One link, ZIP or single files";
   const { ext } = splitFileName(share.fileName);
   const label = KIND_LABEL[share.kind];
   return ext ? `${ext.slice(1).toUpperCase()} ${label.toLowerCase()}` : label;

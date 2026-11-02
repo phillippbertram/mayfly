@@ -1,61 +1,109 @@
-import { getAppInfo } from "../desktop";
-import { DEFAULT_SETTINGS, HTTP_PROFILE } from "./defaults";
+import { type InvokeArgs, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { z } from "zod";
 import { createEmitter } from "./emitter";
-import { type Backend, BackendError, type ServerState, type Settings } from "./types";
+import {
+  LinkProfileSchema,
+  NetworkInterfaceSchema,
+  ServerStateSchema,
+  SettingsSchema,
+  ShareSchema,
+  StagedFilesSchema,
+} from "./schemas";
+import { type Backend, BackendError, type BackendEvent, type ServerState } from "./types";
 
-const NOT_YET = "Sharing isn't available in this build yet.";
+/** The single channel Rust uses for change notifications. */
+const EVENT = "filehop://event";
 
-const unavailable = (): Promise<never> => Promise.reject(new BackendError(NOT_YET));
+const NOT_YET = "This isn't available in this build yet.";
+
+const unavailable = (message = NOT_YET): Promise<never> =>
+  Promise.reject(new BackendError(message));
+
+const BackendEventSchema: z.ZodType<BackendEvent> = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("changed"),
+    topics: z.array(z.enum(["server", "shares", "settings", "profiles", "interfaces"])),
+  }),
+  z.object({ kind: z.literal("addressChanged"), address: z.string() }),
+]);
 
 /**
- * Desktop adapter. The Rust share, server, and network services do not exist yet,
- * so it reports that truthfully instead of pretending to be online. As each
- * backend issue lands, replace a method with `invoke(...)` and parse the result
- * with its schema from `./schemas`.
+ * Invokes a Rust command and validates its result. Rust errors are already
+ * user-safe strings; anything else is replaced by a generic message.
  */
+async function call<T>(command: string, schema: z.ZodType<T>, args?: InvokeArgs): Promise<T> {
+  let result: unknown;
+  try {
+    result = await invoke(command, args);
+  } catch (error) {
+    throw new BackendError(typeof error === "string" ? error : "FileHop's backend didn't respond.");
+  }
+  const parsed = schema.safeParse(result);
+  if (!parsed.success) throw new BackendError("FileHop received unexpected data from its backend.");
+  return parsed.data;
+}
+
+const done = z.null();
+
+/** Desktop adapter: every query and command goes to the Rust backend. */
 export function createDesktopBackend(): Backend {
   const events = createEmitter();
-  let settings: Settings = DEFAULT_SETTINGS;
-
-  const server: Promise<ServerState> = getAppInfo().then(
-    (): ServerState => ({ kind: "unavailable", message: NOT_YET }),
-    (): ServerState => ({
-      kind: "unavailable",
-      message: "FileHop can't reach its desktop backend.",
-    }),
-  );
+  listen<unknown>(EVENT, (event) => {
+    const parsed = BackendEventSchema.safeParse(event.payload);
+    if (parsed.success) events.emit(parsed.data);
+  }).catch(() => {
+    // Without events the UI still refreshes after its own commands.
+  });
 
   return {
     mode: "desktop",
     subscribe: events.subscribe,
-    getServer: () => server,
-    listShares: async () => [],
-    getSettings: async () => settings,
-    listProfiles: async () => [HTTP_PROFILE],
-    listInterfaces: async () => [],
-    pickFiles: unavailable,
-    stageDropped: unavailable,
-    discardStaged: async () => {},
-    createShares: unavailable,
-    shareAgain: unavailable,
-    updateShare: unavailable,
-    stopShare: unavailable,
-    stopAll: unavailable,
-    removeShare: unavailable,
-    clearFinished: unavailable,
-    async updateSettings(patch) {
-      // Display preferences apply for this session until the Rust settings
-      // service persists them; everything else needs the backend.
-      const { theme, hideCodes, ...rest } = patch;
-      if (Object.keys(rest).length > 0) throw new BackendError(NOT_YET);
-      if (theme) settings = { ...settings, theme };
-      if (hideCodes !== undefined) settings = { ...settings, hideCodes };
-      events.emit({ kind: "changed", topics: ["settings"] });
-      return settings;
+
+    getServer: () =>
+      call("get_server", ServerStateSchema).catch(
+        (): ServerState => ({
+          kind: "unavailable",
+          message: "FileHop can't reach its desktop backend.",
+        }),
+      ),
+    listShares: () => call("list_shares", z.array(ShareSchema)),
+    getSettings: () => call("get_settings", SettingsSchema),
+    listProfiles: () => call("list_profiles", z.array(LinkProfileSchema)),
+    listInterfaces: () => call("list_interfaces", z.array(NetworkInterfaceSchema)),
+
+    pickFiles: () => call("pick_files", StagedFilesSchema.nullable()),
+    stageDropped(files) {
+      if (files.kind !== "paths") return unavailable("Drop the files on the window again.");
+      return call("stage_dropped", StagedFilesSchema, { paths: files.paths });
     },
-    saveProfile: unavailable,
-    deleteProfile: unavailable,
-    previewTemplate: async () => ({ ok: false, error: NOT_YET }),
-    savePng: unavailable,
+    discardStaged: async (stageIds) => {
+      await call("discard_staged", done, { stageIds });
+    },
+    createShares: (stageIds, options, bundle) =>
+      call("create_shares", z.array(ShareSchema), { stageIds, options, bundle }),
+    shareAgain: (id, options) => call("share_again", ShareSchema, { id, options: options ?? null }),
+    updateShare: (id, patch) => call("update_share", ShareSchema, { id, patch }),
+    stopShare: async (id) => {
+      await call("stop_share", done, { id });
+    },
+    stopAll: async () => {
+      await call("stop_all", done);
+    },
+    removeShare: async (id) => {
+      await call("remove_share", done, { id });
+    },
+    clearFinished: async () => {
+      await call("clear_finished", done);
+    },
+
+    updateSettings: (patch) => call("update_settings", SettingsSchema, { patch }),
+    saveProfile: () => unavailable("Custom link profiles aren't available in this build yet."),
+    deleteProfile: () => unavailable("Custom link profiles aren't available in this build yet."),
+    previewTemplate: async () => ({
+      ok: false,
+      error: "Custom link profiles aren't available in this build yet.",
+    }),
+    savePng: () => unavailable("Saving QR images isn't available in this build yet."),
   };
 }
