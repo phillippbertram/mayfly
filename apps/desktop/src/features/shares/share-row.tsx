@@ -350,16 +350,18 @@ export const ShareRow = memo(function ShareRow({
                       />
                     </MenuSubContent>
                   </MenuSub>
-                  <MenuSub>
-                    <MenuSubTrigger icon={Link2}>Link profile</MenuSubTrigger>
-                    <MenuSubContent>
-                      <MenuRadioGroup
-                        value={share.profileId}
-                        onValueChange={(id) => actions.setProfile(share, id)}
-                        options={profiles.map((p) => ({ value: p.id, label: p.name }))}
-                      />
-                    </MenuSubContent>
-                  </MenuSub>
+                  {profiles.length > 1 && (
+                    <MenuSub>
+                      <MenuSubTrigger icon={Link2}>Link profile</MenuSubTrigger>
+                      <MenuSubContent>
+                        <MenuRadioGroup
+                          value={share.profileId}
+                          onValueChange={(id) => actions.setProfile(share, id)}
+                          options={profiles.map((p) => ({ value: p.id, label: p.name }))}
+                        />
+                      </MenuSubContent>
+                    </MenuSub>
+                  )}
                   <MenuSeparator />
                   <MenuItem
                     icon={Square}

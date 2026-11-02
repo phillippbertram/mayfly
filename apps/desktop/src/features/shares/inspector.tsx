@@ -159,27 +159,29 @@ export function InspectorBody({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Tooltip
-          label="Change link profile"
-          hotkey={appHotkeys["share.profile"].hotkey}
-          side="left"
-        >
-          <span>
-            <Select
-              label="Link profile"
-              value={share.profileId}
-              disabled={ended}
-              open={profileOpen}
-              onOpenChange={setProfileOpen}
-              onValueChange={(id) => actions.setProfile(share, id)}
-              prefix={<span className="w-14 text-[12px] text-muted">Profile</span>}
-              options={profiles.map((p) => ({
-                value: p.id,
-                label: p.id === HTTP_PROFILE_ID ? "HTTP (default)" : p.name,
-              }))}
-            />
-          </span>
-        </Tooltip>
+        {profiles.length > 1 && (
+          <Tooltip
+            label="Change link profile"
+            hotkey={appHotkeys["share.profile"].hotkey}
+            side="left"
+          >
+            <span>
+              <Select
+                label="Link profile"
+                value={share.profileId}
+                disabled={ended}
+                open={profileOpen}
+                onOpenChange={setProfileOpen}
+                onValueChange={(id) => actions.setProfile(share, id)}
+                prefix={<span className="w-14 text-[12px] text-muted">Profile</span>}
+                options={profiles.map((p) => ({
+                  value: p.id,
+                  label: p.id === HTTP_PROFILE_ID ? "HTTP (default)" : p.name,
+                }))}
+              />
+            </span>
+          </Tooltip>
+        )}
         <div
           className={cn(
             "flex h-8 items-center gap-2 rounded-md border border-line bg-surface pr-0.5 pl-2.5 transition-opacity",

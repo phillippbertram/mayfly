@@ -165,17 +165,22 @@ export function Composer({ actions }: { actions: ShareActions }) {
           value={options.downloadLimit}
           onChange={(downloadLimit) => setOptions((o) => ({ ...o, downloadLimit }))}
         />
-        <span className="pt-1.5 text-[13px] font-medium">Link</span>
-        <Select
-          label="Link profile"
-          className="w-64"
-          value={options.profileId}
-          onValueChange={(profileId) => setOptions((o) => ({ ...o, profileId }))}
-          options={profiles.map((p) => ({
-            value: p.id,
-            label: p.id === HTTP_PROFILE_ID ? "HTTP (download page)" : p.name,
-          }))}
-        />
+        {/* With only the built-in HTTP profile there is nothing to choose. */}
+        {profiles.length > 1 && (
+          <>
+            <span className="pt-1.5 text-[13px] font-medium">Link</span>
+            <Select
+              label="Link profile"
+              className="w-64"
+              value={options.profileId}
+              onValueChange={(profileId) => setOptions((o) => ({ ...o, profileId }))}
+              options={profiles.map((p) => ({
+                value: p.id,
+                label: p.id === HTTP_PROFILE_ID ? "HTTP (download page)" : p.name,
+              }))}
+            />
+          </>
+        )}
       </div>
 
       <motion.p

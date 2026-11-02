@@ -29,7 +29,7 @@ import { useMemo } from "react";
 import { useToast } from "../../components/ui/toast";
 import type { Share } from "../../lib/backend";
 import type { AppHotkeyId } from "../../lib/hotkeys";
-import { useServer, useSettings, useUpdateSettings } from "../../lib/queries";
+import { useProfiles, useServer, useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import type { ShareActions } from "../shares/use-share-actions";
 
@@ -69,6 +69,8 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
   const anyActive = shares.some((s) => s.status === "active");
   const qrVisible = active ? (ui.qrVisibility[active.id] ?? !hideCodes) : true;
   const anyFinished = shares.some((s) => s.status !== "active");
+  // The built-in HTTP profile alone is no choice.
+  const profileChoice = useProfiles().length > 1;
 
   return useMemo(() => {
     const index = shares.findIndex((s) => s.id === ui.selectedId);
@@ -286,7 +288,7 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
         label: "Change link profile…",
         group: "Share",
         icon: Link2,
-        enabled: active !== null,
+        enabled: active !== null && profileChoice,
         run: () => ui.openProfileMenu(),
       },
       {
@@ -342,5 +344,6 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
     updateSettings,
     hideCodes,
     qrVisible,
+    profileChoice,
   ]);
 }
