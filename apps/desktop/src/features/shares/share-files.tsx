@@ -29,11 +29,7 @@ export function ShareFiles({
   const limit = share.downloadLimit;
   const many = share.files.length > 1;
   return (
-    <section
-      aria-label="Files in this link"
-      className="flex flex-col gap-1.5"
-      {...(active ? { "data-drop-share": share.id } : {})}
-    >
+    <section aria-label="Files in this link" className="flex flex-col gap-1.5">
       <div className="flex h-7 items-center justify-between">
         <span className="text-[11px] text-muted">
           {share.files.length === 1 ? "1 file" : `${share.files.length} files`}
@@ -49,7 +45,7 @@ export function ShareFiles({
       {share.files.length === 0 ? (
         <div className="flex h-16 flex-col items-center justify-center rounded-xl border border-dashed border-line-strong text-[12px] text-muted">
           <span className="font-medium text-fg">No files yet</span>
-          {active && <span>Drop files here or add them.</span>}
+          {active && <span>Add files, or drag them onto the right half of the window.</span>}
         </div>
       ) : (
         <ul className="flex max-h-[200px] flex-col gap-0.5 overflow-y-auto rounded-xl border border-line bg-bg/60 p-1">
@@ -125,7 +121,8 @@ export function ShareFiles({
       )}
       {active && share.files.length > 0 && (
         <span className="text-[11px] text-faint">
-          Drop files here to add them. Everyone with the link sees them.
+          Drag files onto the right half of the window to add them. Everyone with the link sees
+          them.
         </span>
       )}
     </section>

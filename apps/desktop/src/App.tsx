@@ -98,13 +98,17 @@ function Shell({ client }: { client: QueryClient }) {
 
   const actions = useShareActions();
   const commands = useCommands(shares, actions);
-  // Files dropped on an active share join it; anywhere else they become a new share.
-  const { dragging, target: dropTarget } = useFileDrop((files, targetId) => {
-    const target = targetId ? shares.find((s) => s.id === targetId) : undefined;
-    if (target) actions.dropInto(target, files);
-    else actions.drop(files);
-  });
   const selected = shares.find((s) => s.id === selectedId) ?? null;
+  // Dragging splits the window: the left half always creates a new share, the
+  // right half adds to the selected share when it is active.
+  const addTarget = online && selected?.status === "active" ? selected : null;
+  const { dragging, zone } = useFileDrop(
+    (files, at) => {
+      if (at === "add" && addTarget) actions.dropInto(addTarget, files);
+      else actions.drop(files);
+    },
+    (x) => (addTarget && x >= window.innerWidth / 2 ? "add" : "new"),
+  );
 
   // Keep a sensible selection: the first share at launch, a neighbour after removal.
   useEffect(() => {
@@ -157,7 +161,7 @@ function Shell({ client }: { client: QueryClient }) {
                 className="flex min-h-0 flex-1 flex-col gap-3 pt-4 pr-5 pl-6"
               >
                 <DropStrip
-                  dragging={dragging && !dropTarget}
+                  dragging={dragging && zone === "new"}
                   disabled={!online}
                   onChoose={actions.chooseFiles}
                 />
@@ -189,7 +193,8 @@ function Shell({ client }: { client: QueryClient }) {
       <DragOverlay
         visible={dragging && shares.length > 0}
         enabled={online}
-        target={dropTarget}
+        addTarget={addTarget}
+        zone={zone}
         lifetimeMinutes={settings.defaultLifetimeMinutes}
       />
       <Composer actions={actions} />

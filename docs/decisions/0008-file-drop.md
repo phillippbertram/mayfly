@@ -32,7 +32,8 @@ The [file drop concept](../concepts/file-drop.md) proposed one model instead.
   a switch "Give each file its own link" creates one share per file; by default
   all files go behind one link.
 - **Editing.** Add files through the inspector, the row menu, the palette (`A`), or
-  by dropping onto a share's row or file list. Remove files from the inspector
+  by dragging files onto the right half of the window while the share is selected;
+  the left half always creates a new link (see design.md, "Dashboard with shares"). Remove files from the inspector
   while more than one remains; "Stop sharing" ends the share instead of emptying
   it. The page shows "The owner may add or remove files" with a Refresh link once
   files changed and while the share is empty.

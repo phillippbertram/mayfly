@@ -361,7 +361,6 @@ export const ActiveShareRow = memo(function ActiveShareRow({
   return (
     <motion.li {...rowMotion} className="mb-1.5">
       <div
-        data-drop-share={share.id}
         className={cn(
           "group relative flex h-16 items-center gap-3.5 rounded-[12px] border pr-3 pl-3",
           "transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out",

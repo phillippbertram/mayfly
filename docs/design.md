@@ -156,6 +156,20 @@ Once a share exists, the drop zone collapses into a compact 64-point strip at th
 top of the list ("Drop files to share" plus a "Choose files" button). The whole
 window remains a drop target, so the strip is a hint rather than the only target.
 
+Dragging files over the window shows an overlay with large zones instead of
+per-element targets, decided only by the pointer's horizontal position:
+
+- Left half: "New link" — all files go behind one new link with the default
+  lifetime (the options sheet opens first when "Ask before sharing" is on).
+- Right half: "Add to “<name>”" — only when the selected share is active; the
+  files join it and everyone with its link sees them.
+- Without an active selected share, one full-width "Drop to share" zone.
+
+The zone under the pointer is outlined with marching dashes and a raised card; the
+other stays visible but muted, so the result is clear before releasing. Rows and
+the inspector are not drop targets themselves: precise hit areas between 64-point
+rows made it too easy to add to the wrong share.
+
 The list has two groups. "Sharing now" holds active shares, newest first, with a
 summary such as "2 files · next ends in 7 min" and a Stop all action. "Finished"
 collects expired, stopped, and limit-reached shares below it, most recent first.
@@ -178,9 +192,8 @@ Each active row (64 points) shows, from left to right:
   meaning (started downloads, not confirmed saves) is explained in a tooltip and in
   the inspector, matching the semantics the core-sharing issue defines.
 - Actions behind a divider: Copy link, Show QR, and an overflow menu with Save QR as
-  PNG, lifetime, download limit, Add files…, Copy ZIP link, and Stop sharing. The
-  whole row is a drop target: dragging files over an active row outlines it with
-  "Drop to add to this link". They fade in on
+  PNG, lifetime, download limit, Add files…, Copy ZIP link, and Stop sharing. They
+  fade in on
   hover, focus, or selection in a reserved slot, so nothing shifts. The keyboard
   reaches the same actions through the row's context menu.
 
@@ -206,8 +219,9 @@ The inspector answers "how does my device get this?" in one view:
    count, a button that copies the file's direct link, a QR button that switches
    the inspector's code to that file's direct link ("Downloads Beach.jpg directly",
    with "Show share QR" to switch back), and a remove button while more than one
-   file remains. An empty share shows a dashed "No files yet" drop area instead. Below it, "Drop files here to add them. Everyone with
-   the link sees them." The section is a drop target with the same outline as rows.
+   file remains. An empty share shows a dashed "No files yet" box instead. Below
+   it, a hint explains that dragging files onto the right half of the window adds
+   them and that everyone with the link sees them.
 3. The QR code on a white card with a generous quiet zone, 240 points wide. The card
    stays white in dark mode because phone cameras scan a dark-on-light code more
    reliably. A small caption underneath reads "Scan with any camera, or open the link".
