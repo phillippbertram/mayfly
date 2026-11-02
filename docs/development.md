@@ -56,7 +56,8 @@ installation when the shell has not loaded it yet.
 
 `pnpm dev` starts Vite on loopback port 1420, then compiles/opens FileHop. The
 frontend's status and version are returned by the real `get_app_info` Rust command.
-The capability file grants no filesystem, shell, network, or plugin permissions.
+The capability file grants only native file-drop event listening and title-bar
+dragging; it grants no filesystem, shell, network, or plugin permissions.
 Production CSP is restrictive; development CSP adds the local Vite/HMR origins.
 Window close currently exits the process; tray behavior remains a separate feature.
 
@@ -65,11 +66,14 @@ For a quicker macOS debug app bundle, use
 `pnpm --filter @filehop/desktop tauri build --debug --bundles app`.
 Build outputs are ignored under `apps/desktop/src-tauri/target/`.
 The starter icon has an editable SVG source in `src-tauri/icons/`; final brand/tray
-assets remain issue #12. shadcn/ui will be introduced with actual interactive components.
+assets remain issue #12. Interface components follow the shadcn/ui pattern on Radix
+primitives; see [ADR 0002](decisions/0002-desktop-interface.md) for CSP constraints.
 
 The starter has no behavioral test suite yet. Run real native startup/IPC checks
 alongside compiler/linter checks; add meaningful feature tests as features arrive.
 Do not treat a browser preview as verification of native IPC or a desktop build.
+`pnpm dev:web` loads a sample-data simulator for interface review only; the desktop
+build never loads it and reports sharing as unavailable until the Rust services exist.
 
 ## Current verification
 

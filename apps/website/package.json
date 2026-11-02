@@ -1,0 +1,32 @@
+{
+  "name": "@filehop/website",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "build": "next build",
+    "postinstall": "fumadocs-mdx",
+    "typecheck": "fumadocs-mdx && tsc --noEmit",
+    "test": "node --test scripts/release.test.mjs",
+    "check:export": "python3 scripts/check-export.py"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "fumadocs-core": "16.17.10",
+    "fumadocs-mdx": "15.4.10",
+    "fumadocs-ui": "16.17.10",
+    "lucide-react": "1.66.0",
+    "motion": "14.9.0",
+    "next": "16.4.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@types/mdx": "2.0.13",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}

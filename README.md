@@ -8,12 +8,14 @@ No cloud service, account, or companion mobile app is required.
 
 ## Project status
 
-**A minimal Tauri desktop starter is implemented. File sharing is not implemented yet.**
+**The desktop interface is implemented. The Rust sharing backend is not implemented yet.**
 
-The app opens a native window with a React/TypeScript start screen, automatic
-light/dark styling, and a real read-only Rust IPC connection for application info.
+The app opens a native window with the dashboard from the [design concept](docs/design.md):
+an empty state and drop zone, the share list, a share inspector with QR codes,
+settings, and light/dark themes. It talks to Rust through a typed backend contract.
+The desktop build truthfully reports that sharing is unavailable, because there are
+no file-sharing services, HTTP endpoints, native picker, or tray service in Rust yet.
 The pnpm workspace includes strict TypeScript, Vite, Tailwind CSS, Lucide, and Biome.
-There are no file-sharing endpoints, picker, QR codes, or background tray service yet.
 Further implementation is tracked in the [roadmap](docs/roadmap.md).
 
 ## Planned experience
@@ -70,8 +72,9 @@ For a browser-only preview without Rust:
 pnpm dev:web
 ```
 
-Open <http://127.0.0.1:1420>. The preview identifies itself as a browser preview and
-does not provide native IPC. The development server binds only to loopback.
+Open <http://127.0.0.1:1420>. The preview loads a clearly labeled sample-data
+simulator so every interface state can be reviewed without Rust. It shares nothing
+and does not provide native IPC. The development server binds only to loopback.
 
 To format repository documents and configuration:
 
@@ -81,9 +84,9 @@ pnpm format
 
 ## Application development and builds
 
-The starter uses Tauri 2, Rust, React, strict TypeScript, Vite, Tailwind CSS, and
-Lucide. Axum, Tokio-based sharing services, and shadcn/ui components will be added
-when their features are implemented.
+The app uses Tauri 2, Rust, React, strict TypeScript, Vite, Tailwind CSS, Lucide,
+Motion, and shadcn-style components on Radix primitives. Axum and Tokio-based sharing
+services will be added when their features are implemented.
 
 Native prerequisites will include Rust through rustup and the platform dependencies
 in the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/):
@@ -124,6 +127,12 @@ tokens as permanent credentials. No telemetry, cloud relay, or file upload servi
 is part of the product. See the [security model](docs/security.md).
 
 ## Link profiles
+
+For optional future access outside your Wi-Fi, see
+[Sharing beyond your local network](docs/remote-sharing.md): Cloudflare Tunnel,
+ngrok, private Tailscale access/Serve, and public Tailscale Funnel. These workflows
+are not currently implemented or verified. The guide explains their different
+access and provider trust models; local sharing remains the default.
 
 The standard QR code will contain the local mobile-page URL. Custom profiles will
 support templates such as:

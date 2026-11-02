@@ -1,99 +1,296 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Design tokens: docs/design.md, "Color". Light on :root, dark under data-theme. */
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #17191d;
-  background: #f7f7f8;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  color-scheme: light dark;
+  --bg: #f7f7f8;
   --surface: #ffffff;
-  --muted: #626975;
+  --surface-muted: #f0f1f3;
+  --surface-hover: #f4f5f6;
   --border: #e2e4e8;
+  --border-strong: #cbd0d6;
+  --text: #17191d;
+  --text-muted: #6b7280;
+  --text-faint: #9ba3ae;
   --accent: #0e7c66;
+  --accent-hover: #0b6a57;
+  --accent-strong: #0b5f4e;
+  --accent-foreground: #ffffff;
   --accent-soft: #ddf3ec;
+  --warning: #b45309;
+  --warning-strong: #8a3f06;
+  --warning-soft: #fbebd3;
+  --danger: #b42323;
+  --danger-strong: #8f1d1d;
+  --danger-soft: #fbe1e1;
+  --qr-card: #ffffff;
+  --qr-ink: #17191d;
+  --shadow-color: 220 15% 20%;
+  --overlay: rgb(23 25 29 / 0.32);
+  color-scheme: light;
 }
 
-body {
-  margin: 0;
-  min-width: 360px;
+:root[data-theme="dark"] {
+  --bg: #121316;
+  --surface: #1b1d21;
+  --surface-muted: #23262b;
+  --surface-hover: #202328;
+  --border: #2e3239;
+  --border-strong: #3a3f47;
+  --text: #eceef1;
+  --text-muted: #9ba3ae;
+  --text-faint: #6b7380;
+  --accent: #3dd6a8;
+  --accent-hover: #5fe0b9;
+  --accent-strong: #6fe3c0;
+  --accent-foreground: #0b1f19;
+  --accent-soft: #163a31;
+  --warning: #f5b454;
+  --warning-strong: #f5b454;
+  --warning-soft: #3d2e12;
+  --danger: #f87171;
+  --danger-strong: #fca5a5;
+  --danger-soft: #3f1c1c;
+  --shadow-color: 220 40% 2%;
+  --overlay: rgb(0 0 0 / 0.5);
+  color-scheme: dark;
 }
 
-.brand-mark {
-  color: #ffffff;
-  background: #0e7c66;
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-fg: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-soft: var(--danger-soft);
+  --color-qr: var(--qr-card);
+  --color-qr-ink: var(--qr-ink);
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI",
+    system-ui, Inter, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  --shadow-pop:
+    0 1px 2px hsl(var(--shadow-color) / 0.08), 0 8px 24px -4px hsl(var(--shadow-color) / 0.18);
+  --shadow-dialog:
+    0 2px 6px hsl(var(--shadow-color) / 0.08), 0 24px 60px -12px hsl(var(--shadow-color) / 0.35);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.stage-label {
-  color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
 
-.device-tile {
-  color: var(--accent);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  transform: rotate(-7deg);
-}
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 
-.device-tile.phone {
-  background: var(--accent-soft);
-  border-color: transparent;
-  transform: rotate(7deg);
-}
+  body {
+    margin: 0;
+    min-width: 720px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 18px;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+  }
 
-.hop-path {
-  color: var(--accent);
-}
+  button,
+  [role="button"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [role="radio"] {
+    cursor: default;
+  }
 
-.hop-path > span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.45;
-}
+  input,
+  textarea,
+  .selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 
-.eyebrow {
-  color: var(--accent);
-}
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 
-.muted {
-  color: var(--muted);
-}
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
 
-.connection {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.status-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-footer {
-  border-color: var(--border);
-}
-
-@media (max-height: 560px) {
-  .device-art {
-    display: none;
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #eceef1;
-    background: #121316;
-    --surface: #1b1d21;
-    --muted: #9ba3ae;
-    --border: #2e3239;
-    --accent: #3dd6a8;
-    --accent-soft: #163a31;
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native <dialog> shell; content animates with Motion. */
+dialog.modal {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: hidden;
+}
+
+dialog.modal[open] {
+  display: flex;
+}
+
+dialog.modal::backdrop {
+  background: transparent;
+  transition: background-color 200ms ease;
+}
+
+dialog.modal[data-visible="true"]::backdrop {
+  background: var(--overlay);
+}
+
+/* Popovers from Radix animate from their placement side. */
+.pop {
+  transform-origin: var(
+    --radix-dropdown-menu-content-transform-origin,
+    var(--radix-tooltip-content-transform-origin, center)
+  );
+}
+
+.pop[data-state="open"],
+.pop[data-state="delayed-open"],
+.pop[data-state="instant-open"] {
+  animation: pop-in 160ms var(--ease-out-soft);
+}
+
+.pop[data-state="closed"] {
+  animation: pop-out 110ms ease-in forwards;
+}
+
+.pop[data-side="bottom"] {
+  --pop-from: translateY(-4px);
+}
+.pop[data-side="top"] {
+  --pop-from: translateY(4px);
+}
+.pop[data-side="left"] {
+  --pop-from: translateX(4px);
+}
+.pop[data-side="right"] {
+  --pop-from: translateX(-4px);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: var(--pop-from, none) scale(0.96);
+  }
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Marching dashes on the drop target. */
+@keyframes dash-march {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.dash-march {
+  animation: dash-march 900ms linear infinite;
+}
+
+@keyframes float-y {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.float-y {
+  animation: float-y 1.6s ease-in-out infinite;
+}
+
+/* New share rows glow once in the accent color. */
+@keyframes row-arrive {
+  0% {
+    background-color: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
+
+.row-arrive {
+  animation: row-arrive 1.6s var(--ease-out-soft);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-march,
+  .float-y,
+  .row-arrive,
+  .pop[data-state="open"],
+  .pop[data-state="delayed-open"],
+  .pop[data-state="instant-open"],
+  .pop[data-state="closed"] {
+    animation: none;
+  }
+
+  .spin {
+    animation-duration: 2.4s;
   }
 }

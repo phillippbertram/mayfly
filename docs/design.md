@@ -9,6 +9,11 @@ interface. Where it names behavior, the product specification in
 authoritative. Visual mockups that accompany this concept live outside the
 repository until the first implementation issue imports real assets.
 
+Variant A is implemented in `apps/desktop/src`, see
+[ADR 0002](decisions/0002-desktop-interface.md). The desktop build reports sharing as
+unavailable until the Rust services exist; `pnpm dev:web` shows every state with
+labeled sample data.
+
 ## Product character
 
 FileHop does one thing: it hops a file from the desktop to a phone on the same

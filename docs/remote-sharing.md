@@ -1,0 +1,127 @@
+# Sharing beyond your local network
+
+## Availability
+
+FileHop's planned default is direct sharing over a trusted local network, without
+an account or cloud service. The current desktop starter does not implement file
+sharing yet. Remote access, external URL configuration, and tunnel-aware QR codes
+are not implemented or tested. This guide explains optional approaches to evaluate
+after the local sharing workflow is complete; it is not a working setup tutorial
+for the current app.
+
+## Choose an access model
+
+| Approach                          | Who can reach the service?                                           | Recipient setup                            | Best fit                                          |
+| --------------------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------- |
+| Local Wi-Fi                       | Devices that can reach your local server                             | Browser only                               | The normal FileHop workflow                       |
+| Tailscale private network / Serve | Authorized devices within your tailnet, subject to access policy     | Tailscale connection and authorized access | Your own devices away from home                   |
+| Cloudflare Tunnel                 | Public visitors unless an additional access policy restricts them    | Browser; authentication if configured      | Temporary browser access outside your network     |
+| ngrok                             | Public visitors unless endpoint authentication/policy restricts them | Browser; authentication if configured      | Temporary browser access outside your network     |
+| Tailscale Funnel                  | Public internet visitors                                             | Browser; no tailnet membership required    | A public link from a Tailscale-connected computer |
+
+An internet-reachable service does not make every file public: FileHop must still
+authorize each selected file through its share token. However, anyone who obtains
+a valid public share URL can use it unless an additional access policy intervenes.
+
+## Tailscale: private access first
+
+For your own desktop and iPhone, a private Tailscale network is usually the most
+appropriate remote-access model to evaluate first. Both devices need authorized
+Tailscale access and a policy allowing the connection. A recipient's browser alone
+does not establish that network connection.
+
+The future download server must listen on an address reachable through Tailscale,
+or be exposed through a local proxy. Its advertised share URL must use a reachable
+Tailscale address or hostname. Merely joining the tailnet does not make a QR code
+containing a home Wi-Fi address work remotely.
+
+[Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)
+can expose a local service inside the tailnet. Access policy and device authorization
+still apply. Transport through the private network does not replace FileHop's
+expiration, revocation, or download limits.
+
+## Cloudflare Tunnel
+
+Cloudflare Tunnel can provide a public hostname forwarding requests to a local
+service. [Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)
+provide temporary test URLs; use the documented managed-tunnel approach when a
+stable hostname and deliberate access policy are needed. Quick Tunnels are intended
+for testing and have service limitations; do not assume availability or suitability
+for large transfers.
+
+A public tunnel hostname alone is not recipient authentication. Evaluate an
+additional access policy when the recipient should authenticate. Public HTTPS
+terminates at the provider's edge in the normal HTTP proxy model: this adds a
+provider trust boundary, rather than keeping the file transfer inside your LAN.
+See [Cloudflare Tunnel documentation](https://developers.cloudflare.com/tunnel/).
+
+## ngrok
+
+[ngrok](https://ngrok.com/docs/start) can put a local HTTP service behind a public
+endpoint. The desktop runs the agent and must satisfy the provider's current
+account/configuration requirements. Consider endpoint authentication and traffic
+policies instead of treating the endpoint address as an access control.
+
+Check the current plan's transfer, request, session, and browser-interstitial
+behavior before choosing it for file downloads. Do not assume a particular free
+allowance or permanent URL. As with an edge HTTP proxy, HTTPS on the public URL
+does not mean the provider is excluded from the HTTP trust boundary.
+
+## Tailscale Funnel: public access
+
+[Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel) exposes a
+local service to the public internet. Unlike Serve, the recipient does not need
+Tailscale or tailnet membership. This distinction matters even when the computer
+already belongs to a private tailnet.
+
+Funnel requires the documented DNS, HTTPS, and policy configuration and has
+bandwidth/platform limitations. Its relay forwards encrypted traffic; TLS terminates
+on your Tailscale device, rather than on the Funnel relay. The local HTTP hop still
+needs appropriate isolation. These transport properties do not authenticate the
+person holding a FileHop share URL.
+
+## URLs, QR codes, and deep-link profiles
+
+Once an approved remote setup exists, the intended mapping is:
+
+```text
+Local:    http://192.168.1.20:8765/s/EXAMPLE_TOKEN
+Remote:   https://share.example.com/s/EXAMPLE_TOKEN
+Download: https://share.example.com/d/EXAMPLE_TOKEN
+```
+
+These are illustrative addresses, not live links. Preserve the share path and
+token; change the origin to the remote endpoint. The mobile page's download action
+must remain on that reachable origin, rather than redirecting to a private LAN IP.
+
+The current design generates links from the selected local address. A supported
+remote workflow therefore needs explicit external-origin configuration and testing
+of page/download links, redirects, QR output, and custom profiles. Link-profile
+templates alone do not configure routing or make a LAN address reachable.
+`{url}` and `{encodedUrl}` must eventually resolve to the selected reachable share
+URL so deep links and QR codes agree. Rotating a tunnel hostname invalidates old
+links and QR codes even if the share token has not expired.
+
+## Before exposing a future FileHop server
+
+1. Complete and verify local sharing first. Keep public exposure an explicit opt-in.
+2. Forward only the download listener and its share/page routes. Never expose the
+   Vite development server (port 1420), Tauri IPC, or a loopback management API.
+3. Use short share lifetimes and deliberate download limits. Link scanners,
+   previews, and retries may consume downloads according to the server's counting policy.
+4. Review provider access controls, TLS termination, logging, and transfer limits.
+   Share tokens and filenames may appear in proxy logs or request inspection tools;
+   configure retention/redaction appropriately and avoid publishing real URLs in support requests.
+5. Test from outside your LAN, including the landing page, actual file integrity,
+   expiration, revocation, and supported retry/range behavior.
+6. Revoke shares and stop the tunnel/proxy when finished. Stopping a tunnel does
+   not itself revoke a token or remove the original LAN access path.
+
+The computer, FileHop, and any required agent must remain running and online.
+Sleep, disconnection, proxy timeouts, or account limits can interrupt a transfer.
+Do not enable router port forwarding as a workaround for an unverified setup.
+
+No provider was installed, authenticated, or enabled to prepare this document.
+Provider documentation was reviewed on 2026-11-02; no end-to-end remote transfer
+has been verified. The [security model](security.md) remains the implementation
+baseline; internet exposure requires its own review before becoming supported.
