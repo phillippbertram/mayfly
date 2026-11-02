@@ -8,8 +8,8 @@ cloud service, external server, or mobile application is required.
 
 This document defines the intended product. Local sharing is implemented: native
 selection and drop, in-memory shares and bundles, the LAN listener, landing pages,
-streamed downloads, ZIP downloads, QR PNG export, persistent settings, and the tray
-lifecycle. Custom link profiles remain planned. GitHub Issues track delivery.
+streamed downloads, ZIP downloads, QR PNG export, persistent settings, the tray
+lifecycle, and custom link profiles. GitHub Issues track delivery.
 
 ## MVP scope
 
@@ -77,17 +77,19 @@ of the MVP.
 ## Link profiles
 
 Shares have no link profile of their own: every share has its page, ZIP, and file
-links. The built-in profile (`http`) is the share page. Custom profiles (#6) add
-copy actions such as "Copy link for Documents app" and may become the QR target in
-settings; they don't change what a share's own links open. A custom profile
-consists of an ID, name, and URL template. Settings record an optional default
-profile ID; deleting the default falls back to the share page.
+links. The built-in profile (`http`) is the share page. Custom profiles (#6) are
+global app templates: each adds "Copy link for …" to the share menu and can be what
+the QR code opens; they don't change what a share's own links open. A custom
+profile consists of an ID, name, and URL template; up to 20 are stored with the
+settings. Settings record the default profile, which the QR code opens by default;
+deleting it falls back to the share page. See
+[ADR 0010](decisions/0010-link-profiles-as-templates.md).
 
 | Placeholder         | Replacement                                         |
 | ------------------- | --------------------------------------------------- |
-| `{url}`             | Full mobile download-page URL                       |
+| `{url}`             | Share page URL                                      |
 | `{encodedUrl}`      | UTF-8 percent-encoded URL as one URI component      |
-| `{filename}`        | Original filename                                   |
+| `{filename}`        | Share title, file name, or "N files"                |
 | `{encodedFilename}` | UTF-8 percent-encoded filename as one URI component |
 | `{token}`           | Share access token                                  |
 
@@ -100,9 +102,9 @@ and custom application schemes; treat templates as data, never as executable cod
 Prefer encoded placeholders in query parameters. Show validation errors rather
 than generating misleading QR codes.
 
-The user can switch between HTTP and a custom profile in share details. The copied
-link, displayed link, exported PNG, and QR must all match the selected profile and
-network address. A compatible installed application is required for custom schemes;
+The user can switch between the share page and a custom profile in share details
+("QR opens"). The copied link, displayed link, copied QR image, exported PNG, and
+QR all match the selection and the current network address. A compatible installed application is required for custom schemes;
 FileHop neither installs apps nor registers deep links itself.
 
 ## Optional second step

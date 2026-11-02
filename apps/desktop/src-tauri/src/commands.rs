@@ -7,7 +7,7 @@ use serde::Serialize;
 use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::app::{App, LinkProfile, ServerState, ShareDto};
+use crate::app::{App, LinkProfile, ProfileInput, ServerState, ShareDto};
 use crate::export;
 use crate::network::NetworkInterface;
 use crate::settings::{Settings, SettingsPatch};
@@ -60,6 +60,27 @@ pub async fn update_settings(
 #[tauri::command]
 pub fn list_profiles(state: AppState) -> Vec<LinkProfile> {
     state.profiles()
+}
+
+#[tauri::command]
+pub fn save_profile(state: AppState, input: ProfileInput) -> Result<LinkProfile, String> {
+    state.save_profile(input)
+}
+
+#[tauri::command]
+pub fn delete_profile(state: AppState, id: String) -> Result<(), String> {
+    state.delete_profile(&id)
+}
+
+/// `{ ok: true, preview, customScheme }` or `{ ok: false, error }` for the editor.
+#[tauri::command]
+pub fn preview_template(state: AppState, template: String) -> serde_json::Value {
+    match state.preview_template(&template) {
+        Ok((preview, custom_scheme)) => {
+            serde_json::json!({ "ok": true, "preview": preview, "customScheme": custom_scheme })
+        }
+        Err(error) => serde_json::json!({ "ok": false, "error": error }),
+    }
 }
 
 #[tauri::command]

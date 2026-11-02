@@ -9,6 +9,7 @@ import {
   SettingsSchema,
   ShareSchema,
   StagedFilesSchema,
+  TemplatePreviewSchema,
 } from "./schemas";
 import { type Backend, BackendError, type BackendEvent, type ServerState } from "./types";
 
@@ -103,12 +104,15 @@ export function createDesktopBackend(): Backend {
     },
 
     updateSettings: (patch) => call("update_settings", SettingsSchema, { patch }),
-    saveProfile: () => unavailable("Custom link profiles aren't available in this build yet."),
-    deleteProfile: () => unavailable("Custom link profiles aren't available in this build yet."),
-    previewTemplate: async () => ({
-      ok: false,
-      error: "Custom link profiles aren't available in this build yet.",
-    }),
+    saveProfile: (input) => call("save_profile", LinkProfileSchema, { input }),
+    deleteProfile: async (id) => {
+      await call("delete_profile", done, { id });
+    },
+    previewTemplate: (template) =>
+      call("preview_template", TemplatePreviewSchema, { template }).catch(() => ({
+        ok: false as const,
+        error: "FileHop couldn't check the template.",
+      })),
     // Rust opens the native save dialog; the webview only supplies the image.
     takeNotice: () => call("take_notice", z.string().nullable()),
     hideWindow: async () => {

@@ -313,6 +313,16 @@ function ActiveActions({
           >
             Copy ZIP link
           </MenuItem>
+          {share.appLinks.map((app) => (
+            <MenuItem
+              key={app.profileId}
+              icon={Link2}
+              disabled={!app.link}
+              onSelect={() => actions.copyAppLink(share, app.profileId)}
+            >
+              Copy link for {app.name}
+            </MenuItem>
+          ))}
           <MenuSeparator />
           <MenuItem
             icon={Square}

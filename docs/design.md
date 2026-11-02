@@ -266,8 +266,11 @@ network rebind can be reported next to the control that caused it.
   says so.
 - **Appearance**: System, Light, or Dark.
 - **Link profiles**: the built-in share page pinned at the top. Custom app
-  templates (#6) will add copy actions such as "Copy link for Documents app" rather
-  than changing what a share's link opens. The editor is a sheet
+  templates (#6) add copy actions such as "Copy link for Documents app" rather
+  than changing what a share's link opens. A star marks the default, which the QR
+  code opens unless the inspector's "QR opens" select picks another for that
+  share; a custom-scheme choice shows that a compatible app is needed on the
+  scanning device. The editor is a sheet
   with a name field, a monospace template field, placeholder chips that insert the
   exact placeholder token at the caret, a live preview built from an example
   filename and the current address, and validation messages for unknown

@@ -2,13 +2,14 @@
 
 ## Status and decisions
 
-The desktop shell, share service, HTTP service, network discovery, and in-memory
-settings are implemented in `apps/desktop/src-tauri/src/` (`shares/`, `server/`,
-`network.rs`, `settings.rs`, `app.rs`, `commands.rs`). Settings persistence, link
-profiles, and the tray lifecycle remain target architecture. See
+The desktop shell, share service, HTTP service, network discovery, settings
+persistence, link profiles, and the tray lifecycle are implemented in
+`apps/desktop/src-tauri/src/` (`shares/`, `server/`, `network.rs`, `settings.rs`,
+`config.rs`, `profiles.rs`, `lifecycle.rs`, `app.rs`, `commands.rs`). See
 [ADR 0001](decisions/0001-desktop-foundation.md) for the foundation decision and
 [ADR 0005](decisions/0005-share-bundles-and-landing-page.md) for the landing page and
-download counting, and [ADR 0008](decisions/0008-file-drop.md) for the share model.
+download counting, [ADR 0008](decisions/0008-file-drop.md) for the share model, and
+[ADR 0010](decisions/0010-link-profiles-as-templates.md) for link profiles.
 
 FileHop uses a lightweight pnpm workspace with one desktop package at `apps/desktop`
 and root development tooling. React/TypeScript and its Tauri Rust crate stay together
@@ -112,14 +113,16 @@ versioned local document. Validate on load and write via safe replacement. Repor
 corrupt configuration and recover with documented defaults without silently losing
 the user's profiles. Do not store share history, tokens, active shares, or contents.
 
-Implemented (`config.rs`): `settings.json` holds `{ "version": 1, "settings": {…} }`
+Implemented (`config.rs`): `settings.json` holds
+`{ "version": 1, "settings": {…}, "profiles": […] }`
 in the app config directory (macOS `~/Library/Application Support/de.phillippbertram.filehop`,
 Windows `%APPDATA%\de.phillippbertram.filehop`, Linux `~/.config/de.phillippbertram.filehop`).
 Saves write a synced temporary file and rename it over the old one. On load, unknown
 fields are ignored and an invalid value falls back to its default while the others
 are kept; an unreadable file, or one from a newer version, is renamed to
-`settings.unreadable-<time>.json` and FileHop starts with defaults. Either case shows
-a one-time notice in the window. Settings that bind the listener are saved only
+`settings.unreadable-<time>.json` and FileHop starts with defaults. Invalid profiles
+are left out, keeping the original as `settings.repaired-<time>.json`. Each case
+shows a one-time notice in the window. Settings that bind the listener are saved only
 after the bind succeeded.
 
 Keep share state synchronized. Never hold a registry lock for an entire download.

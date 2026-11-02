@@ -79,7 +79,7 @@ function ProfileList({
     <div>
       <SectionHeader
         title="Link profiles"
-        description="Every share has a page, a ZIP, and a direct link per file. App templates add links that open an app on the phone."
+        description="Templates turn a share link into a link that opens a compatible app. The starred profile is what QR codes open by default; each share can switch."
       />
       <ul className="flex flex-col gap-1.5">
         <AnimatePresence initial={false}>
@@ -119,14 +119,18 @@ function ProfileList({
                     {profile.template ?? "http://<address>:<port>/s/<token> · built in"}
                   </span>
                 </div>
-                <Tooltip label={isDefault ? "Default for new shares" : "Make default"}>
+                <Tooltip
+                  label={
+                    isDefault ? "QR codes open this by default" : "Use for QR codes by default"
+                  }
+                >
                   <Button
                     size="iconSm"
                     variant="ghost"
                     aria-label={
                       isDefault
-                        ? `${profile.name} is the default`
-                        : `Make ${profile.name} the default`
+                        ? `QR codes open ${profile.name} by default`
+                        : `Use ${profile.name} for QR codes by default`
                     }
                     aria-pressed={isDefault}
                     onClick={() => setDefault(profile.id)}

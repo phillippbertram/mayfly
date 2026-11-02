@@ -4,6 +4,7 @@ mod config;
 mod export;
 mod lifecycle;
 mod network;
+mod profiles;
 pub mod server;
 mod settings;
 pub mod shares;
@@ -93,6 +94,9 @@ pub fn run() -> tauri::Result<()> {
             commands::take_notice,
             commands::update_settings,
             commands::list_profiles,
+            commands::save_profile,
+            commands::delete_profile,
+            commands::preview_template,
             commands::list_interfaces,
             commands::pick_files,
             commands::stage_dropped,

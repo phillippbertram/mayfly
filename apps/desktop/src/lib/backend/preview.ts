@@ -97,7 +97,7 @@ function substitute(template: string, values: Record<Placeholder, string>): stri
 
 interface Entry {
   /** Links are resolved from the current address in `resolve`. */
-  share: Omit<Share, "link" | "zipLink">;
+  share: Omit<Share, "link" | "zipLink" | "appLinks">;
   token: string;
 }
 
@@ -122,18 +122,39 @@ export function createPreviewBackend(): Backend {
   const address = () =>
     server.kind === "online" ? { address: server.address, port: server.port } : null;
 
-  /** Page, ZIP, and per-file links from the current address, like the Rust backend. */
+  /** Page, ZIP, per-file, and app links from the current address, like the Rust backend. */
   function resolve(entry: Entry): Share {
     const at = address();
     const base = at ? `http://${at.address}:${at.port}` : null;
+    const page = base && `${base}/s/${entry.token}`;
     return {
       ...entry.share,
-      link: base && `${base}/s/${entry.token}`,
+      link: page,
       zipLink: base && `${base}/z/${entry.token}`,
       files: entry.share.files.map((f) => ({
         ...f,
         link: base && `${base}/d/${entry.token}/${f.id}`,
       })),
+      appLinks: profiles.flatMap((profile) => {
+        if (!profile.template) return [];
+        const scheme = profile.template.trim().split(":")[0]?.toLowerCase() ?? "";
+        return [
+          {
+            profileId: profile.id,
+            name: profile.name,
+            link:
+              page &&
+              substitute(profile.template.trim(), {
+                url: page,
+                encodedUrl: encodeURIComponent(page),
+                filename: entry.share.fileName,
+                encodedFilename: encodeURIComponent(entry.share.fileName),
+                token: entry.token,
+              }),
+            customScheme: scheme !== "http" && scheme !== "https",
+          },
+        ];
+      }),
     };
   }
 

@@ -1,6 +1,6 @@
 //! The versioned settings file in the per-user configuration directory.
 //!
-//! Only settings are stored: never shares, tokens, or file paths. Writes go to a
+//! Only settings and link profiles are stored: never shares, tokens, or file paths. Writes go to a
 //! temporary file that is synced and renamed over the old one, so a crash leaves
 //! either the old or the new file. Reading is forgiving: unknown fields are
 //! ignored, an invalid value falls back to its default without discarding the
@@ -14,7 +14,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-use crate::settings::{Settings, SettingsPatch};
+use crate::profiles::{self, Profile, MAX_PROFILES};
+use crate::settings::{Settings, SettingsPatch, HTTP_PROFILE_ID};
 
 /// Bump when the stored shape changes incompatibly, and migrate older versions.
 pub const SETTINGS_VERSION: u64 = 1;
@@ -28,13 +29,25 @@ pub struct ConfigStore {
 /// be repaired.
 pub struct Loaded {
     pub settings: Settings,
+    pub profiles: Vec<Profile>,
     pub notice: Option<String>,
+}
+
+impl Loaded {
+    fn defaults(notice: Option<String>) -> Self {
+        Self {
+            settings: Settings::default(),
+            profiles: Vec::new(),
+            notice,
+        }
+    }
 }
 
 #[derive(Serialize)]
 struct Stored<'a> {
     version: u64,
     settings: &'a Settings,
+    profiles: &'a [Profile],
 }
 
 impl ConfigStore {
@@ -47,23 +60,15 @@ impl ConfigStore {
     }
 
     pub fn load(&self) -> Loaded {
-        let text =
-            match fs::read_to_string(self.path()) {
-                Ok(text) => text,
-                Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                    return Loaded {
-                        settings: Settings::default(),
-                        notice: None,
-                    }
-                }
-                Err(_) => return Loaded {
-                    settings: Settings::default(),
-                    notice: Some(
-                        "FileHop couldn't read its settings file and is using defaults for now."
-                            .into(),
-                    ),
-                },
-            };
+        let text = match fs::read_to_string(self.path()) {
+            Ok(text) => text,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Loaded::defaults(None),
+            Err(_) => {
+                return Loaded::defaults(Some(
+                    "FileHop couldn't read its settings file and is using defaults for now.".into(),
+                ))
+            }
+        };
         let parsed: Option<Map<String, Value>> = serde_json::from_str::<Value>(&text)
             .ok()
             .and_then(|value| match value {
@@ -99,39 +104,97 @@ impl ConfigStore {
                 Err(_) => reset.push(key.clone()),
             }
         }
-        let notice = (!reset.is_empty()).then(|| {
-            format!(
-                "Some saved settings were invalid and were reset to their defaults: {}.",
+
+        let mut profiles: Vec<Profile> = Vec::new();
+        let mut dropped = 0;
+        if let Some(stored) = root.get("profiles") {
+            let entries = stored.as_array().cloned().unwrap_or_default();
+            if !stored.is_array() {
+                dropped += 1;
+            }
+            for entry in entries {
+                let valid = serde_json::from_value::<Profile>(entry)
+                    .ok()
+                    .and_then(|p| profiles::validate_profile(&p).ok())
+                    .filter(|p| {
+                        profiles.len() < MAX_PROFILES && !profiles.iter().any(|q| q.id == p.id)
+                    });
+                match valid {
+                    Some(profile) => profiles.push(profile),
+                    None => dropped += 1,
+                }
+            }
+        }
+        // A default that no longer exists falls back to the share page.
+        if settings.default_profile_id != HTTP_PROFILE_ID
+            && !profiles.iter().any(|p| p.id == settings.default_profile_id)
+        {
+            settings.default_profile_id = HTTP_PROFILE_ID.to_owned();
+        }
+
+        let mut problems = Vec::new();
+        if !reset.is_empty() {
+            problems.push(format!(
+                "some settings were invalid and were reset to their defaults ({})",
                 reset.join(", ")
-            )
+            ));
+        }
+        if dropped > 0 {
+            problems.push(format!(
+                "{dropped} link {} invalid and {} left out",
+                if dropped == 1 {
+                    "profile was"
+                } else {
+                    "profiles were"
+                },
+                if dropped == 1 { "was" } else { "were" },
+            ));
+        }
+        let notice = (!problems.is_empty()).then(|| {
+            // The next save replaces the file, so keep the original first.
+            let backup = self.backup_name("repaired");
+            let kept = fs::copy(self.path(), self.dir.join(&backup)).is_ok();
+            let mut message = problems.join("; ");
+            message[..1].make_ascii_uppercase();
+            if kept {
+                format!("{message}. The original file was kept as {backup}.")
+            } else {
+                format!("{message}.")
+            }
         });
-        Loaded { settings, notice }
+        Loaded {
+            settings,
+            profiles,
+            notice,
+        }
+    }
+
+    fn backup_name(&self, kind: &str) -> String {
+        let millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_millis());
+        format!("settings.{kind}-{millis}.json")
     }
 
     /// Keeps the unreadable file next to the new one and starts from defaults.
     fn recover(&self, reason: &str) -> Loaded {
-        let millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_millis());
-        let backup = format!("settings.unreadable-{millis}.json");
+        let backup = self.backup_name("unreadable");
         let kept = fs::rename(self.path(), self.dir.join(&backup)).is_ok();
         let notice = if kept {
             format!("Your settings file was {reason}. FileHop kept it as {backup} and started with defaults.")
         } else {
             format!("Your settings file was {reason}. FileHop started with defaults.")
         };
-        Loaded {
-            settings: Settings::default(),
-            notice: Some(notice),
-        }
+        Loaded::defaults(Some(notice))
     }
 
     /// Replaces the settings file atomically.
-    pub fn save(&self, settings: &Settings) -> io::Result<()> {
+    pub fn save(&self, settings: &Settings, profiles: &[Profile]) -> io::Result<()> {
         fs::create_dir_all(&self.dir)?;
         let json = serde_json::to_vec_pretty(&Stored {
             version: SETTINGS_VERSION,
             settings,
+            profiles,
         })
         .map_err(io::Error::other)?;
         let tmp = self.dir.join(format!("{FILE_NAME}.tmp"));
@@ -190,7 +253,7 @@ mod tests {
             show_close_notice: false,
             ..Default::default()
         };
-        store.save(&settings).unwrap();
+        store.save(&settings, &[]).unwrap();
         let loaded = store.load();
         assert_eq!(loaded.settings, settings);
         assert!(loaded.notice.is_none());
@@ -227,6 +290,64 @@ mod tests {
         assert_eq!(loaded.settings, Settings::default());
         assert!(loaded.notice.unwrap().contains("newer version"));
         assert_eq!(backups(&store).len(), 1);
+    }
+
+    fn profile(name: &str) -> Profile {
+        Profile {
+            id: crate::shares::token::generate_id().unwrap(),
+            name: name.into(),
+            template: "myapp://import?url={encodedUrl}".into(),
+        }
+    }
+
+    #[test]
+    fn profiles_and_the_default_round_trip() {
+        let (_dir, store) = store();
+        let app = profile("Documents");
+        let settings = Settings {
+            default_profile_id: app.id.clone(),
+            ..Default::default()
+        };
+        store.save(&settings, std::slice::from_ref(&app)).unwrap();
+        let loaded = store.load();
+        assert_eq!(loaded.profiles, std::slice::from_ref(&app));
+        assert_eq!(loaded.settings.default_profile_id, app.id);
+        assert!(loaded.notice.is_none());
+    }
+
+    #[test]
+    fn invalid_profiles_are_left_out_and_the_file_is_kept() {
+        let (_dir, store) = store();
+        let good = profile("Good");
+        let text = serde_json::json!({
+            "version": 1,
+            "settings": { "defaultProfileId": "AAAAAAAAAAAAAAAA" },
+            "profiles": [
+                good,
+                { "id": "AAAAAAAAAAAAAAAA", "name": "Bad", "template": "javascript:alert(1)" },
+                { "id": "../x", "name": "Bad id", "template": "myapp://{url}" },
+                { "name": "No id" },
+                good,
+            ],
+        })
+        .to_string();
+        write(&store, &text);
+        let loaded = store.load();
+        assert_eq!(loaded.profiles, [good]);
+        // The default pointed at a dropped profile, so it falls back.
+        assert_eq!(loaded.settings.default_profile_id, HTTP_PROFILE_ID);
+        let notice = loaded.notice.unwrap();
+        assert!(notice.contains("4 link profiles were invalid"), "{notice}");
+        let repaired: Vec<_> = fs::read_dir(&store.dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .filter(|n| n.starts_with("settings.repaired-"))
+            .collect();
+        assert_eq!(repaired.len(), 1);
+        assert_eq!(
+            fs::read_to_string(store.dir.join(&repaired[0])).unwrap(),
+            text
+        );
     }
 
     #[test]

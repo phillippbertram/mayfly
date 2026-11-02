@@ -39,6 +39,16 @@ export const ShareFileSchema = z.object({
   link: z.string().nullable(),
 });
 
+/** The share link through a custom link profile, for a compatible app. */
+export const AppLinkSchema = z.object({
+  profileId: z.string(),
+  name: z.string(),
+  /** `null` while no address is usable. */
+  link: z.string().nullable(),
+  /** Opens an app rather than a web page; the app must be installed. */
+  customScheme: z.boolean(),
+});
+
 /**
  * A share is a file drop: one page link, a ZIP link, and a direct link per file.
  * Files can be added and removed while it is active, and it may be empty. With
@@ -67,6 +77,8 @@ export const ShareSchema = z.object({
   link: z.string().nullable(),
   /** Everything in the share as one ZIP. */
   zipLink: z.string().nullable(),
+  /** One link per custom profile; empty without custom profiles. */
+  appLinks: z.array(AppLinkSchema),
 });
 
 export const ServerStateSchema = z.discriminatedUnion("kind", [
@@ -166,6 +178,7 @@ export const ProfileInputSchema = z.object({
 export type FileKind = z.infer<typeof FileKindSchema>;
 export type ShareStatus = z.infer<typeof ShareStatusSchema>;
 export type ShareFile = z.infer<typeof ShareFileSchema>;
+export type AppLink = z.infer<typeof AppLinkSchema>;
 export type Share = z.infer<typeof ShareSchema>;
 export type ServerState = z.infer<typeof ServerStateSchema>;
 export type NetworkInterface = z.infer<typeof NetworkInterfaceSchema>;

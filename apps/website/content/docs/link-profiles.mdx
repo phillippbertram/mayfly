@@ -9,16 +9,17 @@ Every share already has the links most people need: the share page (what the QR
 code opens), a ZIP of all files, and a direct download link for each file. See
 [Share files](../sharing/) for when to use which.
 
-Custom profiles are planned as extra links for apps: a profile describes how a
-compatible application expects to receive a file URL, and the share details will
-offer "Copy link for …" for it. Profiles don't change what a share's own links
-open, and they don't install an application, register a scheme, or create network
-connectivity.
+Custom profiles add links for apps: a profile describes how a compatible
+application expects to receive a share URL. Each profile adds **Copy link for …**
+to a share's menu and can be what the QR code opens. Profiles don't change what a
+share's own links open, and they don't install an application, register a scheme,
+or create network connectivity. FileHop only builds and copies these links; it
+never opens them itself.
 
 ## Create a profile
 
-In the interface preview, open **Settings → Link profiles**, choose **New profile**,
-and enter a name and template. For example:
+Open **Settings → Link profiles**, choose **New profile**, and enter a name and
+template. A live preview shows the resulting link. For example:
 
 ```text
 Name: My import app
@@ -36,19 +37,26 @@ scheme and import format documented by your actual target app.
 | --- | --- |
 | `{url}` | Full share page URL |
 | `{encodedUrl}` | That URL encoded as a single URI component |
-| `{filename}` | Original filename |
-| `{encodedFilename}` | Filename encoded as a single URI component |
+| `{filename}` | The share's title, its file name, or "N files" |
+| `{encodedFilename}` | That name encoded as a single URI component |
 | `{token}` | Share token |
 
-Prefer encoded values inside query parameters. Templates are resolved once:
-braces in inserted filenames must not become a second round of placeholders.
-Unknown placeholders and executable schemes are rejected by the intended backend.
+Prefer encoded values inside query parameters. Templates are resolved once, so
+braces in a filename never become a second round of placeholders. FileHop refuses
+unknown placeholders, unmatched braces, line breaks, templates without a scheme,
+and schemes such as `javascript:`, `data:`, or `file:`. Profiles are saved with
+your settings, up to 20 of them.
 
-## Select a default or switch per share
+## Choose what the QR code opens
 
-The interface lets you mark a default profile and choose a different one in the
-share inspector. Deleting the default should fall back to HTTP. Profile persistence
-and actual deep-link handoffs still need Rust implementation and compatible-device tests.
+Mark a profile with the star to make it the QR default. In a share's details,
+**QR opens** switches between the share page and your profiles for that share; the
+QR code, the link field, copying, and saving the QR as PNG all use the shown
+choice. Deleting the default falls back to the share page.
+
+A custom scheme such as `myapp://` only works on a device where a compatible app
+is installed. Opening such links on real phones hasn't been tested with specific
+apps yet; check with your target app.
 
 A custom profile does not turn a local address into a public one.
 See [Remote sharing](../remote-sharing/) for that separate topic.

@@ -123,13 +123,14 @@ export function useShareActions() {
       },
       discardStaged: (ids: string[]) => run(() => backend.discardStaged(ids)),
 
-      async copyLink(share: Share): Promise<boolean> {
-        if (!share.link) {
+      /** Copies the share page link, or `link` (the link the inspector shows). */
+      async copyLink(share: Share, link: string | null = share.link): Promise<boolean> {
+        if (!link) {
           toast("This share has no link until the network is available.", "error");
           return false;
         }
         try {
-          await navigator.clipboard.writeText(share.link);
+          await navigator.clipboard.writeText(link);
           return true;
         } catch {
           toast("The link couldn't be copied.", "error");
@@ -138,6 +139,21 @@ export function useShareActions() {
       },
       copyFileLink: (share: Share, file: ShareFile) => copyDirect(share, file.link),
       copyZipLink: (share: Share) => copyDirect(share, share.zipLink),
+      /** Copies the link a custom profile builds for this share. */
+      async copyAppLink(share: Share, profileId: string): Promise<boolean> {
+        const app = share.appLinks.find((a) => a.profileId === profileId);
+        if (!app?.link) {
+          toast("This link isn't available until the network is.", "error");
+          return false;
+        }
+        try {
+          await navigator.clipboard.writeText(app.link);
+          return true;
+        } catch {
+          toast("The link couldn't be copied.", "error");
+          return false;
+        }
+      },
       /** Copies the QR image of the share page, or of `link` (a file's direct link). */
       async copyQr(share: Share, link: string | null = share.link): Promise<boolean> {
         if (!link) return false;
@@ -149,9 +165,9 @@ export function useShareActions() {
           return false;
         }
       },
-      async saveQr(share: Share) {
-        if (!share.link) return;
-        const link = share.link;
+      /** Saves the QR code of the share page, or of `link` (what the inspector shows). */
+      async saveQr(share: Share, link: string | null = share.link) {
+        if (!link) return;
         const saved = await run(async () =>
           backend.savePng(`${splitFileName(share.fileName).base}-qr.png`, await qrPng(link)),
         );

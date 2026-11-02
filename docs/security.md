@@ -138,7 +138,8 @@ bound to `127.0.0.1` on a separately configured port.
   execution, broadly scoped filesystem commands, or remote web content in the app.
 - Treat profile templates as data. Resolve placeholders once, percent-encode URI
   components correctly, reject malformed/unknown placeholders and executable schemes,
-  and never inject resulting links or filenames as raw HTML.
+  and never inject resulting links or filenames as raw HTML. Validation and
+  resolution live in Rust (`profiles.rs`); the UI only displays resolved links.
 - Generate and copy custom links; never execute a scheme automatically on profile changes.
 - Store only settings and profiles in the user config directory. Use validated,
   reliable writes and sanitized errors. Do not commit credentials or signing keys.

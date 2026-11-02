@@ -17,11 +17,13 @@ import { type ReactNode, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
 import { MenuContent, MenuItem, MenuRadioGroup, MenuSeparator } from "../../components/ui/menu";
+import { Select } from "../../components/ui/select";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useNow } from "../../hooks/use-now";
 import { maskLink, useQrVisible } from "../../hooks/use-qr-visible";
 import { useSignal } from "../../hooks/use-signal";
 import type { Share } from "../../lib/backend";
+import { HTTP_PROFILE_ID } from "../../lib/backend/types";
 import { cn } from "../../lib/cn";
 import {
   describeType,
@@ -32,6 +34,7 @@ import {
   remainingMs,
 } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
+import { useSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import { ConnectionHelp } from "./connection-help";
 import { CopyButton } from "./copy-button";
@@ -99,9 +102,15 @@ export function InspectorBody({
   const [limitOpen, setLimitOpen] = useSignalledOpen(useUi((s) => s.limitMenuSignal));
   const [extendOpen, setExtendOpen] = useState(false);
   const renameSignal = useUi((s) => s.renameSignal);
-  // The QR code shows the share page, or one file's direct link on request.
+  // What the QR code, the link field, copying, and PNG export use: the share page,
+  // an app link from a custom profile (default from settings), or one file.
+  const settings = useSettings();
   const [qrFileId, setQrFileId] = useState<string | null>(null);
+  const [qrProfileId, setQrProfileId] = useState<string | null>(null);
   const qrFile = share.status === "active" ? share.files.find((f) => f.id === qrFileId) : undefined;
+  const sourceId = qrProfileId ?? settings.defaultProfileId;
+  const qrApp = qrFile ? undefined : share.appLinks.find((a) => a.profileId === sourceId);
+  const shown = qrFile ? qrFile.link : qrApp ? qrApp.link : share.link;
 
   const status = displayStatus(share, now);
   const qrVisible = useQrVisible(share.id);
@@ -146,11 +155,11 @@ export function InspectorBody({
       <div className="flex flex-col items-center gap-2">
         <QrCard
           share={share}
-          link={qrFile ? qrFile.link : share.link}
+          link={shown}
           pulse={qrPulse}
           visible={qrVisible}
           onToggleVisible={() => setQrVisible(share.id, !qrVisible)}
-          onCopy={() => actions.copyQr(share, qrFile?.link)}
+          onCopy={() => actions.copyQr(share, shown)}
         />
         {qrFile ? (
           <span className="flex max-w-full items-center gap-1.5 text-[12px] text-muted">
@@ -165,8 +174,32 @@ export function InspectorBody({
             <QrCode aria-hidden="true" size={13} strokeWidth={1.6} />
             {ended
               ? "This code no longer opens the share"
-              : "Scan with any camera, or open the link"}
+              : qrApp
+                ? `Opens the share in ${qrApp.name}`
+                : "Scan with any camera, or open the link"}
           </span>
+        )}
+        {!ended && share.appLinks.length > 0 && (
+          <Select
+            label="What the QR code opens"
+            className="w-60"
+            prefix={<span className="text-[12px] text-muted">QR opens</span>}
+            value={qrApp?.profileId ?? HTTP_PROFILE_ID}
+            onValueChange={(id) => {
+              setQrFileId(null);
+              setQrProfileId(id);
+            }}
+            options={[
+              { value: HTTP_PROFILE_ID, label: "Share page" },
+              ...share.appLinks.map((a) => ({ value: a.profileId, label: a.name })),
+            ]}
+          />
+        )}
+        {!ended && qrApp?.customScheme && (
+          <p className="max-w-[300px] text-center text-[11.5px] text-muted">
+            A compatible app must be installed on the device that scans this. FileHop never opens
+            the link itself.
+          </p>
         )}
         {!ended && <ConnectionHelp />}
       </div>
@@ -181,7 +214,7 @@ export function InspectorBody({
           <span className="w-14 shrink-0 text-[12px] text-muted">Link</span>
           <AnimatePresence mode="wait" initial={false}>
             <motion.input
-              key={share.link ?? "none"}
+              key={shown ?? "none"}
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 4 }}
@@ -191,10 +224,10 @@ export function InspectorBody({
               value={
                 ended
                   ? "Link no longer works"
-                  : share.link
+                  : shown
                     ? qrVisible
-                      ? share.link
-                      : maskLink(share.link)
+                      ? shown
+                      : maskLink(shown)
                     : "Waiting for the network…"
               }
               onFocus={(e) => e.currentTarget.select()}
@@ -207,8 +240,8 @@ export function InspectorBody({
             label="Copy link"
             copiedLabel="Link copied"
             hotkey={appHotkeys["share.copyLink"].hotkey}
-            disabled={ended || !share.link}
-            onCopy={() => actions.copyLink(share)}
+            disabled={ended || !shown}
+            onCopy={() => actions.copyLink(share, shown)}
           />
         </div>
         {!ended && share.files.length > 1 && (
@@ -371,8 +404,8 @@ export function InspectorBody({
                 className="flex-1"
                 label="Copy link"
                 copiedLabel="Link copied"
-                disabled={!share.link}
-                onCopy={() => actions.copyLink(share)}
+                disabled={!shown}
+                onCopy={() => actions.copyLink(share, shown)}
               />
               <CopyButton
                 iconOnly
@@ -382,7 +415,7 @@ export function InspectorBody({
                 copiedLabel="QR image copied"
                 hotkey={appHotkeys["share.copyQr"].hotkey}
                 disabled={!share.link}
-                onCopy={() => actions.copyQr(share)}
+                onCopy={() => actions.copyQr(share, shown)}
               />
               <IconButton
                 icon={ImageDown}
@@ -391,7 +424,7 @@ export function InspectorBody({
                 label="Save QR as PNG"
                 hotkey={appHotkeys["share.savePng"].hotkey}
                 disabled={!share.link}
-                onClick={() => actions.saveQr(share)}
+                onClick={() => actions.saveQr(share, shown)}
               />
             </div>
             <StopButton armedSignal={stopSignal} onStop={() => actions.stop(share)} />

@@ -114,9 +114,10 @@ impl Settings {
     }
 }
 
-/// Only the built-in profile exists until custom link profiles land (#6).
+/// The built-in share page or a custom profile id. Whether a custom profile
+/// exists is checked by the app, which owns the profile list.
 pub fn validate_profile(id: &str) -> Result<(), ShareError> {
-    if id == HTTP_PROFILE_ID {
+    if id == HTTP_PROFILE_ID || crate::shares::token::is_well_formed_id(id) {
         Ok(())
     } else {
         Err(ShareError("That profile no longer exists.".into()))
