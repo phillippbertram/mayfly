@@ -5,22 +5,22 @@ description: A camera scan is all the recipient should need.
 
 ## Open the share inspector
 
-Select a share or use **Show QR code**. The interface presents a large code,
-its selected link profile, the URL, and copy/save actions.
+Select a share or use **Show QR code**. The interface presents a large code, the
+share's files, the share link, and copy/save actions.
 The browser preview renders real QR images from sample URLs; the URLs do not serve files.
 
 ## Scan from an iPhone
 
 In the planned sharing workflow, open Camera, point it at the complete code, and tap
 the detected link. Safari should show a mobile page with the file's name, size,
-and a download button. The standard HTTP profile requires no companion app.
+and a download button. No companion app is required.
 
 Keep the whole QR code visible, including the clear border around it. If scanning
 fails, enlarge the inspector, improve screen brightness, or use the copied link.
 
 ## Copy or save
 
-- **Copy link** copies the currently selected profile's link.
+- **Copy link** copies the share link the QR code opens.
 - **Copy QR image** copies an image rather than a text URL.
 - **Save QR as PNG** exports the code to an image file.
 
@@ -34,5 +34,5 @@ and can reach the server can use the share while it remains available.
 Do not post a screenshot of a real active code in a public issue.
 
 Changing the selected IP, port, or external hostname requires an updated link and
-QR code. An old image cannot update itself. Switching to a custom profile also
-changes the QR payload; see [Link profiles](../link-profiles/).
+QR code. An old image cannot update itself. The QR code always opens the share
+page; direct file links are copied, not scanned.

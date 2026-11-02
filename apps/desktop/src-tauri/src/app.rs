@@ -13,8 +13,8 @@ use crate::network::{self, NetworkInterface};
 use crate::server::{HttpState, Listener};
 use crate::settings::{self, Settings, SettingsPatch};
 use crate::shares::{
-    Clock, FileKind, Grouping, Registry, ShareError, ShareOptions, SharePatch, ShareSnapshot,
-    ShareStatus, StagedFiles, SystemClock,
+    Clock, FileKind, Registry, ShareError, ShareOptions, SharePatch, ShareSnapshot, ShareStatus,
+    StagedFiles, SystemClock,
 };
 
 /// How long open downloads may continue on a listener that is being replaced.
@@ -71,9 +71,11 @@ pub struct ShareFileDto {
     pub byte_size: u64,
     pub kind: FileKind,
     pub download_count: u32,
+    /// Direct download of this file, `/d/{token}/{file}`.
+    pub link: Option<String>,
 }
 
-/// What the UI receives for a share. The token appears only inside `link`.
+/// What the UI receives for a share. The token appears only inside links.
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareDto {
@@ -87,11 +89,10 @@ pub struct ShareDto {
     pub download_count: u32,
     pub download_limit: Option<u32>,
     pub status: ShareStatus,
-    pub profile_id: String,
+    /// The share's page, `/s/{token}`; `None` while no address is usable.
     pub link: Option<String>,
-    pub link_error: Option<String>,
-    /// Files can be added and removed while the share is active.
-    pub collection: bool,
+    /// Everything in the share as one ZIP, `/z/{token}`.
+    pub zip_link: Option<String>,
     pub files: Vec<ShareFileDto>,
 }
 
@@ -310,18 +311,11 @@ impl App {
     }
 
     pub fn profiles(&self) -> Vec<LinkProfile> {
-        vec![
-            LinkProfile {
-                id: settings::HTTP_PROFILE_ID,
-                name: "Download page",
-                template: None,
-            },
-            LinkProfile {
-                id: settings::DOWNLOAD_PROFILE_ID,
-                name: "Direct download",
-                template: None,
-            },
-        ]
+        vec![LinkProfile {
+            id: settings::HTTP_PROFILE_ID,
+            name: "Share page",
+            template: None,
+        }]
     }
 
     // ---- Shares ------------------------------------------------------------
@@ -375,13 +369,12 @@ impl App {
         &self,
         stage_ids: &[String],
         options: &ShareOptions,
-        grouping: Grouping,
+        separate: bool,
     ) -> Result<Vec<ShareDto>, String> {
-        settings::validate_profile(&options.profile_id).map_err(|e| e.0)?;
         let advertised = self.advertised();
         Ok(self
             .registry
-            .create(stage_ids, options, grouping)
+            .create(stage_ids, options, separate)
             .map_err(|e| e.0)?
             .into_iter()
             .map(|s| to_dto(s, advertised.as_deref()))
@@ -389,14 +382,7 @@ impl App {
     }
 
     pub fn share_again(&self, id: &str, options: Option<ShareOptions>) -> Result<ShareDto, String> {
-        let options = match options {
-            Some(options) => options,
-            None => {
-                let previous = self.registry.get(id).map_err(|e| e.0)?;
-                self.settings().default_options(&previous.profile_id)
-            }
-        };
-        settings::validate_profile(&options.profile_id).map_err(|e| e.0)?;
+        let options = options.unwrap_or_else(|| self.settings().default_options());
         let snapshot = self.registry.share_again(id, &options).map_err(|e| e.0)?;
         Ok(to_dto(snapshot, self.advertised().as_deref()))
     }
@@ -412,9 +398,6 @@ impl App {
     }
 
     pub fn update_share(&self, id: &str, patch: &SharePatch) -> Result<ShareDto, String> {
-        if let Some(profile) = &patch.profile_id {
-            settings::validate_profile(profile).map_err(|e| e.0)?;
-        }
         let snapshot = self
             .registry
             .update(id, patch)
@@ -425,20 +408,12 @@ impl App {
 
 fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
     let download_count = snapshot.download_count();
-    // Direct links skip the landing page: the file itself, or the ZIP of a
-    // bundle or collection. A collection's link must not change as files come
-    // and go, so it is always the ZIP.
-    let single = snapshot.files.len() == 1 && !snapshot.collection;
-    let route = match (snapshot.profile_id.as_str(), single) {
-        (settings::DOWNLOAD_PROFILE_ID, true) => "d",
-        (settings::DOWNLOAD_PROFILE_ID, false) => "z",
-        _ => "s",
-    };
-    let (file_name, kind) = match (snapshot.files.as_slice(), snapshot.collection) {
-        ([file], false) => (file.name.clone(), file.kind),
-        ([], true) => ("No files yet".to_owned(), FileKind::Bundle),
-        ([_], true) => ("1 file".to_owned(), FileKind::Bundle),
-        (files, _) => (format!("{} files", files.len()), FileKind::Bundle),
+    let base = advertised.map(|at| format!("http://{at}"));
+    let token = &snapshot.token;
+    let (file_name, kind) = match snapshot.files.as_slice() {
+        [file] => (file.name.clone(), file.kind),
+        [] => ("No files yet".to_owned(), FileKind::Bundle),
+        files => (format!("{} files", files.len()), FileKind::Bundle),
     };
     ShareDto {
         id: snapshot.id,
@@ -451,14 +426,13 @@ fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
         download_count,
         download_limit: snapshot.download_limit,
         status: snapshot.status,
-        profile_id: snapshot.profile_id,
-        link: advertised.map(|at| format!("http://{at}/{route}/{}", snapshot.token)),
-        link_error: None,
-        collection: snapshot.collection,
+        link: base.as_ref().map(|b| format!("{b}/s/{token}")),
+        zip_link: base.as_ref().map(|b| format!("{b}/z/{token}")),
         files: snapshot
             .files
             .into_iter()
             .map(|f| ShareFileDto {
+                link: base.as_ref().map(|b| format!("{b}/d/{token}/{}", f.id)),
                 id: f.id,
                 name: f.name,
                 byte_size: f.size,
@@ -478,7 +452,7 @@ mod tests {
     use super::*;
     use crate::shares::FileSnapshot;
 
-    fn snapshot(profile_id: &str, files: usize) -> ShareSnapshot {
+    fn snapshot(files: usize) -> ShareSnapshot {
         ShareSnapshot {
             id: "id".into(),
             token: "TOKEN".into(),
@@ -496,58 +470,44 @@ mod tests {
             ended_at: None,
             download_limit: None,
             status: ShareStatus::Active,
-            profile_id: profile_id.into(),
-            collection: false,
         }
     }
 
-    fn link(profile_id: &str, files: usize) -> Option<String> {
-        to_dto(snapshot(profile_id, files), Some("192.168.1.20:8765")).link
-    }
-
     #[test]
-    fn links_follow_the_selected_profile() {
-        let page = Some("http://192.168.1.20:8765/s/TOKEN".to_owned());
-        assert_eq!(link(settings::HTTP_PROFILE_ID, 1), page);
-        assert_eq!(link(settings::HTTP_PROFILE_ID, 3), page);
+    fn every_share_has_a_page_a_zip_and_a_link_per_file() {
+        let dto = to_dto(snapshot(2), Some("192.168.1.20:8765"));
         assert_eq!(
-            link(settings::DOWNLOAD_PROFILE_ID, 1).as_deref(),
-            Some("http://192.168.1.20:8765/d/TOKEN")
+            dto.link.as_deref(),
+            Some("http://192.168.1.20:8765/s/TOKEN")
         );
         assert_eq!(
-            link(settings::DOWNLOAD_PROFILE_ID, 3).as_deref(),
+            dto.zip_link.as_deref(),
             Some("http://192.168.1.20:8765/z/TOKEN")
         );
         assert_eq!(
-            to_dto(snapshot(settings::DOWNLOAD_PROFILE_ID, 1), None).link,
-            None
+            dto.files[1].link.as_deref(),
+            Some("http://192.168.1.20:8765/d/TOKEN/file-1")
         );
+        let offline = to_dto(snapshot(1), None);
+        assert_eq!(offline.link, None);
+        assert_eq!(offline.zip_link, None);
+        assert_eq!(offline.files[0].link, None);
     }
 
     #[test]
-    fn collection_links_stay_stable_as_files_change() {
-        for files in [0, 1, 3] {
-            let mut collection = snapshot(settings::DOWNLOAD_PROFILE_ID, files);
-            collection.collection = true;
-            let dto = to_dto(collection, Some("192.168.1.20:8765"));
-            assert_eq!(
-                dto.link.as_deref(),
-                Some("http://192.168.1.20:8765/z/TOKEN")
-            );
-            assert_eq!(dto.kind, FileKind::Bundle);
-        }
-        let mut empty = snapshot(settings::HTTP_PROFILE_ID, 0);
-        empty.collection = true;
-        assert_eq!(to_dto(empty, None).file_name, "No files yet");
-    }
+    fn summaries_follow_the_file_count() {
+        let one = to_dto(snapshot(1), None);
+        assert_eq!(one.file_name, "file-0.txt");
+        assert_eq!(one.kind, FileKind::Document);
 
-    #[test]
-    fn bundles_summarize_their_files() {
-        let dto = to_dto(snapshot(settings::HTTP_PROFILE_ID, 3), None);
-        assert_eq!(dto.file_name, "3 files");
-        assert_eq!(dto.kind, FileKind::Bundle);
-        assert_eq!(dto.byte_size, 30);
-        assert_eq!(dto.download_count, 2);
-        assert_eq!(dto.files.len(), 3);
+        let many = to_dto(snapshot(3), None);
+        assert_eq!(many.file_name, "3 files");
+        assert_eq!(many.kind, FileKind::Bundle);
+        assert_eq!(many.byte_size, 30);
+        assert_eq!(many.download_count, 2);
+
+        let empty = to_dto(snapshot(0), None);
+        assert_eq!(empty.file_name, "No files yet");
+        assert_eq!(empty.kind, FileKind::Bundle);
     }
 }

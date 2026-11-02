@@ -1,6 +1,6 @@
 # ADR 0007: Collections and stable file IDs
 
-- Status: Accepted
+- Status: Accepted; stable file IDs remain, the collection type is superseded by [ADR 0008](0008-file-drop.md)
 - Date: 2026-11-02
 
 ## Context

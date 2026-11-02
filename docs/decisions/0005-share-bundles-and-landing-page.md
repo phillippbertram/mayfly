@@ -1,6 +1,6 @@
 # ADR 0005: Share bundles, landing page, and download counting
 
-- Status: Accepted
+- Status: Accepted; grouping and the `/d/{token}` route superseded by [ADR 0008](0008-file-drop.md)
 - Date: 2026-11-02
 
 ## Context

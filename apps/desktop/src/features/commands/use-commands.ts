@@ -29,7 +29,7 @@ import { useMemo } from "react";
 import { useToast } from "../../components/ui/toast";
 import type { Share } from "../../lib/backend";
 import type { AppHotkeyId } from "../../lib/hotkeys";
-import { useProfiles, useServer, useSettings, useUpdateSettings } from "../../lib/queries";
+import { useServer, useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import type { ShareActions } from "../shares/use-share-actions";
 
@@ -69,8 +69,6 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
   const anyActive = shares.some((s) => s.status === "active");
   const qrVisible = active ? (ui.qrVisibility[active.id] ?? !hideCodes) : true;
   const anyFinished = shares.some((s) => s.status !== "active");
-  // The built-in HTTP profile alone is no choice.
-  const profileChoice = useProfiles().length > 1;
 
   return useMemo(() => {
     const index = shares.findIndex((s) => s.id === ui.selectedId);
@@ -283,22 +281,23 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
         run: () => ui.openLimitMenu(),
       },
       {
-        id: "share.profile",
-        hotkeyId: "share.profile",
-        label: "Change link profile…",
-        group: "Share",
-        icon: Link2,
-        enabled: active !== null && profileChoice,
-        run: () => ui.openProfileMenu(),
-      },
-      {
         id: "share.addFiles",
+        hotkeyId: "share.addFiles",
         label: "Add files to this link…",
         group: "Share",
         icon: FilePlus2,
-        keywords: ["collection", "add", "more"],
-        enabled: active?.collection === true && online,
+        keywords: ["add", "more", "drop"],
+        enabled: active !== null && online,
         run: () => active && actions.addFiles(active),
+      },
+      {
+        id: "share.copyZip",
+        label: "Copy ZIP link",
+        group: "Share",
+        icon: Link2,
+        keywords: ["zip", "all", "download"],
+        enabled: active !== null && active.files.length > 1 && Boolean(active.zipLink),
+        run: () => active && actions.copyZipLink(active),
       },
       {
         id: "share.again",
@@ -353,6 +352,5 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
     updateSettings,
     hideCodes,
     qrVisible,
-    profileChoice,
   ]);
 }

@@ -1,6 +1,6 @@
 # ADR 0006: Direct download links
 
-- Status: Accepted
+- Status: Superseded by [ADR 0008](0008-file-drop.md)
 - Date: 2026-11-02
 
 ## Context

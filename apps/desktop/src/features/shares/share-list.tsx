@@ -7,7 +7,6 @@ import { useNow } from "../../hooks/use-now";
 import type { Share } from "../../lib/backend";
 import { formatRemaining, remainingMs } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
-import { useProfiles } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import { ActiveShareRow, FinishedShareRow } from "./share-row";
 import type { ShareActions } from "./use-share-actions";
@@ -15,7 +14,6 @@ import type { ShareActions } from "./use-share-actions";
 /** Shares in display order: the active group first, then the finished group. */
 export function ShareList({ shares, actions }: { shares: Share[]; actions: ShareActions }) {
   const now = useNow();
-  const profiles = useProfiles();
   const selectedId = useUi((s) => s.selectedId);
   const select = useUi((s) => s.select);
   const setOverlay = useUi((s) => s.setOverlay);
@@ -73,7 +71,6 @@ export function ShareList({ shares, actions }: { shares: Share[]; actions: Share
               position={index + 1}
               selected={share.id === selectedId}
               fresh={share.createdAt > mountedAt.current}
-              profiles={profiles}
               actions={actions}
               onSelect={select}
               onShowQr={showQr}

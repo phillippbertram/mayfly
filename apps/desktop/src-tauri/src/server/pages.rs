@@ -23,19 +23,22 @@ pub static PAGE_CSP: LazyLock<String> = LazyLock::new(|| {
 pub fn landing(token: &str, view: &PageView) -> String {
     let token = escape(token);
     let mut body = String::new();
-    let refresh = if view.collection {
+    // Without scripts the page can't update itself; once the owner changed the
+    // files, or while there are none, it offers a plain reload.
+    let refresh = if view.edited || view.files.is_empty() {
         format!(r#" The owner may add or remove files. <a href="/s/{token}">Refresh</a>"#)
     } else {
         String::new()
     };
-    if let ([file], false) = (view.files.as_slice(), view.collection) {
+    if let [file] = view.files.as_slice() {
         let _ = write!(
             body,
             r#"<div class="glyph {kind}">{icon}</div>
 <h1>{name}</h1>
 <p class="meta">{size} · {label}</p>
-<a class="button" href="/d/{token}" download>{download}Download</a>
-<p class="note">{availability}</p>"#,
+<a class="button" href="/d/{token}/{id}" download>{download}Download</a>
+<p class="note">{availability}{refresh}</p>"#,
+            id = escape(&file.id),
             kind = kind_class(file.kind),
             icon = icon(file.kind),
             name = escape(&file.name),
@@ -100,10 +103,10 @@ pub fn landing(token: &str, view: &PageView) -> String {
         }
         body.push_str("</ul>");
     }
-    let title = match (view.files.as_slice(), view.collection) {
-        ([file], false) => escape(&file.name),
-        ([], true) => "No files yet".to_owned(),
-        (files, _) => file_count(files.len()),
+    let title = match view.files.as_slice() {
+        [file] => escape(&file.name),
+        [] => "No files yet".to_owned(),
+        files => file_count(files.len()),
     };
     document(&title, &body)
 }
@@ -341,7 +344,7 @@ mod tests {
             files: vec![file(r#"<script>alert("x")</script>&'.pdf"#, None)],
             remaining: None,
             download_limit: None,
-            collection: false,
+            edited: false,
         };
         let html = landing("TOKEN", &view);
         assert!(!html.contains("<script>"));
@@ -354,10 +357,11 @@ mod tests {
             files: vec![file("a.pdf", Some(2))],
             remaining: Some(Duration::from_secs(7 * 60 + 1)),
             download_limit: Some(3),
-            collection: false,
+            edited: false,
         };
         let html = landing("TOKEN", &view);
-        assert!(html.contains(r#"href="/d/TOKEN""#));
+        assert!(html.contains(r#"href="/d/TOKEN/a_pdf""#));
+        assert!(!html.contains("Refresh"));
         assert!(html.contains("2.4 MB · Document"));
         assert!(html.contains("about 8 more minutes · 2 downloads left."));
     }
@@ -368,7 +372,7 @@ mod tests {
             files: vec![file("a.pdf", Some(1)), file("b.pdf", Some(0))],
             remaining: None,
             download_limit: Some(1),
-            collection: false,
+            edited: false,
         };
         let html = landing("TOKEN", &view);
         assert!(html.contains("2 files"));
@@ -381,16 +385,15 @@ mod tests {
     }
 
     #[test]
-    fn collections_list_even_one_file_and_explain_changes() {
+    fn edited_and_empty_shares_offer_a_refresh() {
         let view = PageView {
             files: vec![file("a.pdf", None)],
             remaining: None,
             download_limit: None,
-            collection: true,
+            edited: true,
         };
         let html = landing("TOKEN", &view);
-        assert!(html.contains("<h1>1 file</h1>"));
-        assert!(html.contains(r#"href="/z/TOKEN""#));
+        assert!(html.contains("<h1>a.pdf</h1>"));
         assert!(html.contains(r#"href="/d/TOKEN/a_pdf""#));
         assert!(html.contains(r#"<a href="/s/TOKEN">Refresh</a>"#));
 

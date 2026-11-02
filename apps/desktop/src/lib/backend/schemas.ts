@@ -35,12 +35,15 @@ export const ShareFileSchema = z.object({
   kind: FileKindSchema,
   /** Downloads started of this file, including those inside ZIP downloads. */
   downloadCount: z.int().nonnegative(),
+  /** Direct download of this file; `null` while no address is usable. */
+  link: z.string().nullable(),
 });
 
 /**
- * One link for one or more files. A bundle (several files) or a collection
- * summarizes them: `fileName` is "3 files", `byteSize` the total, and `kind` is
- * `bundle`. A collection's files can change while it is active, and it may be empty.
+ * A share is a file drop: one page link, a ZIP link, and a direct link per file.
+ * Files can be added and removed while it is active, and it may be empty. With
+ * several files (or none), `fileName` is "3 files" (or "No files yet"),
+ * `byteSize` the total, and `kind` is `bundle`.
  */
 export const ShareSchema = z.object({
   id: z.string().min(1),
@@ -48,7 +51,6 @@ export const ShareSchema = z.object({
   byteSize: z.int().nonnegative(),
   kind: FileKindSchema,
   files: z.array(ShareFileSchema),
-  collection: z.boolean(),
   /** Wall-clock milliseconds for display. Rust enforces lifetimes with a monotonic clock. */
   createdAt: z.number(),
   expiresAt: z.number().nullable(),
@@ -58,10 +60,10 @@ export const ShareSchema = z.object({
   /** Bundles apply the limit to each file. */
   downloadLimit: DownloadLimitSchema,
   status: ShareStatusSchema,
-  profileId: z.string(),
-  /** Resolved link for the selected profile and address; `null` while no address is usable. */
+  /** The share's page, which the QR code opens; `null` while no address is usable. */
   link: z.string().nullable(),
-  linkError: z.string().nullable(),
+  /** Everything in the share as one ZIP. */
+  zipLink: z.string().nullable(),
 });
 
 export const ServerStateSchema = z.discriminatedUnion("kind", [
@@ -133,7 +135,6 @@ export const StagedFilesSchema = z.object({
 export const ShareOptionsSchema = z.object({
   lifetimeMinutes: LifetimeSchema,
   downloadLimit: DownloadLimitSchema,
-  profileId: z.string(),
 });
 
 export const SharePatchSchema = z
@@ -145,7 +146,6 @@ export const SharePatchSchema = z
       .max(24 * 60)
       .nullable(),
     downloadLimit: DownloadLimitSchema,
-    profileId: z.string(),
   })
   .partial();
 

@@ -5,10 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::shares::{ShareError, ShareOptions};
 
-/// Built-in link profile: the landing page, `/s/{token}`.
+/// Built-in link profile: the share's page, `/s/{token}`. Custom app templates
+/// (#6) will add copy actions next to it; shares themselves have no profile.
 pub const HTTP_PROFILE_ID: &str = "http";
-/// Built-in link profile: the file itself, `/d/{token}`, or a bundle's ZIP, `/z/{token}`.
-pub const DOWNLOAD_PROFILE_ID: &str = "download";
 pub const DEFAULT_PORT: u16 = 8765;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,22 +96,21 @@ impl Settings {
             next.default_profile_id = profile.clone();
         }
         // Reuse the share option rules for the defaults.
-        next.default_options(HTTP_PROFILE_ID).validate()?;
+        next.default_options().validate()?;
         Ok(next)
     }
 
-    pub fn default_options(&self, profile_id: &str) -> ShareOptions {
+    pub fn default_options(&self) -> ShareOptions {
         ShareOptions {
             lifetime_minutes: self.default_lifetime_minutes,
             download_limit: self.default_download_limit,
-            profile_id: profile_id.to_owned(),
         }
     }
 }
 
-/// Only the built-in profiles exist until custom link profiles land (#6).
+/// Only the built-in profile exists until custom link profiles land (#6).
 pub fn validate_profile(id: &str) -> Result<(), ShareError> {
-    if id == HTTP_PROFILE_ID || id == DOWNLOAD_PROFILE_ID {
+    if id == HTTP_PROFILE_ID {
         Ok(())
     } else {
         Err(ShareError("That profile no longer exists.".into()))
@@ -165,9 +163,6 @@ mod tests {
         assert!(settings
             .apply(&patch(r#"{"defaultProfileId":"other"}"#))
             .is_err());
-        assert!(settings
-            .apply(&patch(r#"{"defaultProfileId":"download"}"#))
-            .is_ok());
         assert!(serde_json::from_str::<SettingsPatch>(r#"{"port":70000}"#).is_err());
         assert!(serde_json::from_str::<SettingsPatch>(r#"{"unknown":1}"#).is_err());
     }

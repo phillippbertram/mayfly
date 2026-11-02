@@ -58,7 +58,7 @@ seconds and do not want to think about accounts, cables, or cloud storage.
 | First share         | Drop or choose a file, see the share appear, open its QR, scan, download                  |
 | Repeat share        | Drop more files onto a non-empty dashboard without losing the current selection           |
 | Hand over a link    | Copy the URL or QR image for a chat or a second screen                                    |
-| Custom app handoff  | Switch the share to a custom link profile and verify the generated link before scanning   |
+| Direct download     | Copy a file's direct link (or the ZIP link) from the inspector and paste it elsewhere     |
 | Stop early          | Revoke one share or all shares with a single, reversible-looking but clearly final action |
 | Keep sharing        | Close the window, confirm from the tray that shares are still active, quit when done      |
 | Recover from errors | Understand a port conflict, a missing network, or a changed address and fix it in place   |
@@ -85,7 +85,7 @@ Tray menu
 └── Quit FileHop
 
 Mobile page (served by the Rust HTTP service)
-├── Download page: filename, size, download button; bundles list files and a ZIP
+├── Share page: one file large, several as a list with a ZIP, or "No files yet"
 └── Error pages: expired, revoked, limit reached, not found, file unavailable
 ```
 
@@ -134,7 +134,10 @@ files.") without a modal.
 Choosing or dropping files opens a compact options sheet before anything is shared.
 It lists the files, with a remove button for each when there are several, and
 offers the lifetime (5, 10, 30, or 60 minutes, until stopped, or a custom number
-of minutes), the download limit (none, 1, 3, 5, or custom), and the link profile.
+of minutes) and the download limit (none, 1, 3, 5, or custom, per file). With
+several files, a switch "Give each file its own link" creates one share per file;
+by default all files go behind one link. Nothing else is asked: files can be added
+or removed later, and every share has a page, a ZIP, and direct file links.
 Every field starts from the defaults in settings, and the primary Share button has
 focus, so Return shares with the defaults in one keystroke; Cmd/Ctrl+Return shares
 from anywhere in the sheet. A live summary reads like "Until about 14:42 · up to 3
@@ -162,8 +165,9 @@ Each active row (64 points) shows, from left to right:
   out and turns amber under two minutes; shares kept until stopped show a calm full
   ring. No thumbnails: generating them would read file contents in the frontend,
   which the architecture forbids.
-- Filename with middle truncation so the extension stays visible, and a meta line
-  with size, type, and link profile ("2.4 MB · PDF document · HTTP link").
+- Filename (or "3 files") with middle truncation so the extension stays visible,
+  and a meta line with size and contents ("2.4 MB · PDF document", or
+  "8.2 MB · 2 images, 1 document").
 - A timer pill with the countdown ("7:42", or "Until stopped"), accent while active
   and amber when expiring. It replaces the status chip for active shares; the ring
   and pill carry the state together, and the row's accessible name states it.
@@ -172,7 +176,9 @@ Each active row (64 points) shows, from left to right:
   meaning (started downloads, not confirmed saves) is explained in a tooltip and in
   the inspector, matching the semantics the core-sharing issue defines.
 - Actions behind a divider: Copy link, Show QR, and an overflow menu with Save QR as
-  PNG, lifetime, download limit, link profile, and Stop sharing. They fade in on
+  PNG, lifetime, download limit, Add files…, Copy ZIP link, and Stop sharing. The
+  whole row is a drop target: dragging files over an active row outlines it with
+  "Drop to add to this link". They fade in on
   hover, focus, or selection in a reserved slot, so nothing shifts. The keyboard
   reaches the same actions through the row's context menu.
 
@@ -188,8 +194,13 @@ Selecting any row opens it in the inspector.
 
 The inspector answers "how does my device get this?" in one view:
 
-1. Filename and size at the top, with the file-type glyph.
-2. The QR code on a white card with a generous quiet zone, 240 points wide. The card
+1. Filename (or "N files"), size, and contents at the top, with the file-type glyph.
+2. The files: a header with the count (and "up to N per file" when limited) and an
+   "Add files…" button, then one row per file with glyph, name, size, download
+   count, a button that copies the file's direct link, and a remove button while
+   more than one file remains. Below it, "Drop files here to add them. Everyone with
+   the link sees them." The section is a drop target with the same outline as rows.
+3. The QR code on a white card with a generous quiet zone, 240 points wide. The card
    stays white in dark mode because phone cameras scan a dark-on-light code more
    reliably. A small caption underneath reads "Scan with any camera, or open the link".
    An eye button on the card hides the code: it blurs, shows "QR code hidden", and
@@ -197,19 +208,17 @@ The inspector answers "how does my device get this?" in one view:
    Clicking the hidden card reveals it again. Copy actions keep working. General
    settings can hide codes and links by default; H toggles the selected share and
    Shift+H toggles the default.
-3. The link profile selector: a select listing "HTTP (default)" and each custom
-   profile. Switching it regenerates the QR, the displayed link, and the PNG export
-   together, so they can never disagree. A custom scheme shows a hint that a
-   compatible app must be installed on the phone.
-4. The generated link in a read-only monospace field with a Copy button. The link
-   is shown in full; it is the credential the user is deliberately handing over.
+4. The share link (the page) in a read-only monospace field with a Copy button,
+   and "Copy ZIP link" below it when the share holds several files. The QR code
+   always encodes the page link. Copying a direct or ZIP link of a share with a
+   download limit shows a note that chat-app link previews can use up a download.
 5. A details block: expires at a wall-clock time with a remaining-time ring,
    downloads used against the limit or "unlimited", and the creation time.
 6. Actions: Copy link, Copy QR image, Save PNG..., and Stop sharing. Stop sharing
    asks for confirmation inline in the button ("Stop sharing? Confirm") instead of
    opening a dialog, so the keyboard flow stays short.
-7. A one-line trust note: "Anyone with this link on your network can download the
-   file until it expires."
+7. A one-line trust note: "Anyone with this link on your network can download its
+   files until it expires, including files you add later."
 
 When the share expires or is stopped while the inspector is open, the QR fades to
 a disabled state with an overlay label, the actions reduce to "Share again" and
@@ -231,8 +240,9 @@ network rebind can be reported next to the control that caused it.
   Applying a change that fails to bind keeps the previous working configuration and
   says so.
 - **Appearance**: System, Light, or Dark.
-- **Link profiles**: a list with the built-in Download page and Direct download
-  profiles pinned at the top and a star marking the default. The editor is a sheet
+- **Link profiles**: the built-in share page pinned at the top. Custom app
+  templates (#6) will add copy actions such as "Copy link for Documents app" rather
+  than changing what a share's link opens. The editor is a sheet
   with a name field, a monospace template field, placeholder chips that insert the
   exact placeholder token at the caret, a live preview built from an example
   filename and the current address, and validation messages for unknown
@@ -278,7 +288,7 @@ font stack and respects `prefers-color-scheme`.
 
 Layout, top to bottom: a small FileHop wordmark, a file-type glyph, the escaped
 filename in large type with word breaking allowed, the formatted size and type, a
-full-width 52-point "Download" button pointing to `/d/{token}`, the remaining time
+full-width 52-point "Download" button pointing to `/d/{token}/{file}`, the remaining time
 and downloads, and a footer line "Shared temporarily from a computer on your
 network." with a short trusted-network note. Nothing on the page identifies the
 computer, its path, or its user. The content sits on a card at most 560 points
@@ -289,15 +299,9 @@ with the total size, a primary "Download all .zip" button pointing to
 `/z/{token}`, and below a divider one 56-point row per file: glyph, name, size,
 and a 44-point download button pointing to `/d/{token}/{file}`. A file that
 reached its limit shows "Limit reached" instead of a button, and the ZIP button
-is disabled once any file is exhausted. A collection uses the same layout even
-for one file, adds "The owner may add or remove files." with a Refresh link, and
-shows "No files yet" while it is empty.
-
-In the desktop app, the composer's Links row offers "One link for all", separate
-links, or "Keep open for more". An active collection's file list in the inspector
-has a remove button per file, an "Add files…" button, and is a drop target:
-dragging files over it outlines it with "Drop to add to this link", while drops
-anywhere else still create new shares.
+is disabled once any file is exhausted. After the owner added or removed files,
+and while the share is empty ("No files yet"), the note adds "The owner may add or
+remove files." with a Refresh link; the page has no scripts to update itself.
 
 Error pages share the same frame and replace the content with one glyph, one
 headline, and one sentence:
@@ -416,7 +420,7 @@ ignored while typing or while a menu is open; dialogs suspend global shortcuts.
 | Shift+H                  | Hide all QR codes and links by default      |
 | E                        | Add 10 minutes                              |
 | L                        | Change the download limit                   |
-| P                        | Change the link profile                     |
+| A                        | Add files to the selected share             |
 | R                        | Share an ended file again                   |
 | Backspace / Delete       | Stop sharing after inline confirmation      |
 | Cmd/Ctrl+Backspace       | Clear finished shares                       |

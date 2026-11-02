@@ -4,7 +4,7 @@
  * services. The UI labels it as sample data. It never ships behavior to the
  * desktop build; Rust remains the source of truth for the real application.
  */
-import { DEFAULT_SETTINGS, DOWNLOAD_PROFILE, HTTP_PROFILE } from "./defaults";
+import { DEFAULT_SETTINGS, HTTP_PROFILE } from "./defaults";
 import { createEmitter } from "./emitter";
 import {
   type Backend,
@@ -96,7 +96,8 @@ function substitute(template: string, values: Record<Placeholder, string>): stri
 }
 
 interface Entry {
-  share: Omit<Share, "link" | "linkError">;
+  /** Links are resolved from the current address in `resolve`. */
+  share: Omit<Share, "link" | "zipLink">;
   token: string;
 }
 
@@ -108,7 +109,6 @@ export function createPreviewBackend(): Backend {
   let settings: Settings = { ...DEFAULT_SETTINGS, interfaceId: "en0" };
   let profiles: LinkProfile[] = [
     HTTP_PROFILE,
-    DOWNLOAD_PROFILE,
     {
       id: "docs-app",
       name: "Documents app",
@@ -122,45 +122,27 @@ export function createPreviewBackend(): Backend {
   const address = () =>
     server.kind === "online" ? { address: server.address, port: server.port } : null;
 
+  /** Page, ZIP, and per-file links from the current address, like the Rust backend. */
   function resolve(entry: Entry): Share {
     const at = address();
-    if (!at) return { ...entry.share, link: null, linkError: null };
-    const url = `http://${at.address}:${at.port}/s/${entry.token}`;
-    const profile = profiles.find((p) => p.id === entry.share.profileId) ?? HTTP_PROFILE;
-    if (profile.id === DOWNLOAD_PROFILE.id) {
-      const single = entry.share.files.length === 1 && !entry.share.collection;
-      const route = single ? "d" : "z";
-      return {
-        ...entry.share,
-        link: `http://${at.address}:${at.port}/${route}/${entry.token}`,
-        linkError: null,
-      };
-    }
-    if (!profile.template) return { ...entry.share, link: url, linkError: null };
-    const valid = validateTemplate(profile.template);
-    if (!valid.ok) return { ...entry.share, link: null, linkError: valid.error };
-    const link = substitute(profile.template, {
-      url,
-      encodedUrl: encodeURIComponent(url),
-      filename: entry.share.fileName,
-      encodedFilename: encodeURIComponent(entry.share.fileName),
-      token: entry.token,
-    });
-    return { ...entry.share, link, linkError: null };
+    const base = at ? `http://${at.address}:${at.port}` : null;
+    return {
+      ...entry.share,
+      link: base && `${base}/s/${entry.token}`,
+      zipLink: base && `${base}/z/${entry.token}`,
+      files: entry.share.files.map((f) => ({
+        ...f,
+        link: base && `${base}/d/${entry.token}/${f.id}`,
+      })),
+    };
   }
 
   /** The share's summary fields, derived from its files like the Rust backend does. */
-  function summarize(files: Share["files"], collection: boolean) {
+  function summarize(files: Share["files"]) {
     const [first] = files;
-    const single = first && files.length === 1 && !collection;
+    const single = first && files.length === 1;
     return {
-      fileName: single
-        ? first.name
-        : files.length === 0
-          ? "No files yet"
-          : files.length === 1
-            ? "1 file"
-            : `${files.length} files`,
+      fileName: single ? first.name : files.length === 0 ? "No files yet" : `${files.length} files`,
       byteSize: files.reduce((sum, f) => sum + f.byteSize, 0),
       kind: single ? first.kind : ("bundle" as const),
     };
@@ -175,14 +157,13 @@ export function createPreviewBackend(): Backend {
     byteSize: f.byteSize,
     kind: f.kind,
     downloadCount,
+    link: null,
   });
 
-  /** One share for one file, a bundle when given several, or a collection. */
   function makeEntry(
     files: { fileName: string; byteSize: number; kind: FileKind }[],
     options: ShareOptions,
     overrides: Partial<Entry["share"]> = {},
-    collection = false,
   ): Entry {
     const createdAt = Date.now();
     const shareFiles = files.map((f) => toShareFile(f, overrides.downloadCount ?? 0));
@@ -190,9 +171,8 @@ export function createPreviewBackend(): Backend {
       token: randomToken(),
       share: {
         id: crypto.randomUUID(),
-        ...summarize(shareFiles, collection),
+        ...summarize(shareFiles),
         files: shareFiles,
-        collection,
         createdAt,
         expiresAt:
           options.lifetimeMinutes === null ? null : createdAt + options.lifetimeMinutes * MINUTE,
@@ -200,7 +180,6 @@ export function createPreviewBackend(): Backend {
         downloadCount: 0,
         downloadLimit: options.downloadLimit,
         status: "active",
-        profileId: options.profileId,
         ...overrides,
       },
     };
@@ -210,11 +189,7 @@ export function createPreviewBackend(): Backend {
     { fileName: name, byteSize: size, kind: kindOf(type, name) },
   ];
   const now = Date.now();
-  const base: ShareOptions = {
-    lifetimeMinutes: 10,
-    downloadLimit: null,
-    profileId: HTTP_PROFILE_ID,
-  };
+  const base: ShareOptions = { lifetimeMinutes: 10, downloadLimit: null };
   entries = [
     makeEntry(sample("Quarterly-report-2026.pdf", 2_400_000, "application/pdf"), base, {
       createdAt: now - 2.3 * MINUTE,
@@ -353,18 +328,16 @@ export function createPreviewBackend(): Backend {
       for (const id of ids) staged.delete(id);
     },
 
-    async createShares(ids, options, grouping) {
+    async createShares(ids, options, separate) {
       requireOnline();
-      if (!profiles.some((p) => p.id === options.profileId)) fail("That profile no longer exists.");
       const files = ids.map((id) => {
         const file = staged.get(id) ?? fail("A file is no longer available. Add it again.");
         staged.delete(id);
         return file;
       });
-      const created =
-        grouping === "separate"
-          ? files.map((file) => makeEntry([file], options))
-          : [makeEntry(files, options, {}, grouping === "collection")];
+      const created = separate
+        ? files.map((file) => makeEntry([file], options))
+        : [makeEntry(files, options)];
       entries = [...[...created].reverse(), ...entries];
       changed("shares");
       return created.map(resolve);
@@ -378,10 +351,7 @@ export function createPreviewBackend(): Backend {
         options ?? {
           lifetimeMinutes: settings.defaultLifetimeMinutes,
           downloadLimit: settings.defaultDownloadLimit,
-          profileId: old.profileId,
         },
-        {},
-        old.collection,
       );
       entries = [entry, ...entries];
       changed("shares");
@@ -390,7 +360,6 @@ export function createPreviewBackend(): Backend {
 
     async addFiles(id, ids) {
       const { share } = find(id);
-      if (!share.collection) fail("Only links kept open for more files can take new files.");
       if (share.status !== "active") fail("Files can only be added to an active link.");
       const added = ids.map((stageId) => {
         const file = staged.get(stageId) ?? fail("A file is no longer available. Add it again.");
@@ -398,16 +367,15 @@ export function createPreviewBackend(): Backend {
         return toShareFile(file);
       });
       const files = [...share.files, ...added];
-      update(id, { files, ...summarize(files, true) });
+      update(id, { files, ...summarize(files) });
       return resolve(find(id));
     },
 
     async removeFile(id, fileId) {
       const { share } = find(id);
-      if (!share.collection) fail("Files can only be removed from links kept open for more files.");
       const files = share.files.filter((f) => f.id !== fileId);
       if (files.length === share.files.length) fail("This file is no longer part of the link.");
-      update(id, { files, ...summarize(files, true) });
+      update(id, { files, ...summarize(files) });
       return resolve(find(id));
     },
 
@@ -427,10 +395,6 @@ export function createPreviewBackend(): Backend {
             `The limit must be higher than the ${share.downloadCount} downloads already started.`,
           );
         next.downloadLimit = patch.downloadLimit;
-      }
-      if (patch.profileId !== undefined) {
-        if (!profiles.some((p) => p.id === patch.profileId)) fail("That profile no longer exists.");
-        next.profileId = patch.profileId;
       }
       update(id, next);
       return resolve(find(id));
@@ -508,15 +472,11 @@ export function createPreviewBackend(): Backend {
     },
 
     async deleteProfile(id) {
-      if (id === HTTP_PROFILE_ID || id === DOWNLOAD_PROFILE.id)
-        fail("Built-in profiles are always available.");
+      if (id === HTTP_PROFILE_ID) fail("The share page is always available.");
       profiles = profiles.filter((p) => p.id !== id);
       if (settings.defaultProfileId === id)
         settings = { ...settings, defaultProfileId: HTTP_PROFILE_ID };
-      entries = entries.map((e) =>
-        e.share.profileId === id ? { ...e, share: { ...e.share, profileId: HTTP_PROFILE_ID } } : e,
-      );
-      changed("profiles", "settings", "shares");
+      changed("profiles", "settings");
     },
 
     async previewTemplate(template): Promise<TemplatePreview> {

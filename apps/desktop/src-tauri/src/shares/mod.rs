@@ -7,9 +7,8 @@ pub mod token;
 
 pub use file::{read_chunk, stream, Cancel, FileKind, SharedFile};
 pub use registry::{
-    Clock, FileSnapshot, Grouping, PageFile, PageView, Registry, Reservation, ShareError,
-    ShareOptions, SharePatch, ShareSnapshot, ShareStatus, StagedFiles, SystemClock, Target,
-    Unavailable,
+    Clock, FileSnapshot, PageFile, PageView, Registry, Reservation, ShareError, ShareOptions,
+    SharePatch, ShareSnapshot, ShareStatus, StagedFiles, SystemClock, Target, Unavailable,
 };
 
 #[cfg(test)]

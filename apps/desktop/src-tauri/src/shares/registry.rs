@@ -63,7 +63,6 @@ impl std::fmt::Display for ShareError {
 pub struct ShareOptions {
     pub lifetime_minutes: Option<u32>,
     pub download_limit: Option<u32>,
-    pub profile_id: String,
 }
 
 impl ShareOptions {
@@ -88,7 +87,6 @@ pub struct SharePatch {
     pub extend_minutes: Option<Option<u32>>,
     #[serde(default, with = "double_option")]
     pub download_limit: Option<Option<u32>>,
-    pub profile_id: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -100,18 +98,6 @@ pub enum ShareStatus {
     LimitReached,
 }
 
-/// How staged files become shares.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Grouping {
-    /// One share per file.
-    Separate,
-    /// One fixed set of files behind one link.
-    Bundle,
-    /// One link whose files can be added and removed while it is active.
-    Collection,
-}
-
 /// Why a public request can't be served.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Unavailable {
@@ -120,9 +106,9 @@ pub enum Unavailable {
     Stopped,
     LimitReached,
     FileUnavailable,
-    /// The owner took this file out of a collection.
+    /// The owner took this file out of the share.
     FileRemoved,
-    /// A collection without files has nothing to download yet.
+    /// A share without files has nothing to download yet.
     Empty,
 }
 
@@ -169,8 +155,6 @@ pub struct ShareSnapshot {
     pub ended_at: Option<u64>,
     pub download_limit: Option<u32>,
     pub status: ShareStatus,
-    pub profile_id: String,
-    pub collection: bool,
 }
 
 impl ShareSnapshot {
@@ -186,7 +170,8 @@ pub struct PageView {
     pub files: Vec<PageFile>,
     pub remaining: Option<Duration>,
     pub download_limit: Option<u32>,
-    pub collection: bool,
+    /// Files were added or removed after the share was created.
+    pub edited: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -199,11 +184,6 @@ pub struct PageFile {
 }
 
 impl PageView {
-    /// Several files, or a collection: shown as a list with a ZIP.
-    pub fn is_bundle(&self) -> bool {
-        self.collection || self.files.len() > 1
-    }
-
     pub fn all_available(&self) -> bool {
         !self.files.is_empty() && self.files.iter().all(|f| f.remaining_downloads != Some(0))
     }
@@ -212,9 +192,7 @@ impl PageView {
 /// Which part of a share a download request asks for.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Target {
-    /// `/d/{token}`: only valid for single-file shares.
-    Single,
-    /// `/d/{token}/{file}`: one file of a bundle or collection, by stable ID.
+    /// `/d/{token}/{file}`: one file, by its stable ID.
     File(String),
     /// `/z/{token}`: every file at once.
     All,
@@ -247,10 +225,10 @@ struct Entry {
     download_limit: Option<u32>,
     stopped_at: Option<u64>,
     limit_reached_at: Option<u64>,
-    profile_id: String,
     cancel: CancellationToken,
-    collection: bool,
-    /// IDs of files taken out of a collection, so their links explain why.
+    /// Files were added or removed after creation; the page then says so.
+    edited: bool,
+    /// IDs of files taken out of the share, so their links explain why.
     removed: Vec<String>,
     /// Status last reported to the UI, to detect expiry transitions.
     reported: ShareStatus,
@@ -273,7 +251,7 @@ impl Entry {
         self.download_limit.is_none_or(|l| file.downloads < l)
     }
 
-    /// Every file reached the limit. An empty collection is never exhausted.
+    /// Every file reached the limit. An empty share is never exhausted.
     fn exhausted(&self) -> bool {
         !self.files.is_empty() && self.files.iter().all(|f| !self.file_available(f))
     }
@@ -320,8 +298,6 @@ impl Entry {
             },
             download_limit: self.download_limit,
             status,
-            profile_id: self.profile_id.clone(),
-            collection: self.collection,
         }
     }
 
@@ -431,12 +407,12 @@ impl Registry {
 
     // ---- Share management --------------------------------------------------
 
-    /// Turns staged files into shares: one per file, one bundle, or one collection.
+    /// Turns staged files into one share, or one share per file when `separate`.
     pub fn create(
         &self,
         stage_ids: &[String],
         options: &ShareOptions,
-        grouping: Grouping,
+        separate: bool,
     ) -> Result<Vec<ShareSnapshot>, ShareError> {
         options.validate()?;
         if stage_ids.is_empty() {
@@ -455,14 +431,14 @@ impl Registry {
                 .iter()
                 .filter_map(|id| inner.staged.remove(id).map(|s| s.file))
                 .collect();
-            let groups: Vec<Vec<Arc<SharedFile>>> = match grouping {
-                Grouping::Separate => files.into_iter().map(|f| vec![f]).collect(),
-                Grouping::Bundle | Grouping::Collection => vec![files],
+            let groups: Vec<Vec<Arc<SharedFile>>> = if separate {
+                files.into_iter().map(|f| vec![f]).collect()
+            } else {
+                vec![files]
             };
-            let collection = grouping == Grouping::Collection;
             let mut created = Vec::with_capacity(groups.len());
             for group in groups {
-                created.push(new_entry(group, options, collection, now, wall)?);
+                created.push(new_entry(group, options, now, wall)?);
             }
             let snapshots: Vec<_> = created.iter().map(|e| e.snapshot(now)).collect();
             // Newest first, keeping the batch in selection order.
@@ -487,10 +463,12 @@ impl Registry {
         let wall = self.clock.wall_ms();
         let snapshot = {
             let mut inner = self.lock();
-            let previous = find(&inner, id)?;
-            let collection = previous.collection;
-            let files = previous.files.iter().map(|f| f.file.clone()).collect();
-            let entry = new_entry(files, options, collection, now, wall)?;
+            let files = find(&inner, id)?
+                .files
+                .iter()
+                .map(|f| f.file.clone())
+                .collect();
+            let entry = new_entry(files, options, now, wall)?;
             let snapshot = entry.snapshot(now);
             inner.shares.insert(0, entry);
             snapshot
@@ -539,9 +517,6 @@ impl Registry {
                 entry.download_limit = limit;
                 entry.limit_reached_at = None;
             }
-            if let Some(profile_id) = &patch.profile_id {
-                entry.profile_id = profile_id.clone();
-            }
             entry.reported = entry.status(now);
             entry.snapshot(now)
         };
@@ -549,7 +524,7 @@ impl Registry {
         Ok(snapshot)
     }
 
-    /// Adds staged files to an active collection. Everyone with the link sees them.
+    /// Adds staged files to an active share. Everyone with the link sees them.
     pub fn add_files(&self, id: &str, stage_ids: &[String]) -> Result<ShareSnapshot, ShareError> {
         if stage_ids.is_empty() {
             return Err(ShareError::new("Choose at least one file."));
@@ -558,11 +533,6 @@ impl Registry {
         let snapshot = {
             let mut inner = self.lock();
             let entry = find(&inner, id)?;
-            if !entry.collection {
-                return Err(ShareError::new(
-                    "Only links kept open for more files can take new files.",
-                ));
-            }
             if entry.status(now) != ShareStatus::Active {
                 return Err(ShareError::new(
                     "Files can only be added to an active link.",
@@ -584,6 +554,7 @@ impl Registry {
             for file in files {
                 entry.add(file)?;
             }
+            entry.edited = true;
             entry.reported = entry.status(now);
             entry.snapshot(now)
         };
@@ -591,19 +562,14 @@ impl Registry {
         Ok(snapshot)
     }
 
-    /// Takes a file out of a collection and cancels its running transfers,
-    /// including ZIP downloads that contain it.
+    /// Takes a file out of a share and cancels its running transfers, including
+    /// ZIP downloads that contain it. A share may become empty; it stays active.
     pub fn remove_file(&self, id: &str, file_id: &str) -> Result<ShareSnapshot, ShareError> {
         let now = self.clock.now();
         let wall = self.clock.wall_ms();
         let snapshot = {
             let mut inner = self.lock();
             let entry = find_mut(&mut inner, id)?;
-            if !entry.collection {
-                return Err(ShareError::new(
-                    "Files can only be removed from links kept open for more files.",
-                ));
-            }
             let index = entry
                 .files
                 .iter()
@@ -612,6 +578,7 @@ impl Registry {
             let removed = entry.files.remove(index);
             removed.cancel.cancel();
             entry.removed.push(removed.id);
+            entry.edited = true;
             if entry.exhausted() {
                 entry.limit_reached_at.get_or_insert(wall);
             } else {
@@ -761,7 +728,7 @@ impl Registry {
                 .collect(),
             remaining: entry.deadline.map(|d| d.saturating_duration_since(now)),
             download_limit: entry.download_limit,
-            collection: entry.collection,
+            edited: entry.edited,
         })
     }
 
@@ -856,7 +823,6 @@ impl Registry {
 fn new_entry(
     files: Vec<Arc<SharedFile>>,
     options: &ShareOptions,
-    collection: bool,
     now: Instant,
     wall: u64,
 ) -> Result<Entry, ShareError> {
@@ -874,9 +840,8 @@ fn new_entry(
         download_limit: options.download_limit,
         stopped_at: None,
         limit_reached_at: None,
-        profile_id: options.profile_id.clone(),
         cancel: CancellationToken::new(),
-        collection,
+        edited: false,
         removed: Vec::new(),
         reported: ShareStatus::Active,
     };
@@ -905,17 +870,13 @@ fn rejected(file: &SharedFile, reason: &str) -> RejectedItem {
 fn resolve_target(entry: &Entry, target: &Target) -> Result<Vec<usize>, Unavailable> {
     let count = entry.files.len();
     match target {
-        // A collection's link must stay valid as files come and go, so it never
-        // serves a lone file at `/d/{token}`.
-        Target::Single if count == 1 && !entry.collection => Ok(vec![0]),
         Target::File(id) => match entry.files.iter().position(|f| &f.id == id) {
             Some(i) => Ok(vec![i]),
             None if entry.removed.contains(id) => Err(Unavailable::FileRemoved),
             None => Err(Unavailable::NotFound),
         },
-        Target::All if entry.collection && count == 0 => Err(Unavailable::Empty),
-        Target::All if count > 1 || entry.collection => Ok((0..count).collect()),
-        _ => Err(Unavailable::NotFound),
+        Target::All if count == 0 => Err(Unavailable::Empty),
+        Target::All => Ok((0..count).collect()),
     }
 }
 
@@ -1007,11 +968,15 @@ pub mod tests {
         }
     }
 
+    /// The first file of a share as a download target.
+    fn first(share: &ShareSnapshot) -> Target {
+        Target::File(share.files[0].id.clone())
+    }
+
     pub fn options(lifetime: Option<u32>, limit: Option<u32>) -> ShareOptions {
         ShareOptions {
             lifetime_minutes: lifetime,
             download_limit: limit,
-            profile_id: "http".into(),
         }
     }
 
@@ -1059,7 +1024,7 @@ pub mod tests {
             &self,
             names: &[&str],
             options: &ShareOptions,
-            grouping: Grouping,
+            separate: bool,
         ) -> Vec<ShareSnapshot> {
             let paths = names
                 .iter()
@@ -1075,24 +1040,20 @@ pub mod tests {
             let staged = self.registry.stage(paths);
             assert!(staged.rejected.is_empty());
             let ids: Vec<_> = staged.files.into_iter().map(|f| f.stage_id).collect();
-            self.registry.create(&ids, options, grouping).unwrap()
+            self.registry.create(&ids, options, separate).unwrap()
         }
     }
 
     #[test]
     fn creates_separate_shares_or_one_bundle() {
         let fx = Fixture::new();
-        let separate = fx.share(
-            &["a.txt", "b.txt"],
-            &options(Some(10), None),
-            Grouping::Separate,
-        );
+        let separate = fx.share(&["a.txt", "b.txt"], &options(Some(10), None), true);
         assert_eq!(separate.len(), 2);
         assert_ne!(separate[0].token, separate[1].token);
         let bundle = fx.share(
             &["c.txt", "d.txt", "e.txt"],
             &options(Some(10), None),
-            Grouping::Bundle,
+            false,
         );
         assert_eq!(bundle.len(), 1);
         assert_eq!(bundle[0].files.len(), 3);
@@ -1119,11 +1080,11 @@ pub mod tests {
         assert_eq!(staged.rejected.len(), 1);
         let ids = vec![staged.files[0].stage_id.clone()];
         fx.registry
-            .create(&ids, &options(None, None), Grouping::Separate)
+            .create(&ids, &options(None, None), true)
             .unwrap();
         assert!(fx
             .registry
-            .create(&ids, &options(None, None), Grouping::Separate)
+            .create(&ids, &options(None, None), true)
             .is_err());
     }
 
@@ -1145,11 +1106,11 @@ pub mod tests {
             options(None, Some(0)),
             options(None, Some(1000)),
         ] {
-            assert!(fx.registry.create(&ids, &bad, Grouping::Separate).is_err());
+            assert!(fx.registry.create(&ids, &bad, true).is_err());
         }
         assert!(fx
             .registry
-            .create(&ids, &options(Some(1440), Some(999)), Grouping::Separate)
+            .create(&ids, &options(Some(1440), Some(999)), true)
             .is_ok());
     }
 
@@ -1157,12 +1118,12 @@ pub mod tests {
     fn expires_exactly_at_the_deadline() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(Some(5), None), Grouping::Separate)
+            .share(&["a.txt"], &options(Some(5), None), true)
             .remove(0);
         fx.clock
             .advance(Duration::from_secs(5 * 60) - Duration::from_millis(1));
         assert!(fx.registry.page(&share.token).is_ok());
-        assert!(fx.registry.reserve(&share.token, Target::Single).is_ok());
+        assert!(fx.registry.reserve(&share.token, first(&share)).is_ok());
         fx.clock.advance(Duration::from_millis(1));
         assert_eq!(
             fx.registry.page(&share.token).unwrap_err(),
@@ -1170,7 +1131,7 @@ pub mod tests {
         );
         assert_eq!(
             fx.registry
-                .reserve(&share.token, Target::Single)
+                .reserve(&share.token, first(&share))
                 .unwrap_err(),
             Unavailable::Expired
         );
@@ -1184,9 +1145,7 @@ pub mod tests {
     #[test]
     fn unlimited_lifetime_never_expires() {
         let fx = Fixture::new();
-        let share = fx
-            .share(&["a.txt"], &options(None, None), Grouping::Separate)
-            .remove(0);
+        let share = fx.share(&["a.txt"], &options(None, None), true).remove(0);
         fx.clock.advance(Duration::from_secs(365 * 24 * 3600));
         assert!(fx.registry.page(&share.token).is_ok());
         assert_eq!(share.expires_at, None);
@@ -1196,7 +1155,7 @@ pub mod tests {
     fn extending_adds_to_the_remaining_lifetime() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(Some(10), None), Grouping::Separate)
+            .share(&["a.txt"], &options(Some(10), None), true)
             .remove(0);
         fx.clock.advance(Duration::from_secs(9 * 60));
         let patch = SharePatch {
@@ -1218,10 +1177,8 @@ pub mod tests {
     #[test]
     fn stopping_revokes_and_cancels_transfers() {
         let fx = Fixture::new();
-        let share = fx
-            .share(&["a.txt"], &options(None, None), Grouping::Separate)
-            .remove(0);
-        let reservation = fx.registry.reserve(&share.token, Target::Single).unwrap();
+        let share = fx.share(&["a.txt"], &options(None, None), true).remove(0);
+        let reservation = fx.registry.reserve(&share.token, first(&share)).unwrap();
         fx.registry.stop(&share.id).unwrap();
         assert!(reservation.cancel.is_cancelled());
         assert_eq!(
@@ -1230,7 +1187,7 @@ pub mod tests {
         );
         assert_eq!(
             fx.registry
-                .reserve(&share.token, Target::Single)
+                .reserve(&share.token, first(&share))
                 .unwrap_err(),
             Unavailable::Stopped
         );
@@ -1244,9 +1201,7 @@ pub mod tests {
     #[test]
     fn active_shares_cannot_be_removed() {
         let fx = Fixture::new();
-        let share = fx
-            .share(&["a.txt"], &options(None, None), Grouping::Separate)
-            .remove(0);
+        let share = fx.share(&["a.txt"], &options(None, None), true).remove(0);
         assert!(fx.registry.remove(&share.id).is_err());
         fx.registry.clear_finished();
         assert_eq!(fx.registry.list().len(), 1);
@@ -1256,13 +1211,13 @@ pub mod tests {
     fn download_limit_is_enforced_and_released_on_failure() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(None, Some(2)), Grouping::Separate)
+            .share(&["a.txt"], &options(None, Some(2)), true)
             .remove(0);
-        let first = fx.registry.reserve(&share.token, Target::Single).unwrap();
-        let _second = fx.registry.reserve(&share.token, Target::Single).unwrap();
+        let earlier = fx.registry.reserve(&share.token, first(&share)).unwrap();
+        let _second = fx.registry.reserve(&share.token, first(&share)).unwrap();
         assert_eq!(
             fx.registry
-                .reserve(&share.token, Target::Single)
+                .reserve(&share.token, first(&share))
                 .unwrap_err(),
             Unavailable::LimitReached
         );
@@ -1270,29 +1225,29 @@ pub mod tests {
             fx.registry.get(&share.id).unwrap().status,
             ShareStatus::LimitReached
         );
-        fx.registry.release(first);
+        fx.registry.release(earlier);
         assert_eq!(
             fx.registry.get(&share.id).unwrap().status,
             ShareStatus::Active
         );
-        assert!(fx.registry.reserve(&share.token, Target::Single).is_ok());
+        assert!(fx.registry.reserve(&share.token, first(&share)).is_ok());
         // HEAD-style checks never take capacity.
-        assert!(fx.registry.peek(&share.token, Target::Single).is_err());
+        assert!(fx.registry.peek(&share.token, first(&share)).is_err());
     }
 
     #[test]
     fn raising_the_limit_reopens_but_must_exceed_started_downloads() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(None, Some(2)), Grouping::Separate)
+            .share(&["a.txt"], &options(None, Some(2)), true)
             .remove(0);
-        fx.registry.reserve(&share.token, Target::Single).unwrap();
+        fx.registry.reserve(&share.token, first(&share)).unwrap();
         let too_low = SharePatch {
             download_limit: Some(Some(1)),
             ..Default::default()
         };
         assert!(fx.registry.update(&share.id, &too_low).is_err());
-        fx.registry.reserve(&share.token, Target::Single).unwrap();
+        fx.registry.reserve(&share.token, first(&share)).unwrap();
         // A share that reached its limit is no longer active and can't be raised.
         let raise = SharePatch {
             download_limit: Some(Some(3)),
@@ -1305,7 +1260,7 @@ pub mod tests {
     fn concurrent_reservations_never_exceed_the_limit() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(None, Some(3)), Grouping::Separate)
+            .share(&["a.txt"], &options(None, Some(3)), true)
             .remove(0);
         let granted = Arc::new(AtomicUsize::new(0));
         let threads: Vec<_> = (0..50)
@@ -1313,8 +1268,9 @@ pub mod tests {
                 let registry = fx.registry.clone();
                 let token = share.token.clone();
                 let granted = granted.clone();
+                let file = first(&share);
                 std::thread::spawn(move || {
-                    if registry.reserve(&token, Target::Single).is_ok() {
+                    if registry.reserve(&token, file).is_ok() {
                         granted.fetch_add(1, Ordering::SeqCst);
                     }
                 })
@@ -1331,18 +1287,8 @@ pub mod tests {
     fn bundle_limits_apply_per_file_and_zip_is_all_or_nothing() {
         let fx = Fixture::new();
         let share = fx
-            .share(
-                &["a.txt", "b.txt"],
-                &options(None, Some(1)),
-                Grouping::Bundle,
-            )
+            .share(&["a.txt", "b.txt"], &options(None, Some(1)), false)
             .remove(0);
-        assert_eq!(
-            fx.registry
-                .reserve(&share.token, Target::Single)
-                .unwrap_err(),
-            Unavailable::NotFound
-        );
         assert_eq!(
             fx.registry
                 .reserve(&share.token, Target::File(token::generate_id().unwrap()))
@@ -1370,11 +1316,7 @@ pub mod tests {
     fn zip_reservation_takes_one_download_of_every_file() {
         let fx = Fixture::new();
         let share = fx
-            .share(
-                &["a.txt", "b.txt", "c.txt"],
-                &options(None, Some(1)),
-                Grouping::Bundle,
-            )
+            .share(&["a.txt", "b.txt", "c.txt"], &options(None, Some(1)), false)
             .remove(0);
         let reservation = fx.registry.reserve(&share.token, Target::All).unwrap();
         assert_eq!(reservation.files.len(), 3);
@@ -1392,7 +1334,7 @@ pub mod tests {
     fn share_again_issues_a_new_token() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(Some(5), None), Grouping::Separate)
+            .share(&["a.txt"], &options(Some(5), None), true)
             .remove(0);
         fx.registry.stop(&share.id).unwrap();
         let again = fx
@@ -1410,11 +1352,7 @@ pub mod tests {
     #[test]
     fn stop_all_revokes_every_active_share() {
         let fx = Fixture::new();
-        let shares = fx.share(
-            &["a.txt", "b.txt"],
-            &options(None, None),
-            Grouping::Separate,
-        );
+        let shares = fx.share(&["a.txt", "b.txt"], &options(None, None), true);
         assert!(fx.registry.has_active());
         assert_eq!(fx.registry.stop_all(), 2);
         assert!(!fx.registry.has_active());
@@ -1429,7 +1367,7 @@ pub mod tests {
     #[test]
     fn malformed_and_unknown_tokens_are_not_found() {
         let fx = Fixture::new();
-        fx.share(&["a.txt"], &options(None, None), Grouping::Separate);
+        fx.share(&["a.txt"], &options(None, None), true);
         assert_eq!(
             fx.registry.page("../../etc/passwd").unwrap_err(),
             Unavailable::NotFound
@@ -1442,19 +1380,9 @@ pub mod tests {
     }
 
     #[test]
-    fn collections_take_and_drop_files_with_stable_ids() {
+    fn shares_take_and_drop_files_with_stable_ids() {
         let fx = Fixture::new();
-        let share = fx
-            .share(&["a.txt"], &options(None, None), Grouping::Collection)
-            .remove(0);
-        assert!(share.collection);
-        // A collection's lone file is never served at the bare `/d/{token}`.
-        assert_eq!(
-            fx.registry
-                .reserve(&share.token, Target::Single)
-                .unwrap_err(),
-            Unavailable::NotFound
-        );
+        let share = fx.share(&["a.txt"], &options(None, None), false).remove(0);
         let a = share.files[0].id.clone();
         let added = fx
             .registry
@@ -1482,30 +1410,23 @@ pub mod tests {
     }
 
     #[test]
-    fn bundles_and_single_shares_stay_fixed() {
+    fn edits_mark_the_page_as_changed() {
         let fx = Fixture::new();
-        let bundle = fx
-            .share(&["a.txt", "b.txt"], &options(None, None), Grouping::Bundle)
+        let share = fx
+            .share(&["a.txt", "b.txt"], &options(None, None), false)
             .remove(0);
-        assert!(fx
-            .registry
-            .add_files(&bundle.id, &fx.stage(&["c.txt"]))
-            .is_err());
-        assert!(fx
-            .registry
-            .remove_file(&bundle.id, &bundle.files[0].id)
-            .is_err());
+        assert!(!fx.registry.page(&share.token).unwrap().edited);
+        fx.registry
+            .remove_file(&share.id, &share.files[0].id)
+            .unwrap();
+        assert!(fx.registry.page(&share.token).unwrap().edited);
     }
 
     #[test]
     fn removing_a_file_cancels_its_transfers_and_zips_containing_it() {
         let fx = Fixture::new();
         let share = fx
-            .share(
-                &["a.txt", "b.txt"],
-                &options(None, None),
-                Grouping::Collection,
-            )
+            .share(&["a.txt", "b.txt"], &options(None, None), false)
             .remove(0);
         let a = fx
             .registry
@@ -1532,7 +1453,7 @@ pub mod tests {
     fn empty_collections_stay_active_and_have_no_zip() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(None, Some(1)), Grouping::Collection)
+            .share(&["a.txt"], &options(None, Some(1)), false)
             .remove(0);
         fx.registry
             .remove_file(&share.id, &share.files[0].id)
@@ -1542,7 +1463,7 @@ pub mod tests {
             ShareStatus::Active
         );
         let page = fx.registry.page(&share.token).unwrap();
-        assert!(page.files.is_empty() && page.is_bundle() && !page.all_available());
+        assert!(page.files.is_empty() && !page.all_available());
         assert_eq!(
             fx.registry.reserve(&share.token, Target::All).unwrap_err(),
             Unavailable::Empty
@@ -1558,7 +1479,7 @@ pub mod tests {
     fn ended_collections_take_no_new_files() {
         let fx = Fixture::new();
         let share = fx
-            .share(&["a.txt"], &options(None, Some(1)), Grouping::Collection)
+            .share(&["a.txt"], &options(None, Some(1)), false)
             .remove(0);
         fx.registry.reserve(&share.token, Target::All).unwrap();
         assert_eq!(
@@ -1573,7 +1494,7 @@ pub mod tests {
             .registry
             .share_again(&share.id, &options(None, None))
             .unwrap();
-        assert!(again.collection);
+        assert_eq!(again.files.len(), 1);
     }
 
     #[test]

@@ -2,6 +2,7 @@ import {
   Clock,
   Copy,
   Ellipsis,
+  FilePlus2,
   Hash,
   ImageDown,
   Infinity as InfinityIcon,
@@ -28,8 +29,7 @@ import {
   MenuTrigger,
 } from "../../components/ui/menu";
 import { Tooltip } from "../../components/ui/tooltip";
-import type { LinkProfile, Share } from "../../lib/backend";
-import { HTTP_PROFILE_ID } from "../../lib/backend/types";
+import type { Share } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import {
   describeType,
@@ -194,7 +194,6 @@ function TimerPill({ share, now, warning }: { share: Share; now: number; warning
 
 function ActiveActions({
   share,
-  profiles,
   actions,
   revealed,
   menuOpen,
@@ -202,7 +201,6 @@ function ActiveActions({
   onShowQr,
 }: {
   share: Share;
-  profiles: LinkProfile[];
   actions: ShareActions;
   revealed: boolean;
   menuOpen: boolean;
@@ -292,18 +290,17 @@ function ActiveActions({
               />
             </MenuSubContent>
           </MenuSub>
-          {profiles.length > 1 && (
-            <MenuSub>
-              <MenuSubTrigger icon={Link2}>Link profile</MenuSubTrigger>
-              <MenuSubContent>
-                <MenuRadioGroup
-                  value={share.profileId}
-                  onValueChange={(id) => actions.setProfile(share, id)}
-                  options={profiles.map((p) => ({ value: p.id, label: p.name }))}
-                />
-              </MenuSubContent>
-            </MenuSub>
-          )}
+          <MenuSeparator />
+          <MenuItem icon={FilePlus2} onSelect={() => actions.addFiles(share)}>
+            Add files…
+          </MenuItem>
+          <MenuItem
+            icon={Link2}
+            disabled={!share.zipLink || share.files.length < 2}
+            onSelect={() => actions.copyZipLink(share)}
+          >
+            Copy ZIP link
+          </MenuItem>
           <MenuSeparator />
           <MenuItem
             icon={Square}
@@ -325,7 +322,6 @@ interface RowProps {
   position: number;
   selected: boolean;
   fresh: boolean;
-  profiles: LinkProfile[];
   actions: ShareActions;
   onSelect: (id: string) => void;
   onShowQr: (id: string) => void;
@@ -338,7 +334,6 @@ export const ActiveShareRow = memo(function ActiveShareRow({
   position,
   selected,
   fresh,
-  profiles,
   actions,
   onSelect,
   onShowQr,
@@ -349,14 +344,12 @@ export const ActiveShareRow = memo(function ActiveShareRow({
   const left = remainingMs(share, now);
   const lifetime = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
   const progress = left === null || !lifetime ? null : left / lifetime;
-  const profile = profiles.find((p) => p.id === share.profileId);
-  const linkLabel =
-    !profile || profile.id === HTTP_PROFILE_ID ? "HTTP link" : `${profile.name} link`;
   const timeText = left === null ? "until stopped" : `${formatRemaining(left)} left`;
 
   return (
     <motion.li {...rowMotion} className="mb-1.5">
       <div
+        data-drop-share={share.id}
         className={cn(
           "group relative flex h-16 items-center gap-3.5 rounded-[12px] border pr-3 pl-3",
           "transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out",
@@ -388,7 +381,7 @@ export const ActiveShareRow = memo(function ActiveShareRow({
         <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5">
           <FileName name={share.fileName} className="text-[14px] leading-5 font-semibold" />
           <span className="truncate text-[12px] leading-4 text-muted tnum">
-            {formatBytes(share.byteSize)} · {describeType(share)} · {linkLabel}
+            {formatBytes(share.byteSize)} · {describeType(share)}
           </span>
         </div>
         <TimerPill share={share} now={now} warning={warning} />
@@ -399,7 +392,6 @@ export const ActiveShareRow = memo(function ActiveShareRow({
         </Tooltip>
         <ActiveActions
           share={share}
-          profiles={profiles}
           actions={actions}
           revealed={selected || menuOpen}
           menuOpen={menuOpen}

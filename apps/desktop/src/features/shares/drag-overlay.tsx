@@ -11,7 +11,7 @@ export function DragOverlay({
   visible: boolean;
   enabled: boolean;
   lifetimeMinutes: number | null;
-  /** A collection under the pointer: the drop adds files to it instead. */
+  /** A share under the pointer: the drop adds files to it instead. */
   target: DropTarget | null;
 }) {
   if (visible && target) return <CollectionTarget target={target} />;
@@ -68,7 +68,7 @@ export function DragOverlay({
   );
 }
 
-/** Outlines the collection that will receive the dropped files. */
+/** Outlines the share that will receive the dropped files. */
 function CollectionTarget({ target }: { target: DropTarget }) {
   const { x, y, width, height } = target.rect;
   return (

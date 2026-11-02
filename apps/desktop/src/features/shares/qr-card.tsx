@@ -84,7 +84,7 @@ export function QrCard({
                     className="flex flex-col items-center gap-2 px-6 text-center text-[12px] text-[#6b7280]"
                   >
                     <LoaderCircle aria-hidden="true" size={18} className="spin" />
-                    {share.linkError ?? "Waiting for a network address"}
+                    Waiting for a network address
                   </motion.div>
                 )}
               </AnimatePresence>

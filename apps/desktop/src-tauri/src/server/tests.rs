@@ -8,7 +8,7 @@ use std::time::Duration;
 use reqwest::{header, Method, StatusCode};
 
 use super::{HttpState, Listener};
-use crate::shares::{test_options, Grouping, ManualClock, Registry, ShareSnapshot};
+use crate::shares::{test_options, ManualClock, Registry, ShareSnapshot};
 
 struct Harness {
     clock: Arc<ManualClock>,
@@ -50,7 +50,7 @@ impl Harness {
         files: &[(&str, &[u8])],
         lifetime: Option<u32>,
         limit: Option<u32>,
-        grouping: Grouping,
+        separate: bool,
     ) -> ShareSnapshot {
         let paths = files
             .iter()
@@ -68,7 +68,7 @@ impl Harness {
         assert!(staged.rejected.is_empty());
         let ids: Vec<_> = staged.files.into_iter().map(|f| f.stage_id).collect();
         self.registry
-            .create(&ids, &test_options(lifetime, limit), grouping)
+            .create(&ids, &test_options(lifetime, limit), separate)
             .unwrap()
             .remove(0)
     }
@@ -109,7 +109,7 @@ async fn landing_page_is_escaped_and_hardened() {
         &[("<img src=x onerror=alert(1)>.txt", b"hi")],
         Some(10),
         None,
-        Grouping::Separate,
+        true,
     );
     let response = h.get(&format!("/s/{}", share.token)).await;
     assert_eq!(response.status(), StatusCode::OK);
@@ -133,8 +133,10 @@ async fn downloads_stream_the_original_bytes_with_attachment_headers() {
     let contents: Vec<u8> = (0..(8 * 1024 * 1024 + 7))
         .map(|i| (i % 253) as u8)
         .collect();
-    let share = h.share(&[("Grüße.pdf", &contents)], None, None, Grouping::Separate);
-    let response = h.get(&format!("/d/{}", share.token)).await;
+    let share = h.share(&[("Grüße.pdf", &contents)], None, None, true);
+    let response = h
+        .get(&format!("/d/{}/{}", share.token, share.files[0].id))
+        .await;
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(header(&response, header::CONTENT_TYPE), "application/pdf");
     assert_eq!(
@@ -159,9 +161,11 @@ async fn active_content_is_served_as_binary() {
         &[("page.html", b"<script>alert(1)</script>")],
         None,
         None,
-        Grouping::Separate,
+        true,
     );
-    let response = h.get(&format!("/d/{}", share.token)).await;
+    let response = h
+        .get(&format!("/d/{}/{}", share.token, share.files[0].id))
+        .await;
     assert_eq!(
         header(&response, header::CONTENT_TYPE),
         "application/octet-stream"
@@ -172,19 +176,27 @@ async fn active_content_is_served_as_binary() {
 #[tokio::test]
 async fn head_reports_without_counting() {
     let h = Harness::new().await;
-    let share = h.share(&[("a.txt", b"hello")], None, Some(1), Grouping::Separate);
+    let share = h.share(&[("a.txt", b"hello")], None, Some(1), true);
     let response = h
-        .request(Method::HEAD, &format!("/d/{}", share.token))
+        .request(
+            Method::HEAD,
+            &format!("/d/{}/{}", share.token, share.files[0].id),
+        )
         .await;
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(header(&response, header::CONTENT_LENGTH), "5");
     assert_eq!(h.downloads(&share.id), 0);
     assert_eq!(
-        h.get(&format!("/d/{}", share.token)).await.status(),
+        h.get(&format!("/d/{}/{}", share.token, share.files[0].id))
+            .await
+            .status(),
         StatusCode::OK
     );
     let response = h
-        .request(Method::HEAD, &format!("/d/{}", share.token))
+        .request(
+            Method::HEAD,
+            &format!("/d/{}/{}", share.token, share.files[0].id),
+        )
         .await;
     assert_eq!(response.status(), StatusCode::GONE);
 }
@@ -192,15 +204,13 @@ async fn head_reports_without_counting() {
 #[tokio::test]
 async fn range_requests_receive_the_full_file_and_count_once() {
     let h = Harness::new().await;
-    let share = h.share(
-        &[("a.txt", b"0123456789")],
-        None,
-        Some(2),
-        Grouping::Separate,
-    );
+    let share = h.share(&[("a.txt", b"0123456789")], None, Some(2), true);
     let response = h
         .client
-        .get(format!("{}/d/{}", h.base, share.token))
+        .get(format!(
+            "{}/d/{}/{}",
+            h.base, share.token, share.files[0].id
+        ))
         .header(header::RANGE, "bytes=2-4")
         .send()
         .await
@@ -213,13 +223,8 @@ async fn range_requests_receive_the_full_file_and_count_once() {
 #[tokio::test]
 async fn download_limit_holds_under_concurrency() {
     let h = Harness::new().await;
-    let share = h.share(
-        &[("a.txt", &[7u8; 200_000])],
-        None,
-        Some(3),
-        Grouping::Separate,
-    );
-    let url = format!("{}/d/{}", h.base, share.token);
+    let share = h.share(&[("a.txt", &[7u8; 200_000])], None, Some(3), true);
+    let url = format!("{}/d/{}/{}", h.base, share.token, share.files[0].id);
     let requests = (0..20).map(|_| {
         let client = h.client.clone();
         let url = url.clone();
@@ -252,10 +257,12 @@ async fn download_limit_holds_under_concurrency() {
 #[tokio::test]
 async fn expired_and_stopped_shares_are_gone() {
     let h = Harness::new().await;
-    let expiring = h.share(&[("a.txt", b"a")], Some(5), None, Grouping::Separate);
-    let stopped = h.share(&[("b.txt", b"b")], None, None, Grouping::Separate);
+    let expiring = h.share(&[("a.txt", b"a")], Some(5), None, true);
+    let stopped = h.share(&[("b.txt", b"b")], None, None, true);
     h.clock.advance(Duration::from_secs(5 * 60));
-    let response = h.get(&format!("/d/{}", expiring.token)).await;
+    let response = h
+        .get(&format!("/d/{}/{}", expiring.token, expiring.files[0].id))
+        .await;
     assert_eq!(response.status(), StatusCode::GONE);
     assert!(response.text().await.unwrap().contains("This link expired"));
 
@@ -268,7 +275,9 @@ async fn expired_and_stopped_shares_are_gone() {
         .unwrap()
         .contains("Sharing was stopped"));
     assert_eq!(
-        h.get(&format!("/d/{}", stopped.token)).await.status(),
+        h.get(&format!("/d/{}/{}", stopped.token, stopped.files[0].id))
+            .await
+            .status(),
         StatusCode::GONE
     );
 }
@@ -277,8 +286,10 @@ async fn expired_and_stopped_shares_are_gone() {
 async fn stopping_cancels_a_running_transfer() {
     let h = Harness::new().await;
     let contents = vec![1u8; 32 * 1024 * 1024];
-    let share = h.share(&[("big.bin", &contents)], None, None, Grouping::Separate);
-    let mut response = h.get(&format!("/d/{}", share.token)).await;
+    let share = h.share(&[("big.bin", &contents)], None, None, true);
+    let mut response = h
+        .get(&format!("/d/{}/{}", share.token, share.files[0].id))
+        .await;
     let mut received = response.chunk().await.unwrap().map_or(0, |c| c.len());
     h.registry.stop(&share.id).unwrap();
     let mut failed = false;
@@ -299,7 +310,7 @@ async fn stopping_cancels_a_running_transfer() {
 #[tokio::test]
 async fn malformed_requests_reveal_nothing() {
     let h = Harness::new().await;
-    let share = h.share(&[("a.txt", b"a")], None, None, Grouping::Separate);
+    let share = h.share(&[("a.txt", b"a")], None, None, true);
     for path in [
         "/",
         "/s/",
@@ -312,7 +323,7 @@ async fn malformed_requests_reveal_nothing() {
         &format!("/d/{}/01", share.token),
         &format!("/d/{}/-1", share.token),
         &format!("/d/{}/+0", share.token),
-        &format!("/z/{}", share.token),
+        &format!("/d/{}", share.token),
     ] {
         let response = h.get(path).await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
@@ -331,10 +342,12 @@ async fn malformed_requests_reveal_nothing() {
 #[tokio::test]
 async fn changed_files_are_unavailable_and_do_not_count() {
     let h = Harness::new().await;
-    let share = h.share(&[("a.txt", b"original")], None, Some(1), Grouping::Separate);
+    let share = h.share(&[("a.txt", b"original")], None, Some(1), true);
     let path = h.dir.path().join("0").join("a.txt");
     std::fs::write(&path, b"changed contents").unwrap();
-    let response = h.get(&format!("/d/{}", share.token)).await;
+    let response = h
+        .get(&format!("/d/{}/{}", share.token, share.files[0].id))
+        .await;
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
     assert!(response.text().await.unwrap().contains("File unavailable"));
     assert_eq!(h.downloads(&share.id), 0);
@@ -351,7 +364,7 @@ async fn bundles_serve_single_files_and_a_zip() {
         ],
         None,
         Some(2),
-        Grouping::Bundle,
+        false,
     );
     let page = h
         .get(&format!("/s/{}", share.token))
@@ -464,18 +477,18 @@ async fn stopping_the_listener_refuses_new_connections() {
 }
 
 #[tokio::test]
-async fn collections_change_behind_one_link() {
+async fn shares_change_behind_one_link() {
     let h = Harness::new().await;
-    let share = h.share(&[("a.txt", b"first")], None, None, Grouping::Collection);
+    let share = h.share(&[("a.txt", b"first")], None, None, false);
     let page = h
         .get(&format!("/s/{}", share.token))
         .await
         .text()
         .await
         .unwrap();
-    assert!(page.contains("<h1>1 file</h1>"));
-    assert!(page.contains("Refresh"));
-    // The bare download route never serves a collection's lone file.
+    assert!(page.contains("<h1>a.txt</h1>"));
+    assert!(!page.contains("Refresh"));
+    // There is no bare download route; direct links always name a file.
     assert_eq!(
         h.get(&format!("/d/{}", share.token)).await.status(),
         StatusCode::NOT_FOUND
@@ -487,6 +500,14 @@ async fn collections_change_behind_one_link() {
     let ids: Vec<_> = staged.files.into_iter().map(|f| f.stage_id).collect();
     let share = h.registry.add_files(&share.id, &ids).unwrap();
     let added = share.files[1].id.clone();
+    let page = h
+        .get(&format!("/s/{}", share.token))
+        .await
+        .text()
+        .await
+        .unwrap();
+    assert!(page.contains("<h1>2 files</h1>"));
+    assert!(page.contains("Refresh"));
 
     let zip = h
         .get(&format!("/z/{}", share.token))
@@ -517,7 +538,7 @@ async fn collections_change_behind_one_link() {
 async fn removing_a_file_cuts_off_its_running_download() {
     let h = Harness::new().await;
     let contents = vec![3u8; 32 * 1024 * 1024];
-    let share = h.share(&[("big.bin", &contents)], None, None, Grouping::Collection);
+    let share = h.share(&[("big.bin", &contents)], None, None, false);
     let file = share.files[0].id.clone();
     let mut response = h.get(&format!("/d/{}/{}", share.token, file)).await;
     assert_eq!(response.status(), StatusCode::OK);

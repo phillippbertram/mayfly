@@ -13,16 +13,8 @@ import type {
 
 export type * from "./schemas";
 
-/** Built-in profile: links open the landing page. */
+/** Built-in profile: the share page. Custom app templates arrive with #6. */
 export const HTTP_PROFILE_ID = "http";
-/** Built-in profile: links download the file, or a bundle's ZIP, without the page. */
-export const DOWNLOAD_PROFILE_ID = "download";
-
-/**
- * How selected files become shares: one per file, one fixed bundle, or one
- * collection whose files can be added and removed later.
- */
-export type ShareGrouping = "separate" | "bundle" | "collection";
 
 /** Lifetime presets offered in the UI, in minutes. */
 export const LIFETIME_PRESETS = [5, 10, 30, 60] as const;
@@ -61,14 +53,11 @@ export interface Backend {
   pickFiles(): Promise<StagedFiles | null>;
   stageDropped(files: DroppedFiles): Promise<StagedFiles>;
   discardStaged(stageIds: string[]): Promise<void>;
-  createShares(
-    stageIds: string[],
-    options: ShareOptions,
-    grouping: ShareGrouping,
-  ): Promise<Share[]>;
-  /** Adds staged files to an active collection. */
+  /** One share for all files, or one per file when `separate`. */
+  createShares(stageIds: string[], options: ShareOptions, separate: boolean): Promise<Share[]>;
+  /** Adds staged files to an active share. */
   addFiles(id: string, stageIds: string[]): Promise<Share>;
-  /** Removes a file from a collection and cuts off its running downloads. */
+  /** Removes a file from a share and cuts off its running downloads. */
   removeFile(id: string, fileId: string): Promise<Share>;
   shareAgain(id: string, options?: ShareOptions): Promise<Share>;
   updateShare(id: string, patch: SharePatch): Promise<Share>;

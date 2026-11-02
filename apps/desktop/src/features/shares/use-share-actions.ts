@@ -2,13 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useToast } from "../../components/ui/toast";
 import { useBackend } from "../../hooks/use-backend";
-import type {
-  DroppedFiles,
-  Share,
-  ShareGrouping,
-  ShareOptions,
-  StagedFiles,
-} from "../../lib/backend";
+import type { DroppedFiles, Share, ShareFile, ShareOptions, StagedFiles } from "../../lib/backend";
 import { splitFileName } from "../../lib/format";
 import { copyQrImage, qrPng } from "../../lib/qr";
 import { errorMessage, queryKeys, useSettings } from "../../lib/queries";
@@ -34,7 +28,6 @@ export function useShareActions() {
     const defaults = (): ShareOptions => ({
       lifetimeMinutes: settings.defaultLifetimeMinutes,
       downloadLimit: settings.defaultDownloadLimit,
-      profileId: settings.defaultProfileId,
     });
 
     /** Select the newest share once the list contains it. */
@@ -45,19 +38,36 @@ export function useShareActions() {
       if (shares.length > 1) toast(`${shares.length} files are now shared.`, "success");
     };
 
-    /** Several files share one link unless asked for separate links. */
-    const createShares = async (
-      stageIds: string[],
-      options: ShareOptions,
-      grouping: ShareGrouping = "bundle",
-    ) => {
-      const effective = grouping === "bundle" && stageIds.length === 1 ? "separate" : grouping;
-      const shares = await run(() => backend.createShares(stageIds, options, effective));
+    /** All files go behind one link unless `separate` asks for one link per file. */
+    const createShares = async (stageIds: string[], options: ShareOptions, separate = false) => {
+      const shares = await run(() => backend.createShares(stageIds, options, separate));
       if (shares) await reveal(shares);
       return Boolean(shares);
     };
 
-    /** Adds staged files to a collection; rejected items are reported. */
+    /**
+     * Copies a direct download link. Chat apps fetch links to build previews, and
+     * for a direct link that fetch is a counted download; say so when it matters.
+     */
+    const copyDirect = async (share: Share, link: string | null): Promise<boolean> => {
+      if (!link) {
+        toast("This link isn't available until the network is.", "error");
+        return false;
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+      } catch {
+        toast("The link couldn't be copied.", "error");
+        return false;
+      }
+      if (share.downloadLimit !== null)
+        toast(
+          "Direct link copied. Link previews in chat apps can use up a download; the share page never counts.",
+        );
+      return true;
+    };
+
+    /** Adds staged files to a share; rejected items are reported. */
     const addStaged = async (share: Share, staged: StagedFiles | null | undefined) => {
       if (!staged) return;
       for (const item of staged.rejected) toast(`${item.name}: ${item.reason}`, "error");
@@ -107,7 +117,7 @@ export function useShareActions() {
 
       async copyLink(share: Share): Promise<boolean> {
         if (!share.link) {
-          toast(share.linkError ?? "This share has no link right now.", "error");
+          toast("This share has no link until the network is available.", "error");
           return false;
         }
         try {
@@ -118,6 +128,8 @@ export function useShareActions() {
           return false;
         }
       },
+      copyFileLink: (share: Share, file: ShareFile) => copyDirect(share, file.link),
+      copyZipLink: (share: Share) => copyDirect(share, share.zipLink),
       async copyQr(share: Share): Promise<boolean> {
         if (!share.link) return false;
         try {
@@ -148,7 +160,6 @@ export function useShareActions() {
           );
       },
       setLimit: (share: Share, downloadLimit: number | null) => update(share, { downloadLimit }),
-      setProfile: (share: Share, profileId: string) => update(share, { profileId }),
       stop: (share: Share) => run(() => backend.stopShare(share.id)),
       stopAll: () => run(() => backend.stopAll()),
       remove: (share: Share) => run(() => backend.removeShare(share.id)),

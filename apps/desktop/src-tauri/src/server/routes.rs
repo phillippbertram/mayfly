@@ -26,7 +26,6 @@ pub struct HttpState {
 pub fn router(state: HttpState) -> Router {
     Router::new()
         .route("/s/{token}", get(landing))
-        .route("/d/{token}", get(download_single))
         .route("/d/{token}/{file}", get(download_file))
         .route("/z/{token}", get(download_all))
         .fallback(not_found)
@@ -46,17 +45,6 @@ async fn landing(
         Ok(view) => html(StatusCode::OK, pages::landing(&token, &view)),
         Err(reason) => error(reason),
     }
-}
-
-async fn download_single(
-    State(state): State<HttpState>,
-    method: Method,
-    token: Result<Path<String>, PathRejection>,
-) -> Response {
-    let Ok(Path(token)) = token else {
-        return error(Unavailable::NotFound);
-    };
-    download(&state, &method, &token, Target::Single).await
 }
 
 async fn download_file(

@@ -10,7 +10,7 @@ use tauri_plugin_dialog::DialogExt;
 use crate::app::{App, LinkProfile, ServerState, ShareDto};
 use crate::network::NetworkInterface;
 use crate::settings::{Settings, SettingsPatch};
-use crate::shares::{Grouping, ShareOptions, SharePatch, StagedFiles};
+use crate::shares::{ShareOptions, SharePatch, StagedFiles};
 
 type AppState<'a> = State<'a, Arc<App>>;
 
@@ -109,9 +109,9 @@ pub fn create_shares(
     state: AppState,
     stage_ids: Vec<String>,
     options: ShareOptions,
-    grouping: Grouping,
+    separate: bool,
 ) -> Result<Vec<ShareDto>, String> {
-    state.create_shares(&stage_ids, &options, grouping)
+    state.create_shares(&stage_ids, &options, separate)
 }
 
 #[tauri::command]

@@ -62,28 +62,31 @@ Implemented counting semantics ([ADR 0005](decisions/0005-share-bundles-and-land
 | `GET` download, streaming started    | Counts, even if the client aborts or the network drops                           |
 | `GET` with a `Range` header          | Range ignored (`Accept-Ranges: none`); full 200 response, counts once            |
 | Retry or resumed download            | A new download                                                                   |
-| Bundle file `GET /d/{token}/{file}`  | One download of that file; limits apply per file                                 |
-| Bundle ZIP `GET /z/{token}`          | One download of every file, reserved all-or-nothing; refused if any is exhausted |
+| File `GET /d/{token}/{file}`         | One download of that file; limits apply per file                                 |
+| ZIP `GET /z/{token}`                 | One download of every file, reserved all-or-nothing; refused if any is exhausted |
 
 Link previews in chat apps and security scanners fetch URLs before a person does.
-A landing-page link is safe to preview; a direct-download link (`/d`, `/z`) is a
-GET download and counts. The interface warns about this when a direct link has a
-download limit.
+A share page link is safe to preview; a file or ZIP link (`/d`, `/z`) is a GET
+download and counts. The QR code always encodes the page, and copying a file or
+ZIP link of a share with a download limit shows a warning.
 
 Expiry blocks new requests and lets running transfers finish. Stopping, removing,
 or quitting cancels running transfers within one 64 KiB chunk, so the client sees
-an incomplete transfer rather than a short success. Removing a file from a
-collection cancels its own transfers and any ZIP download that includes it.
+an incomplete transfer rather than a short success. Removing a file from a share
+cancels its own transfers and any ZIP download that includes it.
 
-A collection's link authorizes whatever files it holds at request time, including
-files added after the link was sent. The interface states this when the option is
-chosen and in the share details. Files can only be added while the collection is
-active; an expired, stopped, or exhausted collection never reopens by adding files.
+A share's token authorizes whatever files the share holds at request time,
+including files added after the link was sent. Every file link contains the token,
+so whoever has one file's link can also open the share page and see all its files:
+a share is one audience. The share details and the add-files hint say so, and the
+share options offer one link per file for separate audiences. Files can only be
+added while the share is active; an expired, stopped, or exhausted share never
+reopens by adding files.
 
 ## Public HTTP listener
 
-- Expose only landing pages and their download endpoints: `/s/{token}`,
-  `/d/{token}`, `/d/{token}/{file}`, and `/z/{token}`, GET and HEAD only. No
+- Expose only share pages and their download endpoints: `/s/{token}`,
+  `/d/{token}/{file}`, and `/z/{token}`, GET and HEAD only. No
   management routes, arbitrary static-file routes, directory listing, or uploads.
   File IDs are random 16-character base64url values, checked for shape and then
   resolved against the in-memory share; IDs of removed files are never reused.

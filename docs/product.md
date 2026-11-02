@@ -44,39 +44,42 @@ and restrained motion. Never show an online state when binding the server failed
 
 ## Mobile experience
 
-`GET /s/{token}` opens a responsive, self-contained landing page that works on a
-phone or on another computer. For one file it shows the escaped filename, size,
-type, remaining time, and a download button; `GET /d/{token}` streams the file
-with appropriate media type and attachment headers. For a bundle it lists every
-file with its own download (`GET /d/{token}/{file}`, where `{file}` is a stable
-random file ID) and offers "Download all" as a ZIP (`GET /z/{token}`), streamed
-without compression or temporary files. The page must not depend on CDNs,
-third-party scripts, external fonts, or an account.
+Every share is a file drop ([ADR 0008](decisions/0008-file-drop.md)): one token,
+any number of files, a lifetime, and a download limit per file. It has three
+kinds of links:
 
-A link can also be kept open as a **collection**: the user adds and removes files
-while it is active, and the link, QR code, and file IDs of remaining files stay the
-same. Everyone with the link sees the current files after reloading the page; a
-removed file's link reports that it was removed, and its running downloads stop.
-An empty collection shows "No files yet". A collection's direct-download link is
-always its ZIP, so it doesn't change as files come and go.
+| Link  | Route               | Opens                                                         |
+| ----- | ------------------- | ------------------------------------------------------------- |
+| Share | `/s/{token}`        | The page; the QR code always encodes this link                |
+| File  | `/d/{token}/{file}` | One file as a direct download; `{file}` is a stable random ID |
+| ZIP   | `/z/{token}`        | Everything currently in the share, as a streamed stored ZIP   |
+
+The page is responsive and self-contained and works on a phone or another
+computer. For one file it shows the escaped filename, size, type, remaining time,
+and a download button; for several it lists every file with its own download and
+offers "Download all" as a ZIP. Files stream with appropriate media type and
+attachment headers, without compression or temporary files. The page must not
+depend on CDNs, third-party scripts, external fonts, or an account.
+
+While a share is active, its owner adds and removes files; the share link and the
+links of remaining files stay the same. Everyone with the link sees the current
+files after reloading the page; a removed file's link reports that it was removed,
+and its running downloads stop. A share without files shows "No files yet".
 
 Expired, disabled, exhausted, invalid, and unavailable-file requests receive
 understandable pages and suitable HTTP status codes without revealing local paths.
 Download counting is defined in [security.md](security.md#tokens-lifetime-and-limits)
-and [ADR 0005](decisions/0005-share-bundles-and-landing-page.md). In-browser file
-previews are not part of the MVP.
+and [ADR 0008](decisions/0008-file-drop.md). In-browser file previews are not part
+of the MVP.
 
 ## Link profiles
 
-Two built-in profiles always remain available: **Download page** (`http`) links to
-the landing page, `/s/{token}`; **Direct download** (`download`) links to the file
-itself, `/d/{token}`, or for a bundle to its ZIP, `/z/{token}`, so the browser
-starts the download without showing a page. Because chat apps fetch links to build
-previews, a direct link with a download limit warns that a preview can use up a
-download; the landing page never counts. A custom profile consists of an ID, name,
-and URL template. Settings record an optional default profile ID; deleting the
-default falls back to the download page. Selectors stay hidden while only one
-profile exists.
+Shares have no link profile of their own: every share has its page, ZIP, and file
+links. The built-in profile (`http`) is the share page. Custom profiles (#6) add
+copy actions such as "Copy link for Documents app" and may become the QR target in
+settings; they don't change what a share's own links open. A custom profile
+consists of an ID, name, and URL template. Settings record an optional default
+profile ID; deleting the default falls back to the share page.
 
 | Placeholder         | Replacement                                         |
 | ------------------- | --------------------------------------------------- |

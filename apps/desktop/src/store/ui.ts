@@ -11,7 +11,6 @@ interface UiState {
   qrPulse: number;
   stopSignal: number;
   limitMenuSignal: number;
-  profileMenuSignal: number;
   settingsOpen: boolean;
   settingsSection: SettingsSection;
   overlay: Overlay;
@@ -24,7 +23,6 @@ interface UiState {
   pulseQr: () => void;
   armStop: () => void;
   openLimitMenu: () => void;
-  openProfileMenu: () => void;
   openSettings: (section?: SettingsSection) => void;
   closeSettings: () => void;
   setSettingsSection: (section: SettingsSection) => void;
@@ -42,7 +40,6 @@ export const useUi = create<UiState>()((set) => ({
   qrPulse: 0,
   stopSignal: 0,
   limitMenuSignal: 0,
-  profileMenuSignal: 0,
   settingsOpen: false,
   settingsSection: "general",
   overlay: null,
@@ -56,8 +53,6 @@ export const useUi = create<UiState>()((set) => ({
   armStop: () => set((s) => ({ stopSignal: s.stopSignal + 1, inspectorOpen: true })),
   openLimitMenu: () =>
     set((s) => ({ limitMenuSignal: s.limitMenuSignal + 1, inspectorOpen: true })),
-  openProfileMenu: () =>
-    set((s) => ({ profileMenuSignal: s.profileMenuSignal + 1, inspectorOpen: true })),
   openSettings: (section) =>
     set((s) => ({
       settingsOpen: true,

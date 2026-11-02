@@ -3,9 +3,9 @@ import {
   CalendarClock,
   ChevronDown,
   Download,
+  FileArchive,
   ImageDown,
   Info,
-  Link2,
   QrCode,
   RotateCcw,
   Trash2,
@@ -17,7 +17,6 @@ import { type ReactNode, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
 import { MenuContent, MenuItem, MenuRadioGroup, MenuSeparator } from "../../components/ui/menu";
-import { Select } from "../../components/ui/select";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useNow } from "../../hooks/use-now";
 import { maskLink, useQrVisible } from "../../hooks/use-qr-visible";
@@ -33,15 +32,13 @@ import {
   remainingMs,
 } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
-import { useProfiles } from "../../lib/queries";
 import { useUi } from "../../store/ui";
-import { BundleFiles } from "./bundle-files";
 import { CopyButton } from "./copy-button";
 import { CountdownRing } from "./countdown-ring";
-import { DirectLinkHint } from "./direct-link-hint";
 import { FileGlyph } from "./file-glyph";
 import { QrCard } from "./qr-card";
 import { RollingText } from "./rolling-text";
+import { ShareFiles } from "./share-files";
 import { EXTEND_OPTIONS, limitOptions } from "./share-row";
 import { StatusChip } from "./status-chip";
 import { StopButton } from "./stop-button";
@@ -95,12 +92,10 @@ export function InspectorBody({
   onClose: () => void;
 }) {
   const now = useNow();
-  const profiles = useProfiles();
   const qrPulse = useUi((s) => s.qrPulse);
   const stopSignal = useUi((s) => s.stopSignal);
   const [limitOpen, setLimitOpen] = useSignalledOpen(useUi((s) => s.limitMenuSignal));
   const [extendOpen, setExtendOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useSignalledOpen(useUi((s) => s.profileMenuSignal));
 
   const status = displayStatus(share, now);
   const qrVisible = useQrVisible(share.id);
@@ -108,8 +103,6 @@ export function InspectorBody({
   const ended = share.status !== "active";
   const left = remainingMs(share, now);
   const total = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
-  const profile = profiles.find((p) => p.id === share.profileId);
-  const customScheme = Boolean(profile?.template) && !/^https?:/i.test(profile?.template ?? "");
 
   return (
     <div className="flex flex-col gap-4">
@@ -134,9 +127,7 @@ export function InspectorBody({
         />
       </div>
 
-      {(share.files.length > 1 || share.collection) && (
-        <BundleFiles share={share} actions={actions} />
-      )}
+      <ShareFiles share={share} actions={actions} />
 
       <div className="flex flex-col items-center gap-2">
         <QrCard
@@ -153,26 +144,6 @@ export function InspectorBody({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        {profiles.length > 1 && (
-          <Tooltip
-            label="Change link profile"
-            hotkey={appHotkeys["share.profile"].hotkey}
-            side="left"
-          >
-            <span>
-              <Select
-                label="Link profile"
-                value={share.profileId}
-                disabled={ended}
-                open={profileOpen}
-                onOpenChange={setProfileOpen}
-                onValueChange={(id) => actions.setProfile(share, id)}
-                prefix={<span className="w-14 text-[12px] text-muted">Profile</span>}
-                options={profiles.map((p) => ({ value: p.id, label: p.name }))}
-              />
-            </span>
-          </Tooltip>
-        )}
         <div
           className={cn(
             "flex h-8 items-center gap-2 rounded-md border border-line bg-surface pr-0.5 pl-2.5 transition-opacity",
@@ -196,7 +167,7 @@ export function InspectorBody({
                     ? qrVisible
                       ? share.link
                       : maskLink(share.link)
-                    : (share.linkError ?? "Waiting for the network…")
+                    : "Waiting for the network…"
               }
               onFocus={(e) => e.currentTarget.select()}
               className="min-w-0 flex-1 bg-transparent font-mono text-[11.5px] text-fg outline-none"
@@ -212,24 +183,18 @@ export function InspectorBody({
             onCopy={() => actions.copyLink(share)}
           />
         </div>
-        {!ended && (
-          <DirectLinkHint profileId={share.profileId} downloadLimit={share.downloadLimit} />
+        {!ended && share.files.length > 1 && (
+          <CopyButton
+            icon={FileArchive}
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            label="Copy ZIP link"
+            copiedLabel="ZIP link copied"
+            disabled={!share.zipLink}
+            onCopy={() => actions.copyZipLink(share)}
+          />
         )}
-        <AnimatePresence initial={false}>
-          {customScheme && !ended && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden text-[12px] text-muted"
-            >
-              <span className="flex items-start gap-1.5 pt-0.5">
-                <Link2 aria-hidden="true" size={13} className="mt-0.5 shrink-0" />A compatible app
-                must be installed on the phone to open this link.
-              </span>
-            </motion.p>
-          )}
-        </AnimatePresence>
       </div>
 
       <div className="grid grid-cols-2 gap-3 rounded-xl border border-line bg-bg/60 p-3">
@@ -411,7 +376,7 @@ export function InspectorBody({
         <span>
           {ended
             ? "This link no longer works. Share again to create a new link."
-            : "Anyone with this link on your network can download the file until it expires."}
+            : "Anyone with this link on your network can download its files until it expires, including files you add later."}
         </span>
       </div>
       <div className="flex items-center justify-between text-[11px] text-faint">

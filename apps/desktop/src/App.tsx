@@ -98,7 +98,7 @@ function Shell({ client }: { client: QueryClient }) {
 
   const actions = useShareActions();
   const commands = useCommands(shares, actions);
-  // Files dropped on a collection's file list join it; anywhere else they become new shares.
+  // Files dropped on an active share join it; anywhere else they become a new share.
   const { dragging, target: dropTarget } = useFileDrop((files, targetId) => {
     const target = targetId ? shares.find((s) => s.id === targetId) : undefined;
     if (target) actions.dropInto(target, files);

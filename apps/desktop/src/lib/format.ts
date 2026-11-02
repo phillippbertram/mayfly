@@ -62,9 +62,27 @@ const KIND_LABEL: Record<FileKind, string> = {
   bundle: "Files",
 };
 
+const KIND_PLURAL: Record<FileKind, [string, string]> = {
+  image: ["image", "images"],
+  document: ["document", "documents"],
+  archive: ["archive", "archives"],
+  audio: ["audio file", "audio files"],
+  video: ["video", "videos"],
+  other: ["file", "files"],
+  bundle: ["file", "files"],
+};
+
+/** "PDF document" for one file; "2 images, 1 document" for several. */
 export function describeType(share: Share): string {
-  if (share.collection) return "Open link, files can change";
-  if (share.files.length > 1) return "One link, ZIP or single files";
+  if (share.files.length === 0) return "Add files to share";
+  if (share.files.length > 1) {
+    const counts = new Map<FileKind, number>();
+    for (const file of share.files) counts.set(file.kind, (counts.get(file.kind) ?? 0) + 1);
+    return [...counts]
+      .sort((a, b) => b[1] - a[1])
+      .map(([kind, n]) => `${n} ${KIND_PLURAL[kind][n === 1 ? 0 : 1]}`)
+      .join(", ");
+  }
   const { ext } = splitFileName(share.fileName);
   const label = KIND_LABEL[share.kind];
   return ext ? `${ext.slice(1).toUpperCase()} ${label.toLowerCase()}` : label;

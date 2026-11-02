@@ -1,20 +1,19 @@
 ---
 title: Link profiles
-description: Let a QR code open a compatible app instead of the browser.
+description: Links that open a compatible app instead of the browser.
 ---
 
 ## Browser first
 
-Two built-in profiles are always available:
+Every share already has the links most people need: the share page (what the QR
+code opens), a ZIP of all files, and a direct download link for each file. See
+[Share files](../sharing/) for when to use which.
 
-- **Download page** opens a page that shows the files and their download buttons.
-  It's the default and the safest choice: opening the page never counts as a download.
-- **Direct download** starts the download right away. For several files shared with
-  one link, it downloads them as one ZIP. Chat apps that show link previews fetch
-  the link first, which can use up a download when a limit is set.
-
-Choose the profile when you share, or later in the share details. Custom profiles describe how a compatible application expects to receive a file URL.
-They do not install an application, register a scheme, or create network connectivity.
+Custom profiles are planned as extra links for apps: a profile describes how a
+compatible application expects to receive a file URL, and the share details will
+offer "Copy link for …" for it. Profiles don't change what a share's own links
+open, and they don't install an application, register a scheme, or create network
+connectivity.
 
 ## Create a profile
 
@@ -35,7 +34,7 @@ scheme and import format documented by your actual target app.
 
 | Placeholder | Value |
 | --- | --- |
-| `{url}` | Full mobile download-page URL |
+| `{url}` | Full share page URL |
 | `{encodedUrl}` | That URL encoded as a single URI component |
 | `{filename}` | Original filename |
 | `{encodedFilename}` | Filename encoded as a single URI component |

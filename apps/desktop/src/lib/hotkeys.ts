@@ -31,7 +31,7 @@ export const appHotkeys = defineAppHotkeys({
   "share.showQr": { hotkey: "Q", meta: { name: "Highlight QR code", group: "Share" } },
   "share.extend": { hotkey: "E", meta: { name: "Add 10 minutes", group: "Share" } },
   "share.limit": { hotkey: "L", meta: { name: "Change download limit", group: "Share" } },
-  "share.profile": { hotkey: "P", meta: { name: "Change link profile", group: "Share" } },
+  "share.addFiles": { hotkey: "A", meta: { name: "Add files to this link", group: "Share" } },
   "qr.toggle": { hotkey: "H", meta: { name: "Hide or show QR code", group: "Share" } },
   "qr.hideAll": {
     hotkey: "Shift+H",

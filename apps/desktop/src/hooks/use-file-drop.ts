@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DroppedFiles } from "../lib/backend";
 import { isDesktop } from "../lib/desktop";
 
-/** A collection under the pointer that accepts dropped files. */
+/** A share under the pointer that accepts dropped files. */
 export interface DropTarget {
   shareId: string;
   rect: DOMRect;
@@ -35,7 +35,7 @@ const sameTarget = (a: DropTarget | null, b: DropTarget | null) =>
 /**
  * Window-wide file drop. The desktop build receives native paths from Tauri's
  * drag-drop events; the browser preview only receives names, sizes, and types.
- * `onDrop` receives the collection the files were dropped on, if any.
+ * `onDrop` receives the share the files were dropped on, if any.
  */
 export function useFileDrop(
   onDrop: (files: DroppedFiles, targetShareId: string | null) => void,
