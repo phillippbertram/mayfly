@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible problem. Report security vulnerabilities privately.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include tokens, private file paths, or vulnerability details. See SECURITY.md.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: FileHop version/commit, OS and architecture, and phone/browser where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use sanitized filenames and example data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove share URLs, tokens, credentials, and private paths before posting.

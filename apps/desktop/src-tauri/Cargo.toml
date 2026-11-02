@@ -1,0 +1,18 @@
+[package]
+name = "filehop"
+version = "0.0.0"
+description = "Temporary local file sharing for your desktop"
+authors = ["Phillipp Bertram"]
+edition = "2021"
+publish = false
+
+[lib]
+name = "filehop_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }

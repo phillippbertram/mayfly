@@ -1,0 +1,33 @@
+# Dependencies and generated application outputs
+node_modules/
+dist/
+target/
+apps/desktop/src-tauri/gen/
+coverage/
+*.tsbuildinfo
+
+# Local credentials and machine state
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.local
+CLAUDE.local.md
+.codex/
+.claude/
+.gemini/
+.aws/
+.pnpm-store/
+
+# Generated installers and signing material
+*.dmg
+*.msi
+*.AppImage
+*.p12
+*.pfx
+*.key
+*.pem

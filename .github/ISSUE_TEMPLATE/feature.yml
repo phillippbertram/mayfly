@@ -1,0 +1,39 @@
+name: Feature or implementation task
+description: Define a focused change with acceptance criteria and verification.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected outcome
+      description: Describe the user-facing behavior or concrete development outcome in English.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List the work included and any important boundaries.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable criteria that establish completion.
+      placeholder: "- [ ] A user can ..."
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Include automated checks and any required OS or physical-device testing.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and references
+      description: Link related issues, decisions, and relevant documents.

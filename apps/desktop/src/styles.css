@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #17191d;
+  background: #f7f7f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light dark;
+  --surface: #ffffff;
+  --muted: #626975;
+  --border: #e2e4e8;
+  --accent: #0e7c66;
+  --accent-soft: #ddf3ec;
+}
+
+body {
+  margin: 0;
+  min-width: 360px;
+}
+
+.brand-mark {
+  color: #ffffff;
+  background: #0e7c66;
+}
+
+.stage-label {
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.device-tile {
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transform: rotate(-7deg);
+}
+
+.device-tile.phone {
+  background: var(--accent-soft);
+  border-color: transparent;
+  transform: rotate(7deg);
+}
+
+.hop-path {
+  color: var(--accent);
+}
+
+.hop-path > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.eyebrow {
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.connection {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+footer {
+  border-color: var(--border);
+}
+
+@media (max-height: 560px) {
+  .device-art {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #eceef1;
+    background: #121316;
+    --surface: #1b1d21;
+    --muted: #9ba3ae;
+    --border: #2e3239;
+    --accent: #3dd6a8;
+    --accent-soft: #163a31;
+  }
+}
