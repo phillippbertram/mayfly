@@ -1,8 +1,9 @@
 # FileHop website and user manual
 
 An English product website and Fumadocs manual, built with Next.js, Tailwind CSS,
-and Motion. The product page uses actual interface-preview screenshots and an
-interactive transfer illustration. No file-sharing backend runs on this website.
+and Motion. The product page uses actual interface-preview screenshots, an animated
+screenshot tour, and an interactive transfer illustration. No file-sharing backend
+runs on this website.
 
 ## Local development
 
@@ -135,10 +136,18 @@ repository visibility, publish a website, or claim a successful hosted deploymen
 
 ## Content and media
 
-The manual lives in `content/docs`; navigation is in `meta.json`. Link-profile and
-remote-network guidance describe planned behavior where the backend is absent.
-Keep public language English and distinguish shipped features from the interface
-preview. Screenshot provenance is in `public/screenshots/README.md`.
+The manual lives in `content/docs`; navigation is in `meta.json`. It covers the
+current native development build: multiple-file shares, ZIP downloads, editable
+file lists, titles, empty links, per-file QR codes, saved settings, tray behavior,
+and custom link profiles. Public installers, packaged-platform/device acceptance,
+and integrated remote sharing remain pending.
+
+Keep public language English and distinguish implemented behavior from verification
+and release availability. Screenshot provenance is in `public/screenshots/README.md`.
+Screenshots use only the sample-data browser simulator, never real access tokens.
+The screenshot tour crossfades actual captures, runs once in view, offers pause/play
+and manual selection, and stays static for reduced motion. Text and the initial
+image remain available without JavaScript; no video or GIF dependency is needed.
 
 Linear's website informed the restrained typography, spacing, and product-first
 presentation. No Linear text, branding, or media is copied into this website.

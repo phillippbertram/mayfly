@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { Downloads } from "@/components/downloads";
+import { ProductTour } from "@/components/product-tour";
 import { Reveal } from "@/components/reveal";
 import { Screenshot } from "@/components/screenshot";
 import { SiteHeader } from "@/components/site-header";
@@ -41,7 +42,8 @@ export default function Home() {
             <div className="hero-bottom">
               <p>
                 From your computer to your phone.
-                <br />A file, a QR code, and one less thing in the way.
+                <br />
+                One file or a few. One link. One quick QR scan.
               </p>
               <div className="hero-actions">
                 <Link href="#download" className="button button-primary">
@@ -58,13 +60,13 @@ export default function Home() {
             <Screenshot
               name="dashboard"
               priority
-              alt="The actual FileHop dashboard preview showing sample PDF and photo shares, their expiration, and a QR inspector"
+              alt="The current FileHop dashboard preview showing sample shares and a three-file link with a QR code and ZIP download action"
             />
           </Reveal>
           <div className="hero-footnote">
             <span>
               <span className="tiny-dot" />
-              In development. A considered start.
+              Local sharing works in the development build. Public release ahead.
             </span>
             <a href="https://github.com/phillippbertram/filehop/issues/10">
               Follow the build <ArrowUpRight size={13} />
@@ -104,11 +106,32 @@ export default function Home() {
                 </h2>
               </div>
               <p>
-                No emailing yourself. No searching for a cable. FileHop is being built to make the
-                little handoffs feel effortless.
+                Choose your files, scan the code, and download in a browser. Keep both devices on
+                the same trusted network, with your computer awake and FileHop running.
               </p>
             </div>
             <TransferStory />
+          </Reveal>
+        </section>
+        <section className="section-wrap tour-section" aria-labelledby="tour-title">
+          <Reveal>
+            <div className="section-intro">
+              <div>
+                <span className="eyebrow">
+                  <span className="mint-square" />A CLOSER LOOK
+                </span>
+                <h2 id="tour-title">
+                  A link for the moment.
+                  <br />
+                  <span>Room for whatever comes next.</span>
+                </h2>
+              </div>
+              <p>
+                Start with a file, a few files, or an empty link. Add what you need, give it a name,
+                and keep the handoff moving.
+              </p>
+            </div>
+            <ProductTour />
           </Reveal>
         </section>
         <section className="section-wrap detail-section" id="details">
@@ -143,8 +166,9 @@ export default function Home() {
                 Not forever.
               </h3>
               <p>
-                The planned sharing controls give every link a lifetime. Five minutes, an hour, or
-                until you stop it. Optional download limits keep the handoff intentional.
+                Give a link five minutes, an hour, a custom lifetime, or until you stop it. Set an
+                optional download limit for each file, or revoke the whole link whenever you’re
+                done. A full app restart clears every share.
               </p>
               <div className="lifetime-visual" aria-hidden="true">
                 <div>
@@ -179,8 +203,8 @@ export default function Home() {
                 Your little corner.
               </h3>
               <p>
-                FileHop’s default transfer design stays on your local network. Files stream from
-                their original location, with no cloud upload and no account in between.
+                FileHop’s default transfers stay on your local network. Files stream from their
+                original location, with no cloud upload and no account in between.
               </p>
               <div className="network-visual" aria-hidden="true">
                 <div className="network-boundary">
@@ -213,8 +237,9 @@ export default function Home() {
                 <span>Into your workflow.</span>
               </h2>
               <p>
-                The browser is just the beginning. Custom link profiles are designed to hand your
-                file’s URL to a compatible app on your phone.
+                Hand a share’s URL to a compatible app on your phone. Create a link template,
+                preview the result, and choose it for your QR code. Your profiles and defaults are
+                saved on your computer.
               </p>
               <code className="template-line">
                 myapp://import?url=<span>{"{encodedUrl}"}</span>
@@ -223,13 +248,13 @@ export default function Home() {
                 Explore link profiles <ArrowRight size={14} />
               </Link>
               <small>
-                Compatible installed app required. Backend integration is in development.
+                Compatible installed app required. Device-specific handoffs still need verification.
               </small>
             </div>
             <div className="profile-screen">
               <Screenshot
                 name="profiles"
-                alt="FileHop’s actual Link profiles settings preview with the default HTTP profile and a sample Documents app template"
+                alt="FileHop’s current profile editor preview showing a Documents app template, placeholders, and a resolved example link"
               />
             </div>
           </Reveal>
@@ -259,7 +284,7 @@ export default function Home() {
                 <span className="manual-number">02</span>
                 <div>
                   <h3>Make your first hop</h3>
-                  <p>The intended choose, scan, and download workflow.</p>
+                  <p>Files, shared links, QR codes, and ZIP downloads.</p>
                 </div>
                 <ArrowUpRight size={20} />
               </Link>
@@ -267,7 +292,7 @@ export default function Home() {
                 <span className="manual-number">03</span>
                 <div>
                   <h3>A little further afield</h3>
-                  <p>Private Tailscale access and optional public tunnels.</p>
+                  <p>Understand optional remote-access approaches and their limits.</p>
                 </div>
                 <Globe2 size={20} />
               </Link>
@@ -296,24 +321,32 @@ export default function Home() {
             <details>
               <summary>Can I download FileHop today?</summary>
               <p>
-                Public installers are not available yet. You can run the desktop interface from
-                source. The Rust sharing server and real file transfers are still in development.
+                Public installers are not available yet. With source access, you can run the desktop
+                development build, including real local sharing. Phone, second-device, and
+                packaged-platform acceptance are still pending.
               </p>
             </details>
             <details>
-              <summary>Will my phone need an app?</summary>
+              <summary>Does my phone need an app?</summary>
               <p>
-                The standard sharing workflow is designed for your phone’s browser. Custom link
-                profiles require their target app; private Tailscale access requires a Tailscale
-                connection.
+                The standard sharing workflow uses your phone’s browser. Custom link profiles
+                require their target app; private Tailscale access requires a Tailscale connection.
               </p>
             </details>
             <details>
               <summary>Do my files leave my network?</summary>
               <p>
-                The default design transfers files directly over your local network. Optional
-                internet tunnels change that route and trust model. The public FileHop website hosts
-                product information and installers, not shared user files.
+                The default workflow transfers files directly over your local network. Remote access
+                is a separate, unverified setup with a different trust model. The FileHop website
+                hosts product information and installers, not shared user files.
+              </p>
+            </details>
+            <details>
+              <summary>Can I add more files after sharing the link?</summary>
+              <p>
+                Yes. Add or remove files in the share details, or drop files onto its row. The link
+                stays the same; recipients refresh the page to see the changes. Everyone with the
+                link can access the files you add later. Use separate links for different people.
               </p>
             </details>
             <details>

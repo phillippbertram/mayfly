@@ -5,9 +5,10 @@ description: Understand the boundaries before you share.
 
 ## Local by default
 
-FileHop is designed to stream only explicitly selected files from your computer to
+FileHop streams only explicitly selected files from your computer to
 a reachable browser on your trusted local network. No account or cloud relay is
-required for that default workflow. The current build does not yet implement transfers.
+required for that default workflow. Real local transfers are implemented in the
+development build; public-release and device acceptance remain pending.
 
 The public FileHop website serves product information, documentation, and eventually
 installers. It does not host or relay the files you choose to share.
@@ -29,9 +30,21 @@ include live URLs, codes, private filenames, or absolute paths in bug reports.
 
 ## No permanent permission
 
-Active shares and tokens are intended to stay in memory. Full application restart
-invalidates earlier links. Backend tests must prove expiration, revocation, path
-authorization, and concurrent download limits before real sharing is considered ready.
+Active shares and tokens stay in memory. Full application restart invalidates
+earlier links; settings and link profiles are saved locally. Stopping a share or
+quitting cuts off its running downloads. Expiration blocks new requests while
+already-started downloads may finish.
+
+## One link, one audience
+
+Everyone with a share's link can access its current files, including files added
+later. A direct file link contains the same share token; it does not isolate that
+file from the rest of the share. Use separate links for different recipients.
+
+Creating an empty link prepares access for files you add later. A title is visible
+to recipients, so keep private information out of names and screenshots. Local
+downloads provide access through the link, without a recipient login or a share
+password. Password protection is planned separately.
 
 ## Remote tools change the boundary
 

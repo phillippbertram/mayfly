@@ -7,8 +7,8 @@ import { useEffect, useRef, useState } from "react";
 const steps = [
   {
     number: "01",
-    title: "Choose a file.",
-    text: "A photo. A PDF. That thing you need on your phone. Drop it into FileHop.",
+    title: "Choose your files.",
+    text: "A photo. A PDF. A few things for later. Drop them into FileHop and set a lifetime.",
   },
   {
     number: "02",
@@ -18,7 +18,7 @@ const steps = [
   {
     number: "03",
     title: "And it’s there.",
-    text: "Download directly from your computer. Stop the share when you’re done.",
+    text: "Download a file or get them all as a ZIP, directly from your computer. Stop sharing when you’re done.",
   },
 ];
 
@@ -95,7 +95,7 @@ export function TransferStory() {
         ))}
       </fieldset>
       <div className="story-controls">
-        <span>Concept animation of the planned sharing workflow.</span>
+        <span>Illustrated workflow · not a recording of a transfer.</span>
         <button
           type="button"
           onClick={() => {

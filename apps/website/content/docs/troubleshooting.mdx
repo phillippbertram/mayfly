@@ -3,49 +3,71 @@ title: Troubleshooting
 description: Find the missing connection, one small check at a time.
 ---
 
-## The app says sharing is unavailable
+## The app is offline or cannot start its server
 
-That is expected in the current desktop build. The interface is implemented; the
-Rust sharing server is not. The browser preview's online state and sample shares
-are a simulator, not a workaround for real transfers.
+Check the server status in the header and open **Settings → Network**. Select an
+address the receiving device can reach. If port 8765 is occupied, choose an unused
+port; share links and QR codes need the current address and port. A failed port
+change keeps the last usable listener.
+
+The browser-only preview (`pnpm dev:web`) is a simulator. Its online badge and
+sample QR codes never provide working downloads. Use the native app (`pnpm dev`)
+for real sharing.
 
 ## The QR opens a link, but my phone cannot connect
 
-For a future working sharing build, check:
-
-1. Both devices can reach each other on the same trusted network.
-2. The desktop is awake, FileHop is running, and the server shows a usable address.
-3. You selected the Wi-Fi/interface address reachable from the phone.
-4. A guest Wi-Fi or router client-isolation setting is not separating the devices.
-5. The desktop firewall permits FileHop on the intended private network.
+1. Check that both devices can reach each other on the same trusted network.
+2. Keep the desktop awake and FileHop running, with a usable address in its header.
+3. Select the Wi-Fi/interface address reachable from the phone.
+4. Check that guest Wi-Fi or router client isolation is not separating the devices.
+5. Allow FileHop through the desktop firewall on the intended private network.
 
 A VPN may change routing or the advertised interface. Re-select the correct address
-and generate a new code. Do not disable the firewall globally or forward the port
-to the internet to fix a local-sharing problem.
+and scan the updated code. Do not disable the firewall globally or forward the port
+to the internet to fix local sharing. Phone and second-device acceptance are still
+pending; include your device and network details when reporting a problem.
 
 ## The camera will not recognize the QR
 
-Show the entire code and its border, increase display brightness, and hold the phone
-steadily. You can copy the link as an alternative. Verify that a custom scheme's
-target app is installed and supports the template you configured.
+Show the entire code and its clear border, increase display brightness, and hold
+the phone steadily. Copy the link as an alternative. If using an app profile,
+check **What the QR code opens** and verify that the compatible app is installed.
+Choose **Share page** to use a browser instead.
+
+## The page says “No files yet”
+
+The owner may have created an empty link or removed its files. Refresh after they
+add files. The share's original lifetime still applies while it is empty.
 
 ## A download expires or reaches its limit
 
-Ask for a new share. An old URL should not become valid again after expiry or
-revocation. Browser previews, security scanners, retries, and interrupted transfers
-may affect a counter according to the eventual reservation policy.
+Ask the owner for a new share. Expired and revoked URLs do not become valid again.
+A limit applies per file and counts when a download starts. Link previews, scanners,
+retries, and interrupted downloads can use an allowance; opening the share page
+does not. Prefer the share-page link when sending a limited share in chat.
 
-## A large transfer stops
+## A file is unavailable or a large transfer stops
 
-Keep the computer awake and connected. Check that the original file is still
-available and that enough space exists on the receiving device. If using an optional
-tunnel, check its transfer limits and timeouts separately.
+Keep the computer awake and connected. FileHop streams the original contents; if
+a file's size changes, it reports the file as unavailable. Removing a file, stopping
+a share, or fully quitting FileHop cancels running transfers. Expiration prevents
+new downloads but lets already-started downloads finish.
+
+Check free space on the receiving device. A retry starts the full file again;
+partial-download resume is not supported. Optional remote proxies have separate
+limits and timeouts and are not a verified FileHop workflow.
+
+## Closing the window did not stop sharing
+
+Closing normally hides FileHop in the menu bar or tray. Use **Stop sharing** to end
+one link, or **Quit FileHop** to stop all shares and downloads. On Linux without
+AppIndicator support, closing quits instead. See [Settings](../settings/).
 
 ## The development server cannot start
 
-Port 1420 may already be used by another preview. Stop the preview you own before
-starting another; do not terminate unrelated processes. Check Node/pnpm versions
-and load Rust's environment if `cargo` is not found.
+Port 1420 may already be used by another desktop preview. Stop the preview you own
+before starting `pnpm dev`; do not terminate unrelated processes. Check Node/pnpm
+versions and load Rust's environment if `cargo` is not found.
 
 ## Report a reproducible problem
 

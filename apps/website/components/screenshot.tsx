@@ -31,8 +31,8 @@ export function Screenshot({
           <Image
             src={asset(`/screenshots/${name}.jpg`)}
             alt={alt}
-            width={1280}
-            height={720}
+            width={1440}
+            height={960}
             sizes="(max-width: 760px) 100vw, 1120px"
             priority={priority}
           />

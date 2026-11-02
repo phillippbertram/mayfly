@@ -83,7 +83,7 @@ export function Downloads({ release }: { release: Release | null }) {
             <p>
               {release
                 ? "A verified installer for this platform is not available in this release."
-                : "FileHop is in development. Public installers aren’t ready yet. Follow along, or run the desktop preview from source."}
+                : "Public installers aren’t ready yet. With source access, run the desktop development build with real local sharing. Platform acceptance is still pending."}
             </p>
             <button className="button unavailable-button" type="button" disabled>
               <ArrowDown size={16} />

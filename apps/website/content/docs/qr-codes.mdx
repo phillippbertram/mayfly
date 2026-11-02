@@ -11,16 +11,18 @@ The browser preview renders real QR images from sample URLs; the URLs do not ser
 
 ## Scan from an iPhone
 
-In the planned sharing workflow, open Camera, point it at the complete code, and tap
-the detected link. Safari should show a mobile page with the file's name, size,
-and a download button. No companion app is required.
+Open Camera, point it at the complete code, and tap the detected link. The default
+code opens a browser page listing the share's files, with individual downloads and
+**Download all** for a ZIP. No companion app is required for this default workflow.
+Phone and second-device acceptance are still pending.
 
 Keep the whole QR code visible, including the clear border around it. If scanning
 fails, enlarge the inspector, improve screen brightness, or use the copied link.
 
 ## Copy or save
 
-- **Copy link** copies the share link the QR code opens.
+- **Copy link** in the inspector copies the displayed QR target. The row's copy
+  action always copies the share-page link.
 - **Copy QR image** copies an image rather than a text URL.
 - **Save QR as PNG** opens your system's save dialog and writes the code as an image file.
 
@@ -31,6 +33,19 @@ Wi-Fi or client isolation, a VPN, or the firewall. See also [Troubleshooting](..
 In the browser-only preview, these actions use the browser's own clipboard and download,
 not the desktop app's.
 
+## A QR code for one file or an app
+
+Select the QR button next to a file to show its direct-download code. **Show share
+QR** returns to the share's QR target. Direct downloads count against the file's
+limit, including requests made by scanners or link previews.
+
+With a custom [link profile](../link-profiles/), **What the QR code opens** lets you
+choose a compatible app instead of the share page. The displayed link, copied QR
+image, and saved PNG follow the selected target. Custom schemes require that app
+on the receiving device; a profile does not make your network reachable.
+
+<Screenshot name="file-qr" alt="FileHop sample-data preview showing a QR code for the direct download of Itinerary.pdf" />
+
 ## A QR code is a credential
 
 The code contains the share URL, including its access token. Anyone who obtains it
@@ -38,5 +53,5 @@ and can reach the server can use the share while it remains available.
 Do not post a screenshot of a real active code in a public issue.
 
 Changing the selected IP, port, or external hostname requires an updated link and
-QR code. An old image cannot update itself. The QR code always opens the share
-page; direct file links are copied, not scanned.
+QR code. An old image cannot update itself. Adding or removing files or changing
+the share's title preserves the share-page link and its QR code.

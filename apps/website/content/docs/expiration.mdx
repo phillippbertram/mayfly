@@ -6,7 +6,7 @@ description: Designed for a handoff, not a permanent public link.
 ## Lifetime options
 
 The share options offer **5 minutes**, **10 minutes** (default), **30 minutes**,
-**1 hour**, and **Until stopped**. The Rust backend enforces expiration on every
+**1 hour**, **Until stopped**, and a **Custom** lifetime. The Rust backend enforces expiration on every
 request; the interface's countdown is informational.
 
 Until stopped means no scheduled deadline. It does not mean a permanent link:
@@ -14,11 +14,11 @@ revocation, full application exit, or a restart will invalidate the in-memory sh
 
 ## Download limits
 
-An optional positive download limit makes a share unavailable once its downloads
-are used. A download counts when it starts, so a count of one is not proof that the
+An optional positive download limit applies to each file. Once every file has used
+its allowance, the share reaches its limit. A download counts when it starts, so a count of one is not proof that the
 recipient saved the file successfully.
 
-- Opening the page never counts.
+- Opening the share page and `HEAD` requests never count.
 - A download that is interrupted or canceled still counts; retrying is a new download.
 - Resuming a partial download isn't supported; the browser receives the whole file again.
 - If FileHop can't read the file, the attempt doesn't count.
@@ -37,7 +37,7 @@ off. When a share expires instead, downloads that already started may finish.
 Expired and stopped shares may remain in the list for clarity. Sharing again
 creates a fresh share and token; it does not reactivate the old URL.
 
-<Screenshot name="settings" alt="FileHop's General settings preview with a default lifetime selector and download-limit switch" />
+<Screenshot name="settings" alt="FileHop's General settings preview with default lifetime and download-limit controls" />
 
 ## Start over safely
 

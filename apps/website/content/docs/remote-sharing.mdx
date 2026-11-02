@@ -5,12 +5,12 @@ description: Private networks, public tunnels, and the boundaries between them.
 
 ## Availability
 
-FileHop's planned default is direct sharing over a trusted local network, without
-an account or cloud service. The current desktop starter does not implement file
-sharing yet. Remote access, external URL configuration, and tunnel-aware QR codes
-are not implemented or tested. This guide explains optional approaches to evaluate
-after the local sharing workflow is complete; it is not a working setup tutorial
-for the current app.
+FileHop's default is direct sharing over a trusted local network, without an
+account or cloud service. The desktop development build implements local sharing.
+External-origin configuration, integrated tunnels, and a cloud relay are not
+available as supported product features. Remote end-to-end transfers remain
+unverified. This guide explains optional approaches to evaluate; it is not a
+verified remote setup tutorial for the current app.
 
 ## Choose an access model
 
@@ -33,7 +33,7 @@ appropriate remote-access model to evaluate first. Both devices need authorized
 Tailscale access and a policy allowing the connection. A recipient's browser alone
 does not establish that network connection.
 
-The future download server must listen on an address reachable through Tailscale,
+The download server must listen on an address reachable through Tailscale,
 or be exposed through a local proxy. Its advertised share URL must use a reachable
 Tailscale address or hostname. Merely joining the tailnet does not make a QR code
 containing a home Wi-Fi address work remotely.

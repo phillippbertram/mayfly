@@ -3,36 +3,43 @@ title: Welcome to FileHop
 description: A shorter path from your computer to your phone.
 ---
 
-FileHop is being built for one small, everyday moment: you have a file on your
-computer, and you want it on your phone. The intended workflow is simple: choose
-a file, scan its QR code, and download it in your phone's browser.
+FileHop shares files from your desktop to a browser on your local network. Choose
+one file or a few, scan the QR code, and download. No account, cloud upload, or
+companion mobile app is required for local sharing.
 
-<Callout title="Development preview" type="info">
-The desktop interface is implemented. The Rust file-sharing server, real transfers,
-and public installers are still in development. Screenshots with sample files show
-the actual browser-preview interface, not a completed file transfer.
+<Callout title="Development build" type="info">
+Real local sharing is implemented in the desktop development build. Public installers
+and phone, second-device, and packaged-platform acceptance are still pending.
+Website screenshots show the actual browser-preview interface with sample data;
+they are not recordings of real transfers.
 </Callout>
 
 ## Start here
 
 <Cards>
-  <Card title="Get started" href="./getting-started/" description="Installation status, source setup, and your first look around." />
-  <Card title="Share your first file" href="./sharing/" description="The intended choose, scan, and download workflow." />
-  <Card title="Stay in control" href="./security/" description="Understand tokens, expiration, and trusted networks." />
+  <Card title="Get started" href="./getting-started/" description="Availability, source setup, and your first local share." />
+  <Card title="Share your files" href="./sharing/" description="One link, multiple files, QR codes, and ZIP downloads." />
+  <Card title="Stay in control" href="./expiration/" description="Lifetimes, per-file download limits, and revocation." />
   <Card title="Need a hand?" href="./troubleshooting/" description="Network, camera, firewall, and download questions." />
 </Cards>
 
-## How this manual works
+## A link that can change with you
 
-Pages distinguish the current interface preview from planned sharing behavior.
-You can explore the interface today; instructions for real transfers become
-actionable when the backend and a verified release are available.
+Share several files behind one link, give it a title, and add or remove files later.
+You can also create an empty link before choosing files. Recipients refresh the
+page to see changes, then download individual files or everything as a ZIP.
+Everyone with the link can access files you add later; use separate links for
+different audiences.
 
-FileHop's default design requires no account, mobile companion app, or cloud relay.
-Optional remote-access tools introduce their own accounts, apps, and trust boundaries.
+Settings and custom link profiles are saved locally. Active shares and tokens stay
+in memory and become invalid after a full app restart.
 
 ## Current availability
 
 There is no public stable installer yet. Visit [Downloads](../#download) for
-release availability. Do not treat a screenshot's example address or QR code as a
-live share. Never use FileHop's development server to distribute files.
+release availability. An authorized source checkout can run the native app;
+`pnpm dev:web` is a sample-data interface simulator with no working downloads.
+
+Use a trusted network: local HTTP is unencrypted. Optional remote-access tools
+introduce their own connectivity and trust boundaries and remain unverified.
+Do not treat a screenshot's example address or QR code as a live share.

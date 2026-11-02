@@ -9,19 +9,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(site),
   title: { default: "FileHop — A little less between your devices.", template: "%s · FileHop" },
   description:
-    "A thoughtful desktop app for temporary file sharing. Choose a file, scan a QR code, and download on your phone. Currently in development.",
+    "Temporary local file sharing from your desktop. Share files with one link, scan a QR code, or download everything as a ZIP. Public release in development.",
   alternates: { canonical: `${basePath}/` },
   icons: { icon: asset("/icon.svg") },
   openGraph: {
     title: "FileHop — Your files. Just a hop away.",
     description:
-      "Local file sharing, thoughtfully simple. Explore the interface preview and user manual.",
+      "One file or a few. One link. One quick QR scan. Explore the current desktop features and user manual.",
     type: "website",
     images: [
       {
         url: asset("/screenshots/dashboard.jpg"),
-        width: 1280,
-        height: 720,
+        width: 1440,
+        height: 960,
         alt: "FileHop interface preview with sample files",
       },
     ],

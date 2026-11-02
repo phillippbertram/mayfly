@@ -13,21 +13,23 @@ provides the familiar Command-comma shortcut.
 
 Choose the default lifetime and optional download limit for new shares.
 Existing shares should keep the values they were created with.
-See [Expiration and limits](../expiration/) for intended server behavior.
+See [Expiration and limits](../expiration/) for the counting and expiration policy.
 
 ## Network
 
-Port **8765** is the planned file-download default. The separate developer
+Port **8765** is the local file-download default. The separate developer
 preview runs on loopback port **1420** and is not a file-sharing server.
 
 Choose the network address your phone can reach. When a port cannot bind or an
-interface disappears, FileHop must report the problem instead of claiming to be online.
-A failed settings change should preserve the last usable configuration.
+interface disappears, FileHop reports the problem instead of claiming to be online.
+A failed port change preserves the last usable listener.
 
 ## Appearance
 
 System, Light, and Dark options let the interface follow your desktop or use a
 specific appearance. The QR itself retains a clear light background for scanning.
+**Hide QR codes and links** in General masks them until revealed, useful during
+screen sharing. Hiding a code on your screen does not revoke its link.
 
 ## Window and tray
 
@@ -49,11 +51,14 @@ then quits FileHop, with the same confirmation while shares are active.
 
 Settings are saved on your computer and restored at the next start: port, network
 address, default lifetime and download limit, theme, and the other options here.
-Shares, links, and files are never saved. If the settings file is damaged, FileHop
+Custom link profiles are saved too. Active shares, tokens, and shared file contents
+are not persisted by FileHop. If the settings file is damaged, FileHop
 keeps a copy next to it, starts with defaults, and tells you once.
 
 ## Keyboard access
 
 Use Tab and Shift-Tab to move between controls, and Escape to dismiss dialogs.
-The interface provides keyboard hints for its actions. Native shortcuts, clipboard
+Open **Commands** for searchable actions and **Settings → Shortcuts** for the list.
+Use **Cmd/Ctrl+N** for an empty link, **A** to add files to the selected share, and
+**T** to rename it. Native shortcuts, clipboard
 images, and file saving need verification on each supported operating system.

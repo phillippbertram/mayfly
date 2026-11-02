@@ -1,35 +1,33 @@
 ---
 title: Link profiles
-description: Links that open a compatible app instead of the browser.
+description: Hand a share link to a compatible app with a reusable URL template.
 ---
 
 ## Browser first
 
-Every share already has the links most people need: the share page (what the QR
-code opens), a ZIP of all files, and a direct download link for each file. See
-[Share files](../sharing/) for when to use which.
+The built-in **Share page** profile opens the browser download page. Every share
+also has a direct link per file and a ZIP link for downloading its files together.
+See [Share files](../sharing/) for when to use each.
 
-Custom profiles add links for apps: a profile describes how a compatible
-application expects to receive a share URL. Each profile adds **Copy link for …**
-to a share's menu and can be what the QR code opens. Profiles don't change what a
-share's own links open, and they don't install an application, register a scheme,
-or create network connectivity. FileHop only builds and copies these links; it
-never opens them itself.
+Custom link profiles turn the share-page URL into a link understood by a compatible
+app. Create, edit, or delete them in **Settings → Link profiles**. Profiles and the
+default choice are saved locally with your settings.
 
 ## Create a profile
 
-Open **Settings → Link profiles**, choose **New profile**, and enter a name and
-template. A live preview shows the resulting link. For example:
+Choose **New profile**, then enter a name and a URL template. For example:
 
 ```text
 Name: My import app
 Template: myapp://import?url={encodedUrl}&name={encodedFilename}
 ```
 
-`myapp` is an example scheme, not a claim about an installed application. Use the
-scheme and import format documented by your actual target app.
+The editor previews the resolved URL with example data and validates the template.
+`myapp` is an example scheme; use the scheme and import format documented by your
+target app. That app must be installed on the receiving device. A real handoff to
+a compatible mobile app still needs device-specific verification.
 
-<Screenshot name="profiles" alt="The real Link profiles settings interface showing a default HTTP profile and a sample app template" />
+<Screenshot name="profiles" alt="FileHop's profile editor with a sample app template, placeholder buttons, and a resolved preview URL" />
 
 ## Available placeholders
 
@@ -37,26 +35,26 @@ scheme and import format documented by your actual target app.
 | --- | --- |
 | `{url}` | Full share page URL |
 | `{encodedUrl}` | That URL encoded as a single URI component |
-| `{filename}` | The share's title, its file name, or "N files" |
-| `{encodedFilename}` | That name encoded as a single URI component |
+| `{filename}` | Share display name: title, filename, or file count |
+| `{encodedFilename}` | That display name encoded as a single URI component |
 | `{token}` | Share token |
 
-Prefer encoded values inside query parameters. Templates are resolved once, so
-braces in a filename never become a second round of placeholders. FileHop refuses
-unknown placeholders, unmatched braces, line breaks, templates without a scheme,
-and schemes such as `javascript:`, `data:`, or `file:`. Profiles are saved with
-your settings, up to 20 of them.
+Prefer encoded values inside query parameters. Templates resolve once; braces in
+inserted values are not interpreted again. Rust rejects unknown placeholders,
+malformed braces, control characters, and unsafe schemes such as `javascript:`,
+`data:`, and `file:`.
 
-## Choose what the QR code opens
+## Choose what the QR opens
 
-Mark a profile with the star to make it the QR default. In a share's details,
-**QR opens** switches between the share page and your profiles for that share; the
-QR code, the link field, copying, and saving the QR as PNG all use the shown
-choice. Deleting the default falls back to the share page.
+Star a profile to make it the QR default. In the share details, use
+**What the QR code opens** to switch between the share page and an app profile.
+The displayed code, copied QR image, and QR save action use the selected target.
+A file's own QR button switches to that file's direct download.
 
-A custom scheme such as `myapp://` only works on a device where a compatible app
-is installed. Opening such links on real phones hasn't been tested with specific
-apps yet; check with your target app.
+The inspector's **Copy link** action copies its displayed target; the share row's
+copy action still gives you the share-page URL. Deleting the
+default custom profile falls back to **Share page**. FileHop creates links without
+running templates, installing apps, or registering their schemes.
 
-A custom profile does not turn a local address into a public one.
-See [Remote sharing](../remote-sharing/) for that separate topic.
+A profile does not configure routing or make a local address public. See
+[Remote sharing](../remote-sharing/) for that separate, unverified topic.

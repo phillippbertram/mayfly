@@ -68,6 +68,34 @@ shared user files continue to travel directly over the local network.
 belongs to the [Optional local API milestone](https://github.com/phillippbertram/filehop/milestone/2).
 It follows the verified Tauri flow and does not block the required MVP.
 
+The enhancements below are planned optional work beyond the LAN MVP. Their
+acceptance criteria and dependencies live in the linked issues; adding them here
+does not start implementation or make them first-release blockers. The suggested
+order is provisional, with no release dates assigned.
+
+### Suggested first enhancements
+
+| Order | Area                    | Delivery issue                                                                                                      |
+| ----- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1     | Transfer visibility     | [#22: Live download progress and transfer activity](https://github.com/phillippbertram/filehop/issues/22)           |
+| 2     | Transfer reliability    | [#23: Prevent automatic system sleep during active downloads](https://github.com/phillippbertram/filehop/issues/23) |
+| 3     | Native file integration | [#24: Finder and Explorer sharing actions](https://github.com/phillippbertram/filehop/issues/24)                    |
+
+### Further enhancements
+
+| Area                  | Delivery issue                                                                                                                   |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Connection help       | [#25: Guided LAN troubleshooting and recipient reachability feedback](https://github.com/phillippbertram/filehop/issues/25)      |
+| Sharing defaults      | [#26: Reusable lifetime and download-limit presets](https://github.com/phillippbertram/filehop/issues/26)                        |
+| Receiving files       | [#27: Opt-in browser-to-desktop file receiving per share](https://github.com/phillippbertram/filehop/issues/27)                  |
+| Interrupted downloads | [#28: Resumable file downloads with explicit range and counting semantics](https://github.com/phillippbertram/filehop/issues/28) |
+
+### Related optional work
+
+- [#19: CLI for terminal and scripted sharing](https://github.com/phillippbertram/filehop/issues/19).
+- [#20: Optional password protection per share](https://github.com/phillippbertram/filehop/issues/20).
+- [#21: Cloudflare relay proof of concept](https://github.com/phillippbertram/filehop/issues/21).
+
 ## Distribution decisions
 
 License and public distribution decisions are tracked in #13, signing/notarization
