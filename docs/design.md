@@ -108,15 +108,19 @@ Mobile page (served by the Rust HTTP service)
 
 The first thing a new user sees is a single large drop zone with a dashed, rounded
 border that fills the content area. It contains a small line illustration (a file
-leaving a laptop on a dashed arc toward a phone), the heading "Share a file with
-your phone", one supporting sentence ("Drop files here or choose them. Nothing
-leaves your network."), and a primary button "Choose files..." with its shortcut
+leaving a laptop on a dashed arc toward another device), the heading "Share a file
+with your phone", where the last word rolls through phone, tablet, laptop, and
+computer in step with the animation, one supporting sentence that names any device
+with a browser on the network, and a primary button "Choose files..." with its shortcut
 shown as a hint. The header already shows the real server status so the user knows
 scanning will work before the first file is added.
 
 The illustration loops gently while idle: a soft glow breathes behind it, a file
 card lifts off the laptop screen, travels the dashed arc with a short trail, and
-the phone lights up with a drawn check mark and a ripple. Hover or an incoming drag
+the receiving device lights up with a drawn check mark and a ripple. The receiver
+changes with every hop (phone, tablet, laptop, desktop monitor) because FileHop
+serves any browser on the network, not only phones. A single clock drives the scene
+so its parts never drift apart; with reduced motion it rests on the received frame. Hover or an incoming drag
 speeds the loop up and brightens the accent. Heading, text, and button rise in with
 a short stagger.
 
@@ -160,8 +164,15 @@ Each row shows, from left to right:
   (reserved downloads, not confirmed saves) is explained in a tooltip and in the
   inspector, matching the semantics the core-sharing issue defines.
 - Hover and focus reveal three actions: Copy link, Show QR, and an overflow menu
-  with Save QR as PNG, Change profile, and Stop sharing. The keyboard reaches the
-  same actions through the row's context menu.
+  with Save QR as PNG, lifetime, download limit, link profile, and Stop sharing.
+  The keyboard reaches the same actions through the row's context menu.
+
+The download count and status chip sit in fixed-width columns at the right edge,
+so they line up across rows and no row leaves the right side empty. The actions do
+not reserve space while hidden: they fade in over the right edge and the metadata
+column slides aside by exactly their width. Active shares with an expiry show a
+two-point remaining-lifetime bar along the bottom of the row, accent while active
+and warning once expiring.
 
 Selecting a row opens it in the inspector. Expired and stopped shares stay in the
 list, muted, with "Share again" (creates a new share for the same file) and "Remove"
@@ -170,12 +181,17 @@ when any finished shares exist, next to "Stop all".
 
 ### Share inspector
 
-The inspector answers "how does my phone get this?" in one view:
+The inspector answers "how does my device get this?" in one view:
 
 1. Filename and size at the top, with the file-type glyph.
 2. The QR code on a white card with a generous quiet zone, 240 points wide. The card
    stays white in dark mode because phone cameras scan a dark-on-light code more
-   reliably. A small caption underneath reads "Scan with your phone's camera".
+   reliably. A small caption underneath reads "Scan with any camera, or open the link".
+   An eye button on the card hides the code: it blurs, shows "QR code hidden", and
+   the link field masks the token, which helps while screen sharing or presenting.
+   Clicking the hidden card reveals it again. Copy actions keep working. General
+   settings can hide codes and links by default; H toggles the selected share and
+   Shift+H toggles the default.
 3. The link profile selector: a select listing "HTTP (default)" and each custom
    profile. Switching it regenerates the QR, the displayed link, and the PNG export
    together, so they can never disagree. A custom scheme shows a hint that a
@@ -373,6 +389,8 @@ ignored while typing or while a menu is open; dialogs suspend global shortcuts.
 | Cmd/Ctrl+Shift+C         | Copy the selected share's QR image          |
 | Cmd/Ctrl+S               | Save the selected share's QR as PNG         |
 | Q                        | Highlight the QR code                       |
+| H                        | Hide or show the QR code and link token     |
+| Shift+H                  | Hide all QR codes and links by default      |
 | E                        | Add 10 minutes                              |
 | L                        | Change the download limit                   |
 | P                        | Change the link profile                     |

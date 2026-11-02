@@ -12,7 +12,14 @@ import {
   Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { type KeyboardEvent, memo, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  memo,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
 import {
@@ -110,6 +117,19 @@ export const ShareRow = memo(function ShareRow({
   const status = displayStatus(share, now);
   const ended = share.status !== "active";
   const secondary = secondaryLine(share, now);
+  const revealed = selected || menuOpen;
+  const left = remainingMs(share, now);
+  const lifetime = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
+  const progress =
+    !ended && left !== null && lifetime ? Math.max(0, Math.min(1, left / lifetime)) : null;
+
+  // The metadata column slides aside by exactly the width of the row's actions.
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const [actionsWidth, setActionsWidth] = useState(96);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the actions change with the ended state.
+  useLayoutEffect(() => {
+    if (actionsRef.current) setActionsWidth(actionsRef.current.offsetWidth);
+  }, [ended]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const keys: Record<string, number | "first" | "last"> = {
@@ -154,6 +174,7 @@ export const ShareRow = memo(function ShareRow({
               : "border-line bg-surface hover:-translate-y-px hover:border-line-strong hover:shadow-[0_4px_14px_-6px_hsl(var(--shadow-color)/0.18)]",
           fresh && "row-arrive",
         )}
+        style={{ "--actions-w": `${actionsWidth + 8}px` } as CSSProperties}
       >
         {selected && (
           <motion.span
@@ -196,19 +217,45 @@ export const ShareRow = memo(function ShareRow({
           />
           <span className="text-[12px] leading-4 text-muted tnum">{secondary}</span>
         </div>
-        <StatusChip status={status} className="pointer-events-none" />
-        <Tooltip label="Downloads started. A download counts when it begins, not when the phone saves it.">
-          <span className="relative z-[1] flex w-[92px] items-center justify-end gap-1 text-[12px] whitespace-nowrap text-muted tnum">
-            <Download aria-hidden="true" size={12} strokeWidth={1.8} className="opacity-70" />
-            {formatDownloads(share)}
-          </span>
-        </Tooltip>
         <div
           className={cn(
-            "relative z-[1] flex items-center gap-0.5 transition-[opacity,transform] duration-200 ease-out",
-            selected || menuOpen
+            "flex shrink-0 items-center gap-2 transition-[margin] duration-300 ease-[var(--ease-out-soft)]",
+            revealed
+              ? "mr-[var(--actions-w)]"
+              : "group-focus-within:mr-[var(--actions-w)] group-hover:mr-[var(--actions-w)]",
+          )}
+        >
+          <Tooltip label="Downloads started. A download counts when it begins, not when the device saves it.">
+            <span className="relative z-[1] flex w-[84px] items-center justify-end gap-1 text-[12px] whitespace-nowrap text-muted tnum">
+              <Download aria-hidden="true" size={12} strokeWidth={1.8} className="opacity-70" />
+              {formatDownloads(share)}
+            </span>
+          </Tooltip>
+          <span className="pointer-events-none flex w-[108px] justify-end">
+            <StatusChip status={status} />
+          </span>
+        </div>
+        {progress !== null && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 bottom-[5px] left-[60px] h-[2px] overflow-hidden rounded-full bg-line/60"
+          >
+            <span
+              className={cn(
+                "block h-full rounded-full transition-[width,background-color] duration-1000 ease-linear",
+                status === "expiring" ? "bg-warning" : "bg-accent/70",
+              )}
+              style={{ width: `${progress * 100}%` }}
+            />
+          </span>
+        )}
+        <div
+          ref={actionsRef}
+          className={cn(
+            "absolute top-1/2 right-3 z-[1] flex -translate-y-1/2 items-center gap-0.5 transition-[opacity,translate] duration-200 ease-out",
+            revealed
               ? "translate-x-0 opacity-100"
-              : "translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100",
+              : "pointer-events-none translate-x-2 opacity-0 group-focus-within:pointer-events-auto group-focus-within:translate-x-0 group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100",
           )}
         >
           {ended ? (

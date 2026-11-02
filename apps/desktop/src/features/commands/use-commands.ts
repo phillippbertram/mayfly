@@ -5,6 +5,8 @@ import {
   ChevronUp,
   Copy,
   Eraser,
+  Eye,
+  EyeOff,
   FilePlus2,
   Hash,
   ImageDown,
@@ -27,7 +29,7 @@ import { useMemo } from "react";
 import { useToast } from "../../components/ui/toast";
 import type { Share } from "../../lib/backend";
 import type { AppHotkeyId } from "../../lib/hotkeys";
-import { useServer, useUpdateSettings } from "../../lib/queries";
+import { useServer, useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import type { ShareActions } from "../shares/use-share-actions";
 
@@ -59,11 +61,13 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
   const toast = useToast();
   const server = useServer().data;
   const updateSettings = useUpdateSettings();
+  const { hideCodes } = useSettings();
   const online = server?.kind === "online";
   const selected = shares.find((s) => s.id === ui.selectedId) ?? null;
   const active = selected?.status === "active" ? selected : null;
   const ended = selected && selected.status !== "active" ? selected : null;
   const anyActive = shares.some((s) => s.status === "active");
+  const qrVisible = active ? (ui.qrVisibility[active.id] ?? !hideCodes) : true;
   const anyFinished = shares.some((s) => s.status !== "active");
 
   return useMemo(() => {
@@ -231,6 +235,33 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
         run: () => ui.pulseQr(),
       },
       {
+        id: "qr.toggle",
+        hotkeyId: "qr.toggle",
+        label: qrVisible ? "Hide QR code" : "Show QR code",
+        group: "Share",
+        icon: qrVisible ? EyeOff : Eye,
+        keywords: ["blur", "privacy", "screen sharing", "reveal"],
+        enabled: active?.link != null,
+        run: () => active && ui.setQrVisible(active.id, !qrVisible),
+      },
+      {
+        id: "qr.hideAll",
+        hotkeyId: "qr.hideAll",
+        label: hideCodes ? "Show QR codes and links by default" : "Hide all QR codes and links",
+        group: "Share",
+        icon: hideCodes ? Eye : EyeOff,
+        keywords: ["blur", "privacy", "presenting", "screen sharing"],
+        enabled: true,
+        run: () => {
+          ui.resetQrVisibility();
+          updateSettings.mutate({ hideCodes: !hideCodes });
+          toast(
+            hideCodes ? "QR codes and links are visible." : "QR codes and links are hidden.",
+            "success",
+          );
+        },
+      },
+      {
         id: "share.extend",
         hotkeyId: "share.extend",
         label: "Add 10 minutes",
@@ -309,5 +340,7 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
     anyFinished,
     toast,
     updateSettings,
+    hideCodes,
+    qrVisible,
   ]);
 }

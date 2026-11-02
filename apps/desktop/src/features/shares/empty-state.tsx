@@ -1,12 +1,12 @@
 import { Plus } from "lucide-react";
-import { motion, type Variants } from "motion/react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Kbd } from "../../components/ui/kbd";
 import type { ServerState } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { appHotkeys } from "../../lib/hotkeys";
-import { HopIllustration } from "./hop-illustration";
+import { DEVICES, HopIllustration } from "./hop-illustration";
 
 const stagger: Variants = {
   hidden: {},
@@ -27,6 +27,8 @@ export function EmptyState({
   onChoose: () => void;
 }) {
   const [hover, setHover] = useState(false);
+  const [device, setDevice] = useState(0);
+  const receiver = DEVICES[device % DEVICES.length] ?? DEVICES[0];
   const online = server?.kind === "online";
   const active = online && (hover || dragging);
   const blocked =
@@ -82,18 +84,47 @@ export function EmptyState({
             animate={{ y: active ? -4 : 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 18 }}
           >
-            <HopIllustration active={active} dimmed={!online} />
+            <HopIllustration
+              active={active}
+              dimmed={!online}
+              device={device}
+              onCycle={() => setDevice((d) => (d + 1) % DEVICES.length)}
+            />
           </motion.div>
         </motion.div>
         <motion.h1
           variants={rise}
           className="mt-2 text-[22px] leading-7 font-semibold tracking-[-0.015em]"
         >
-          {dragging ? "Drop to share" : "Share a file with your phone"}
+          {dragging ? (
+            "Drop to share"
+          ) : (
+            <>
+              <span className="sr-only">Share a file with any device on your network</span>
+              <span aria-hidden="true" className="inline-flex items-baseline gap-[0.28em]">
+                Share a file with your
+                <span className="relative inline-flex overflow-hidden text-accent">
+                  <span className="invisible">computer</span>
+                  <AnimatePresence initial={false}>
+                    <motion.span
+                      key={receiver.id}
+                      initial={{ y: "100%", opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: "-100%", opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 26 }}
+                      className="absolute inset-y-0 left-0"
+                    >
+                      {receiver.label}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
+              </span>
+            </>
+          )}
         </motion.h1>
-        <motion.p variants={rise} className="max-w-[380px] text-[13px] leading-5 text-muted">
-          Drop files here or choose them. Nothing leaves your network, and every share ends on its
-          own.
+        <motion.p variants={rise} className="max-w-[400px] text-[13px] leading-5 text-muted">
+          Phone, tablet, or another computer: anything with a browser on your network can download
+          it. Nothing leaves your network, and every share ends on its own.
         </motion.p>
         <motion.div variants={rise} className="mt-1.5">
           <Button variant="primary" size="lg" disabled={!online} onClick={onChoose}>

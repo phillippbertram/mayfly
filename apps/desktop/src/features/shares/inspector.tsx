@@ -20,6 +20,7 @@ import { MenuContent, MenuItem, MenuRadioGroup, MenuSeparator } from "../../comp
 import { Select } from "../../components/ui/select";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useNow } from "../../hooks/use-now";
+import { maskLink, useQrVisible } from "../../hooks/use-qr-visible";
 import { useSignal } from "../../hooks/use-signal";
 import type { Share } from "../../lib/backend";
 import { HTTP_PROFILE_ID } from "../../lib/backend/types";
@@ -109,6 +110,8 @@ export function InspectorBody({
   const [profileOpen, setProfileOpen] = useSignalledOpen(useUi((s) => s.profileMenuSignal));
 
   const status = displayStatus(share, now);
+  const qrVisible = useQrVisible(share.id);
+  const setQrVisible = useUi((s) => s.setQrVisible);
   const ended = share.status !== "active";
   const left = remainingMs(share, now);
   const total = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
@@ -139,10 +142,16 @@ export function InspectorBody({
       </div>
 
       <div className="flex flex-col items-center gap-2">
-        <QrCard share={share} pulse={qrPulse} onCopy={() => actions.copyQr(share)} />
+        <QrCard
+          share={share}
+          pulse={qrPulse}
+          visible={qrVisible}
+          onToggleVisible={() => setQrVisible(share.id, !qrVisible)}
+          onCopy={() => actions.copyQr(share)}
+        />
         <span className="flex items-center gap-1.5 text-[12px] text-muted">
           <QrCode aria-hidden="true" size={13} strokeWidth={1.6} />
-          {ended ? "This code no longer opens the file" : "Scan with your phone's camera"}
+          {ended ? "This code no longer opens the file" : "Scan with any camera, or open the link"}
         </span>
       </div>
 
@@ -187,7 +196,11 @@ export function InspectorBody({
               value={
                 ended
                   ? "Link no longer works"
-                  : (share.link ?? share.linkError ?? "Waiting for the network…")
+                  : share.link
+                    ? qrVisible
+                      ? share.link
+                      : maskLink(share.link)
+                    : (share.linkError ?? "Waiting for the network…")
               }
               onFocus={(e) => e.currentTarget.select()}
               className="min-w-0 flex-1 bg-transparent font-mono text-[11.5px] text-fg outline-none"

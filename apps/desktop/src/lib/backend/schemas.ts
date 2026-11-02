@@ -71,6 +71,8 @@ export const SettingsSchema = z.object({
   defaultDownloadLimit: DownloadLimitSchema,
   /** Show the share options sheet before files are shared. */
   confirmBeforeSharing: z.boolean(),
+  /** Blur QR codes and mask link tokens until revealed, e.g. while screen sharing. */
+  hideCodes: z.boolean(),
   theme: ThemePreferenceSchema,
   defaultProfileId: z.string(),
 });

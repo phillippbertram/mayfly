@@ -2,6 +2,7 @@ import { Switch } from "../../components/ui/switch";
 import { useToast } from "../../components/ui/toast";
 import type { Settings } from "../../lib/backend";
 import { errorMessage, useSettings, useUpdateSettings } from "../../lib/queries";
+import { useUi } from "../../store/ui";
 import { LifetimeField, LimitField } from "../shares/share-options";
 import { Field, SectionHeader } from "./field";
 
@@ -49,6 +50,25 @@ export function GeneralSection() {
             id="confirm-switch"
             checked={settings.confirmBeforeSharing}
             onCheckedChange={(confirmBeforeSharing) => update({ confirmBeforeSharing })}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <label htmlFor="hide-codes-switch" className="text-[13px] font-medium">
+              Hide QR codes and links
+            </label>
+            <p className="text-[12px] text-muted">
+              Blur codes and mask link tokens until you reveal them, for screen sharing or
+              presenting.
+            </p>
+          </div>
+          <Switch
+            id="hide-codes-switch"
+            checked={settings.hideCodes}
+            onCheckedChange={(hideCodes) => {
+              useUi.getState().resetQrVisibility();
+              update({ hideCodes });
+            }}
           />
         </div>
       </div>

@@ -16,6 +16,8 @@ interface UiState {
   settingsSection: SettingsSection;
   overlay: Overlay;
   composer: StagedFiles | null;
+  /** Per-share QR visibility that overrides the hide-codes setting for this session. */
+  qrVisibility: Record<string, boolean>;
 
   select: (id: string | null, open?: boolean) => void;
   setInspectorOpen: (open: boolean) => void;
@@ -30,6 +32,8 @@ interface UiState {
   openComposer: (staged: StagedFiles) => void;
   dropFromComposer: (stageId: string) => void;
   closeComposer: () => void;
+  setQrVisible: (id: string, visible: boolean) => void;
+  resetQrVisibility: () => void;
 }
 
 export const useUi = create<UiState>()((set) => ({
@@ -43,6 +47,7 @@ export const useUi = create<UiState>()((set) => ({
   settingsSection: "general",
   overlay: null,
   composer: null,
+  qrVisibility: {},
 
   select: (id, open = true) =>
     set(() => ({ selectedId: id, ...(open ? { inspectorOpen: true } : {}) })),
@@ -75,4 +80,7 @@ export const useUi = create<UiState>()((set) => ({
         : {},
     ),
   closeComposer: () => set({ composer: null }),
+  setQrVisible: (id, visible) =>
+    set((s) => ({ qrVisibility: { ...s.qrVisibility, [id]: visible } })),
+  resetQrVisibility: () => set({ qrVisibility: {} }),
 }));

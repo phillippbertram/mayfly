@@ -44,11 +44,12 @@ export function createDesktopBackend(): Backend {
     removeShare: unavailable,
     clearFinished: unavailable,
     async updateSettings(patch) {
-      // Only the theme is a pure UI preference; it applies for this session until
-      // the Rust settings service persists it.
-      const { theme, ...rest } = patch;
+      // Display preferences apply for this session until the Rust settings
+      // service persists them; everything else needs the backend.
+      const { theme, hideCodes, ...rest } = patch;
       if (Object.keys(rest).length > 0) throw new BackendError(NOT_YET);
       if (theme) settings = { ...settings, theme };
+      if (hideCodes !== undefined) settings = { ...settings, hideCodes };
       events.emit({ kind: "changed", topics: ["settings"] });
       return settings;
     },
