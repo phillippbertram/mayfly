@@ -142,7 +142,9 @@ export function InspectorBody({
         />
       </div>
 
-      {share.files.length > 1 && <BundleFiles share={share} />}
+      {(share.files.length > 1 || share.collection) && (
+        <BundleFiles share={share} actions={actions} />
+      )}
 
       <div className="flex flex-col items-center gap-2">
         <QrCard

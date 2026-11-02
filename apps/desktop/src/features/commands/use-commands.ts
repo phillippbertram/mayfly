@@ -292,6 +292,15 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
         run: () => ui.openProfileMenu(),
       },
       {
+        id: "share.addFiles",
+        label: "Add files to this link…",
+        group: "Share",
+        icon: FilePlus2,
+        keywords: ["collection", "add", "more"],
+        enabled: active?.collection === true && online,
+        run: () => active && actions.addFiles(active),
+      },
+      {
         id: "share.again",
         hotkeyId: "share.again",
         label: "Share again",

@@ -62,7 +62,7 @@ Implemented counting semantics ([ADR 0005](decisions/0005-share-bundles-and-land
 | `GET` download, streaming started    | Counts, even if the client aborts or the network drops                           |
 | `GET` with a `Range` header          | Range ignored (`Accept-Ranges: none`); full 200 response, counts once            |
 | Retry or resumed download            | A new download                                                                   |
-| Bundle file `GET /d/{token}/{index}` | One download of that file; limits apply per file                                 |
+| Bundle file `GET /d/{token}/{file}`  | One download of that file; limits apply per file                                 |
 | Bundle ZIP `GET /z/{token}`          | One download of every file, reserved all-or-nothing; refused if any is exhausted |
 
 Link previews in chat apps and security scanners fetch URLs before a person does.
@@ -72,14 +72,21 @@ download limit.
 
 Expiry blocks new requests and lets running transfers finish. Stopping, removing,
 or quitting cancels running transfers within one 64 KiB chunk, so the client sees
-an incomplete transfer rather than a short success.
+an incomplete transfer rather than a short success. Removing a file from a
+collection cancels its own transfers and any ZIP download that includes it.
+
+A collection's link authorizes whatever files it holds at request time, including
+files added after the link was sent. The interface states this when the option is
+chosen and in the share details. Files can only be added while the collection is
+active; an expired, stopped, or exhausted collection never reopens by adding files.
 
 ## Public HTTP listener
 
 - Expose only landing pages and their download endpoints: `/s/{token}`,
-  `/d/{token}`, `/d/{token}/{index}`, and `/z/{token}`, GET and HEAD only. No
+  `/d/{token}`, `/d/{token}/{file}`, and `/z/{token}`, GET and HEAD only. No
   management routes, arbitrary static-file routes, directory listing, or uploads.
-  Bundle indexes are plain decimals resolved against the in-memory share.
+  File IDs are random 16-character base64url values, checked for shape and then
+  resolved against the in-memory share; IDs of removed files are never reused.
 - Active content types (HTML, JavaScript, XML, SVG) are served as
   `application/octet-stream`; downloads also carry `Content-Security-Policy: sandbox`.
   Pages allow only their own inline stylesheet by SHA-256 hash and no scripts.

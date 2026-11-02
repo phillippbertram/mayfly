@@ -27,7 +27,7 @@ pub fn router(state: HttpState) -> Router {
     Router::new()
         .route("/s/{token}", get(landing))
         .route("/d/{token}", get(download_single))
-        .route("/d/{token}/{index}", get(download_file))
+        .route("/d/{token}/{file}", get(download_file))
         .route("/z/{token}", get(download_all))
         .fallback(not_found)
         .method_not_allowed_fallback(method_not_allowed)
@@ -64,18 +64,14 @@ async fn download_file(
     method: Method,
     params: Result<Path<(String, String)>, PathRejection>,
 ) -> Response {
-    let Ok(Path((token, index))) = params else {
+    let Ok(Path((token, file))) = params else {
         return error(Unavailable::NotFound);
     };
-    // Plain decimal only: no signs, no leading zeros, nothing path-like.
-    let valid = !index.is_empty()
-        && index.len() <= 5
-        && index.bytes().all(|b| b.is_ascii_digit())
-        && (index == "0" || !index.starts_with('0'));
-    let Some(index) = index.parse().ok().filter(|_| valid) else {
+    // File IDs are opaque base64url strings; anything else is rejected unread.
+    if !shares::token::is_well_formed_id(&file) {
         return error(Unavailable::NotFound);
-    };
-    download(&state, &method, &token, Target::File(index)).await
+    }
+    download(&state, &method, &token, Target::File(file)).await
 }
 
 async fn download_all(
@@ -95,19 +91,19 @@ async fn download_all(
 /// Range headers are ignored; every GET receives the complete file.
 async fn download(state: &HttpState, method: &Method, token: &str, target: Target) -> Response {
     if method == Method::HEAD {
-        return match state.registry.peek(token, target) {
+        return match state.registry.peek(token, target.clone()) {
             Ok(files) if files.iter().any(|f| f.check_unchanged().is_err()) => {
                 error(Unavailable::FileUnavailable)
             }
             Ok(files) => {
-                let (headers, _) = attachment(state, files, target);
+                let (headers, _) = attachment(state, files, &target);
                 (StatusCode::OK, headers).into_response()
             }
             Err(reason) => error(reason),
         };
     }
 
-    let reservation = match state.registry.reserve(token, target) {
+    let reservation = match state.registry.reserve(token, target.clone()) {
         Ok(reservation) => reservation,
         Err(reason) => return error(reason),
     };
@@ -120,7 +116,7 @@ async fn download(state: &HttpState, method: &Method, token: &str, target: Targe
         return error(Unavailable::FileUnavailable);
     }
     let cancel = reservation.cancel.clone();
-    let (headers, plan) = attachment(state, reservation.files.clone(), target);
+    let (headers, plan) = attachment(state, reservation.files.clone(), &target);
     let body = match plan {
         Some(plan) => Body::from_stream(zip::stream(Arc::new(plan), cancel)),
         None => Body::from_stream(shares::stream(reservation.files[0].clone(), cancel)),
@@ -132,10 +128,10 @@ async fn download(state: &HttpState, method: &Method, token: &str, target: Targe
 fn attachment(
     state: &HttpState,
     files: Vec<Arc<SharedFile>>,
-    target: Target,
+    target: &Target,
 ) -> (HeaderMap, Option<ZipPlan>) {
     let mut headers = HeaderMap::new();
-    let (name, media_type, len, plan) = if target == Target::All {
+    let (name, media_type, len, plan) = if *target == Target::All {
         let name = format!("FileHop-{}-files.zip", files.len());
         let plan = ZipPlan::new(files, state.clock.wall_ms());
         (name, "application/zip".to_owned(), plan.len(), Some(plan))
@@ -219,8 +215,11 @@ async fn method_not_allowed() -> Response {
 
 fn error(reason: Unavailable) -> Response {
     let status = match reason {
-        Unavailable::NotFound => StatusCode::NOT_FOUND,
-        Unavailable::Expired | Unavailable::Stopped | Unavailable::LimitReached => StatusCode::GONE,
+        Unavailable::NotFound | Unavailable::Empty => StatusCode::NOT_FOUND,
+        Unavailable::Expired
+        | Unavailable::Stopped
+        | Unavailable::LimitReached
+        | Unavailable::FileRemoved => StatusCode::GONE,
         Unavailable::FileUnavailable => StatusCode::SERVICE_UNAVAILABLE,
     };
     html(status, pages::error(reason))

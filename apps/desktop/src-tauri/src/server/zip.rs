@@ -10,11 +10,9 @@ use std::collections::HashSet;
 use std::io;
 use std::sync::Arc;
 
+use crate::shares::{Cancel, SharedFile};
 use axum::body::Bytes;
 use futures_util::Stream;
-use tokio_util::sync::CancellationToken;
-
-use crate::shares::SharedFile;
 
 const U16_MAX: u64 = 0xFFFF;
 const U32_MAX: u64 = 0xFFFF_FFFF;
@@ -284,16 +282,13 @@ struct State {
     step: Step,
     hasher: crc32fast::Hasher,
     crcs: Vec<u32>,
-    cancel: CancellationToken,
+    cancel: Cancel,
 }
 
 /// Streams the planned archive. Cancellation or a file that changed mid-way
 /// ends the stream with an error, so the client never receives a corrupt
 /// archive that looks complete.
-pub fn stream(
-    plan: Arc<ZipPlan>,
-    cancel: CancellationToken,
-) -> impl Stream<Item = io::Result<Bytes>> + Send {
+pub fn stream(plan: Arc<ZipPlan>, cancel: Cancel) -> impl Stream<Item = io::Result<Bytes>> + Send {
     let state = State {
         crcs: Vec::with_capacity(plan.entries.len()),
         plan,
@@ -470,7 +465,7 @@ mod tests {
     }
 
     async fn collect(plan: Arc<ZipPlan>) -> Vec<u8> {
-        stream(plan, CancellationToken::new())
+        stream(plan, Cancel::default())
             .try_fold(Vec::new(), |mut acc, chunk| async move {
                 acc.extend_from_slice(&chunk);
                 Ok(acc)
@@ -522,8 +517,9 @@ mod tests {
             shared(dir.path(), "a.txt", b"a"),
             shared(dir.path(), "b.txt", b"b"),
         ];
-        let cancel = CancellationToken::new();
-        cancel.cancel();
+        let token = tokio_util::sync::CancellationToken::new();
+        token.cancel();
+        let cancel = Cancel::new(vec![token]);
         let result: io::Result<Vec<Bytes>> = stream(Arc::new(ZipPlan::new(files, 0)), cancel)
             .try_collect()
             .await;
@@ -584,7 +580,7 @@ mod tests {
         assert!(plan.entries[1].offset >= U32_MAX);
         let out_path = dir.path().join("out.zip");
         let mut out = std::io::BufWriter::new(std::fs::File::create(&out_path).unwrap());
-        let mut chunks = std::pin::pin!(stream(plan.clone(), CancellationToken::new()));
+        let mut chunks = std::pin::pin!(stream(plan.clone(), Cancel::default()));
         while let Some(chunk) = chunks.try_next().await.unwrap() {
             std::io::Write::write_all(&mut out, &chunk).unwrap();
         }

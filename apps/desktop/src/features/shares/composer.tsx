@@ -8,7 +8,7 @@ import { Modal } from "../../components/ui/modal";
 import { Segmented } from "../../components/ui/segmented";
 import { Select } from "../../components/ui/select";
 import { Switch } from "../../components/ui/switch";
-import type { ShareOptions } from "../../lib/backend";
+import type { ShareGrouping, ShareOptions } from "../../lib/backend";
 import { DOWNLOAD_PROFILE_ID } from "../../lib/backend/types";
 import { formatBytes, formatClock } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
@@ -29,7 +29,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
   const profiles = useProfiles();
   const updateSettings = useUpdateSettings();
   const [options, setOptions] = useState<ShareOptions>(actions.defaults);
-  const [grouping, setGrouping] = useState<"one" | "separate">("one");
+  const [grouping, setGrouping] = useState<ShareGrouping>("bundle");
   const [busy, setBusy] = useState(false);
   const open = staged !== null;
   const files = staged?.files ?? [];
@@ -38,9 +38,13 @@ export function Composer({ actions }: { actions: ShareActions }) {
   useEffect(() => {
     if (open) {
       setOptions(actions.defaults());
-      setGrouping("one");
+      setGrouping("bundle");
     }
   }, [open, actions]);
+  // Dropping files from the list can leave one; "separate" then means the same as "bundle".
+  const many = files.length > 1;
+  const effective = !many && grouping === "separate" ? "bundle" : grouping;
+  const perFile = effective === "collection" || (many && effective === "bundle");
 
   const cancel = () => {
     if (staged) actions.discardStaged(staged.files.map((f) => f.stageId));
@@ -53,7 +57,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
     const ok = await actions.createShares(
       files.map((f) => f.stageId),
       options,
-      grouping === "one",
+      effective,
     );
     setBusy(false);
     if (ok) close();
@@ -66,7 +70,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
       : `Until about ${formatClock(now + options.lifetimeMinutes * 60_000)}`,
     options.downloadLimit === null
       ? "unlimited downloads"
-      : `${files.length > 1 && grouping === "one" ? "each file " : ""}up to ${options.downloadLimit} ${options.downloadLimit === 1 ? "download" : "downloads"}`,
+      : `${perFile ? "each file " : ""}up to ${options.downloadLimit} ${options.downloadLimit === 1 ? "download" : "downloads"}`,
   ].join(" · ");
 
   return (
@@ -134,30 +138,33 @@ export function Composer({ actions }: { actions: ShareActions }) {
       )}
 
       <div className="grid grid-cols-[96px_1fr] items-start gap-x-4 gap-y-4 px-6 pt-5">
-        {files.length > 1 && (
-          <>
-            <span className="pt-1.5 text-[13px] font-medium">Links</span>
-            <div className="flex flex-col gap-1.5">
-              <Segmented
-                label="How to share these files"
-                value={grouping}
-                onValueChange={setGrouping}
-                options={[
-                  { value: "one", label: "One link for all" },
-                  { value: "separate", label: `${files.length} separate links` },
-                ]}
-                className="self-start"
-              />
-              <span className="text-[12px] text-muted">
-                {grouping === "separate"
-                  ? "Each file gets its own link and QR code."
+        <span className="pt-1.5 text-[13px] font-medium">Links</span>
+        <div className="flex flex-col gap-1.5">
+          <Segmented<ShareGrouping>
+            label="How to share these files"
+            value={effective}
+            onValueChange={setGrouping}
+            options={[
+              { value: "bundle", label: many ? "One link for all" : "Just this file" },
+              ...(many
+                ? [{ value: "separate" as const, label: `${files.length} separate links` }]
+                : []),
+              { value: "collection", label: "Keep open for more" },
+            ]}
+            className="self-start"
+          />
+          <span className="text-[12px] text-muted">
+            {effective === "separate"
+              ? "Each file gets its own link and QR code."
+              : effective === "collection"
+                ? "Add or remove files later; the link stays the same. Everyone with it sees the current files."
+                : !many
+                  ? "The link shares only this file."
                   : options.profileId === DOWNLOAD_PROFILE_ID
                     ? "The link downloads all files as one ZIP."
                     : "One page lists every file, with a ZIP of all of them."}
-              </span>
-            </div>
-          </>
-        )}
+          </span>
+        </div>
         <span className="pt-1.5 text-[13px] font-medium">Lifetime</span>
         <LifetimeField
           value={options.lifetimeMinutes}

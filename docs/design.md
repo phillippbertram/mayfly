@@ -282,9 +282,17 @@ wide, so the same page reads well when the link is opened on another computer.
 A bundle (several files behind one link) shows a stacked-files glyph, "N files"
 with the total size, a primary "Download all .zip" button pointing to
 `/z/{token}`, and below a divider one 56-point row per file: glyph, name, size,
-and a 44-point download button pointing to `/d/{token}/{index}`. A file that
+and a 44-point download button pointing to `/d/{token}/{file}`. A file that
 reached its limit shows "Limit reached" instead of a button, and the ZIP button
-is disabled once any file is exhausted.
+is disabled once any file is exhausted. A collection uses the same layout even
+for one file, adds "The owner may add or remove files." with a Refresh link, and
+shows "No files yet" while it is empty.
+
+In the desktop app, the composer's Links row offers "One link for all", separate
+links, or "Keep open for more". An active collection's file list in the inspector
+has a remove button per file, an "Add files…" button, and is a drop target:
+dragging files over it outlines it with "Drop to add to this link", while drops
+anywhere else still create new shares.
 
 Error pages share the same frame and replace the content with one glyph, one
 headline, and one sentence:

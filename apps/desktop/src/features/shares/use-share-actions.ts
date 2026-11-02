@@ -2,7 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useToast } from "../../components/ui/toast";
 import { useBackend } from "../../hooks/use-backend";
-import type { DroppedFiles, Share, ShareOptions, StagedFiles } from "../../lib/backend";
+import type {
+  DroppedFiles,
+  Share,
+  ShareGrouping,
+  ShareOptions,
+  StagedFiles,
+} from "../../lib/backend";
 import { splitFileName } from "../../lib/format";
 import { copyQrImage, qrPng } from "../../lib/qr";
 import { errorMessage, queryKeys, useSettings } from "../../lib/queries";
@@ -39,13 +45,34 @@ export function useShareActions() {
       if (shares.length > 1) toast(`${shares.length} files are now shared.`, "success");
     };
 
-    /** Several files share one link unless `bundle` is false. */
-    const createShares = async (stageIds: string[], options: ShareOptions, bundle = true) => {
-      const shares = await run(() =>
-        backend.createShares(stageIds, options, bundle && stageIds.length > 1),
-      );
+    /** Several files share one link unless asked for separate links. */
+    const createShares = async (
+      stageIds: string[],
+      options: ShareOptions,
+      grouping: ShareGrouping = "bundle",
+    ) => {
+      const effective = grouping === "bundle" && stageIds.length === 1 ? "separate" : grouping;
+      const shares = await run(() => backend.createShares(stageIds, options, effective));
       if (shares) await reveal(shares);
       return Boolean(shares);
+    };
+
+    /** Adds staged files to a collection; rejected items are reported. */
+    const addStaged = async (share: Share, staged: StagedFiles | null | undefined) => {
+      if (!staged) return;
+      for (const item of staged.rejected) toast(`${item.name}: ${item.reason}`, "error");
+      if (staged.files.length === 0) return;
+      const ids = staged.files.map((f) => f.stageId);
+      const updated = await run(() => backend.addFiles(share.id, ids));
+      if (!updated) {
+        await run(() => backend.discardStaged(ids));
+        return;
+      }
+      await client.invalidateQueries({ queryKey: queryKeys.shares });
+      toast(
+        ids.length === 1 ? "Added 1 file to the link." : `Added ${ids.length} files to the link.`,
+        "success",
+      );
     };
 
     const handleStaged = async (staged: StagedFiles | null | undefined) => {
@@ -69,6 +96,13 @@ export function useShareActions() {
       chooseFiles: async () => handleStaged(await run(() => backend.pickFiles())),
       drop: async (files: DroppedFiles) =>
         handleStaged(await run(() => backend.stageDropped(files))),
+      addFiles: async (share: Share) => addStaged(share, await run(() => backend.pickFiles())),
+      dropInto: async (share: Share, files: DroppedFiles) =>
+        addStaged(share, await run(() => backend.stageDropped(files))),
+      async removeFile(share: Share, fileId: string) {
+        const updated = await run(() => backend.removeFile(share.id, fileId));
+        if (updated) await client.invalidateQueries({ queryKey: queryKeys.shares });
+      },
       discardStaged: (ids: string[]) => run(() => backend.discardStaged(ids)),
 
       async copyLink(share: Share): Promise<boolean> {

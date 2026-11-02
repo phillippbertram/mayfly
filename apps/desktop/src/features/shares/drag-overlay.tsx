@@ -1,15 +1,20 @@
 import { FilePlus2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import type { DropTarget } from "../../hooks/use-file-drop";
 
 export function DragOverlay({
   visible,
   enabled,
   lifetimeMinutes,
+  target,
 }: {
   visible: boolean;
   enabled: boolean;
   lifetimeMinutes: number | null;
+  /** A collection under the pointer: the drop adds files to it instead. */
+  target: DropTarget | null;
 }) {
+  if (visible && target) return <CollectionTarget target={target} />;
   return (
     <AnimatePresence>
       {visible && (
@@ -60,5 +65,26 @@ export function DragOverlay({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Outlines the collection that will receive the dropped files. */
+function CollectionTarget({ target }: { target: DropTarget }) {
+  const { x, y, width, height } = target.rect;
+  return (
+    <div className="pointer-events-none fixed inset-0 z-40 bg-bg/35">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", stiffness: 420, damping: 30 }}
+        style={{ left: x - 6, top: y - 6, width: width + 12, height: height + 12 }}
+        className="absolute flex items-end justify-center rounded-xl border-2 border-dashed border-accent bg-accent-soft/40 pb-2"
+      >
+        <span className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[12px] font-semibold text-accent-fg shadow-[var(--shadow-pop)]">
+          <FilePlus2 aria-hidden="true" size={13} />
+          Drop to add to this link
+        </span>
+      </motion.div>
+    </div>
   );
 }

@@ -63,6 +63,7 @@ const KIND_LABEL: Record<FileKind, string> = {
 };
 
 export function describeType(share: Share): string {
+  if (share.collection) return "Open link, files can change";
   if (share.files.length > 1) return "One link, ZIP or single files";
   const { ext } = splitFileName(share.fileName);
   const label = KIND_LABEL[share.kind];

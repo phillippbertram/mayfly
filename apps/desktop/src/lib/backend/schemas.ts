@@ -28,6 +28,8 @@ export const LifetimeSchema = z
 export const DownloadLimitSchema = z.int().min(1).max(999).nullable();
 
 export const ShareFileSchema = z.object({
+  /** Stable within its share, also after other files are removed. */
+  id: z.string().min(1),
   name: z.string().min(1),
   byteSize: z.int().nonnegative(),
   kind: FileKindSchema,
@@ -36,15 +38,17 @@ export const ShareFileSchema = z.object({
 });
 
 /**
- * One link for one or more files. A bundle (several files) summarizes them:
- * `fileName` is "3 files", `byteSize` the total, and `kind` is `bundle`.
+ * One link for one or more files. A bundle (several files) or a collection
+ * summarizes them: `fileName` is "3 files", `byteSize` the total, and `kind` is
+ * `bundle`. A collection's files can change while it is active, and it may be empty.
  */
 export const ShareSchema = z.object({
   id: z.string().min(1),
   fileName: z.string().min(1),
   byteSize: z.int().nonnegative(),
   kind: FileKindSchema,
-  files: z.array(ShareFileSchema).min(1),
+  files: z.array(ShareFileSchema),
+  collection: z.boolean(),
   /** Wall-clock milliseconds for display. Rust enforces lifetimes with a monotonic clock. */
   createdAt: z.number(),
   expiresAt: z.number().nullable(),

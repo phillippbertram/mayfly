@@ -96,7 +96,12 @@ function Shell({ client }: { client: QueryClient }) {
 
   const actions = useShareActions();
   const commands = useCommands(shares, actions);
-  const dragging = useFileDrop(actions.drop);
+  // Files dropped on a collection's file list join it; anywhere else they become new shares.
+  const { dragging, target: dropTarget } = useFileDrop((files, targetId) => {
+    const target = targetId ? shares.find((s) => s.id === targetId) : undefined;
+    if (target) actions.dropInto(target, files);
+    else actions.drop(files);
+  });
   const selected = shares.find((s) => s.id === selectedId) ?? null;
 
   // Keep a sensible selection: the first share at launch, a neighbour after removal.
@@ -148,7 +153,11 @@ function Shell({ client }: { client: QueryClient }) {
                 transition={{ type: "spring", stiffness: 320, damping: 32 }}
                 className="flex min-h-0 flex-1 flex-col gap-3 pt-4 pr-5 pl-6"
               >
-                <DropStrip dragging={dragging} disabled={!online} onChoose={actions.chooseFiles} />
+                <DropStrip
+                  dragging={dragging && !dropTarget}
+                  disabled={!online}
+                  onChoose={actions.chooseFiles}
+                />
                 <ShareList shares={shares} actions={actions} />
               </motion.div>
             )}
@@ -177,6 +186,7 @@ function Shell({ client }: { client: QueryClient }) {
       <DragOverlay
         visible={dragging && shares.length > 0}
         enabled={online}
+        target={dropTarget}
         lifetimeMinutes={settings.defaultLifetimeMinutes}
       />
       <Composer actions={actions} />

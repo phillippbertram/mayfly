@@ -80,8 +80,10 @@ export function createDesktopBackend(): Backend {
     discardStaged: async (stageIds) => {
       await call("discard_staged", done, { stageIds });
     },
-    createShares: (stageIds, options, bundle) =>
-      call("create_shares", z.array(ShareSchema), { stageIds, options, bundle }),
+    createShares: (stageIds, options, grouping) =>
+      call("create_shares", z.array(ShareSchema), { stageIds, options, grouping }),
+    addFiles: (id, stageIds) => call("add_files", ShareSchema, { id, stageIds }),
+    removeFile: (id, fileId) => call("remove_file", ShareSchema, { id, fileId }),
     shareAgain: (id, options) => call("share_again", ShareSchema, { id, options: options ?? null }),
     updateShare: (id, patch) => call("update_share", ShareSchema, { id, patch }),
     stopShare: async (id) => {

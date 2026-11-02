@@ -128,7 +128,8 @@ export function createPreviewBackend(): Backend {
     const url = `http://${at.address}:${at.port}/s/${entry.token}`;
     const profile = profiles.find((p) => p.id === entry.share.profileId) ?? HTTP_PROFILE;
     if (profile.id === DOWNLOAD_PROFILE.id) {
-      const route = entry.share.files.length > 1 ? "z" : "d";
+      const single = entry.share.files.length === 1 && !entry.share.collection;
+      const route = single ? "d" : "z";
       return {
         ...entry.share,
         link: `http://${at.address}:${at.port}/${route}/${entry.token}`,
@@ -148,28 +149,50 @@ export function createPreviewBackend(): Backend {
     return { ...entry.share, link, linkError: null };
   }
 
-  /** One share for one file, or a bundle when given several. */
+  /** The share's summary fields, derived from its files like the Rust backend does. */
+  function summarize(files: Share["files"], collection: boolean) {
+    const [first] = files;
+    const single = first && files.length === 1 && !collection;
+    return {
+      fileName: single
+        ? first.name
+        : files.length === 0
+          ? "No files yet"
+          : files.length === 1
+            ? "1 file"
+            : `${files.length} files`,
+      byteSize: files.reduce((sum, f) => sum + f.byteSize, 0),
+      kind: single ? first.kind : ("bundle" as const),
+    };
+  }
+
+  const toShareFile = (
+    f: { fileName: string; byteSize: number; kind: FileKind },
+    downloadCount = 0,
+  ): Share["files"][number] => ({
+    id: randomToken().slice(0, 16),
+    name: f.fileName,
+    byteSize: f.byteSize,
+    kind: f.kind,
+    downloadCount,
+  });
+
+  /** One share for one file, a bundle when given several, or a collection. */
   function makeEntry(
     files: { fileName: string; byteSize: number; kind: FileKind }[],
     options: ShareOptions,
     overrides: Partial<Entry["share"]> = {},
+    collection = false,
   ): Entry {
     const createdAt = Date.now();
-    const [first] = files;
-    const bundle = files.length > 1 || !first;
+    const shareFiles = files.map((f) => toShareFile(f, overrides.downloadCount ?? 0));
     return {
       token: randomToken(),
       share: {
         id: crypto.randomUUID(),
-        fileName: bundle ? `${files.length} files` : first.fileName,
-        byteSize: files.reduce((sum, f) => sum + f.byteSize, 0),
-        kind: bundle ? "bundle" : first.kind,
-        files: files.map((f) => ({
-          name: f.fileName,
-          byteSize: f.byteSize,
-          kind: f.kind,
-          downloadCount: overrides.downloadCount ?? 0,
-        })),
+        ...summarize(shareFiles, collection),
+        files: shareFiles,
+        collection,
         createdAt,
         expiresAt:
           options.lifetimeMinutes === null ? null : createdAt + options.lifetimeMinutes * MINUTE,
@@ -330,7 +353,7 @@ export function createPreviewBackend(): Backend {
       for (const id of ids) staged.delete(id);
     },
 
-    async createShares(ids, options, bundle) {
+    async createShares(ids, options, grouping) {
       requireOnline();
       if (!profiles.some((p) => p.id === options.profileId)) fail("That profile no longer exists.");
       const files = ids.map((id) => {
@@ -338,9 +361,10 @@ export function createPreviewBackend(): Backend {
         staged.delete(id);
         return file;
       });
-      const created = bundle
-        ? [makeEntry(files, options)]
-        : files.map((file) => makeEntry([file], options));
+      const created =
+        grouping === "separate"
+          ? files.map((file) => makeEntry([file], options))
+          : [makeEntry(files, options, {}, grouping === "collection")];
       entries = [...[...created].reverse(), ...entries];
       changed("shares");
       return created.map(resolve);
@@ -356,10 +380,35 @@ export function createPreviewBackend(): Backend {
           downloadLimit: settings.defaultDownloadLimit,
           profileId: old.profileId,
         },
+        {},
+        old.collection,
       );
       entries = [entry, ...entries];
       changed("shares");
       return resolve(entry);
+    },
+
+    async addFiles(id, ids) {
+      const { share } = find(id);
+      if (!share.collection) fail("Only links kept open for more files can take new files.");
+      if (share.status !== "active") fail("Files can only be added to an active link.");
+      const added = ids.map((stageId) => {
+        const file = staged.get(stageId) ?? fail("A file is no longer available. Add it again.");
+        staged.delete(stageId);
+        return toShareFile(file);
+      });
+      const files = [...share.files, ...added];
+      update(id, { files, ...summarize(files, true) });
+      return resolve(find(id));
+    },
+
+    async removeFile(id, fileId) {
+      const { share } = find(id);
+      if (!share.collection) fail("Files can only be removed from links kept open for more files.");
+      const files = share.files.filter((f) => f.id !== fileId);
+      if (files.length === share.files.length) fail("This file is no longer part of the link.");
+      update(id, { files, ...summarize(files, true) });
+      return resolve(find(id));
     },
 
     async updateShare(id, patch) {

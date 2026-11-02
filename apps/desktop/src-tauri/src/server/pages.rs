@@ -23,7 +23,12 @@ pub static PAGE_CSP: LazyLock<String> = LazyLock::new(|| {
 pub fn landing(token: &str, view: &PageView) -> String {
     let token = escape(token);
     let mut body = String::new();
-    if let [file] = view.files.as_slice() {
+    let refresh = if view.collection {
+        format!(r#" The owner may add or remove files. <a href="/s/{token}">Refresh</a>"#)
+    } else {
+        String::new()
+    };
+    if let ([file], false) = (view.files.as_slice(), view.collection) {
         let _ = write!(
             body,
             r#"<div class="glyph {kind}">{icon}</div>
@@ -38,6 +43,16 @@ pub fn landing(token: &str, view: &PageView) -> String {
             label = kind_label(file.kind),
             download = DOWNLOAD_ICON,
             availability = availability(view.remaining, file.remaining_downloads),
+        );
+    } else if view.files.is_empty() {
+        let _ = write!(
+            body,
+            r#"<div class="glyph bundle">{icon}</div>
+<h1>No files yet</h1>
+<p class="meta">Files appear here when the owner adds them.</p>
+<p class="note">{availability}{refresh}</p>"#,
+            icon = icon(FileKind::Bundle),
+            availability = availability(view.remaining, None),
         );
     } else {
         let total: u64 = view.files.iter().map(|f| f.size).sum();
@@ -55,23 +70,24 @@ pub fn landing(token: &str, view: &PageView) -> String {
         let _ = write!(
             body,
             r#"<div class="glyph bundle">{icon}</div>
-<h1>{count} files</h1>
+<h1>{count}</h1>
 <p class="meta">{size} in total</p>
 {button}
-<p class="note">{availability}{limit}</p>
+<p class="note">{availability}{limit}{refresh}</p>
 <ul class="files">"#,
             icon = icon(FileKind::Bundle),
-            count = view.files.len(),
+            count = file_count(view.files.len()),
             size = format_bytes(total),
             availability = availability(view.remaining, None),
         );
-        for (index, file) in view.files.iter().enumerate() {
+        for file in &view.files {
             let name = escape(&file.name);
+            let id = escape(&file.id);
             let action = if file.remaining_downloads == Some(0) {
                 r#"<span class="done">Limit reached</span>"#.to_owned()
             } else {
                 format!(
-                    r#"<a class="mini" href="/d/{token}/{index}" download aria-label="Download {name}">{DOWNLOAD_ICON}</a>"#
+                    r#"<a class="mini" href="/d/{token}/{id}" download aria-label="Download {name}">{DOWNLOAD_ICON}</a>"#
                 )
             };
             let _ = write!(
@@ -84,9 +100,10 @@ pub fn landing(token: &str, view: &PageView) -> String {
         }
         body.push_str("</ul>");
     }
-    let title = match view.files.as_slice() {
-        [file] => escape(&file.name),
-        files => format!("{} files", files.len()),
+    let title = match (view.files.as_slice(), view.collection) {
+        ([file], false) => escape(&file.name),
+        ([], true) => "No files yet".to_owned(),
+        (files, _) => file_count(files.len()),
     };
     document(&title, &body)
 }
@@ -109,6 +126,14 @@ pub fn error(reason: Unavailable) -> String {
         Unavailable::FileUnavailable => (
             "File unavailable",
             "The shared file can't be read right now.",
+        ),
+        Unavailable::FileRemoved => (
+            "File removed",
+            "The owner removed this file from the shared link.",
+        ),
+        Unavailable::Empty => (
+            "No files yet",
+            "Nothing has been added to this link yet. Try again later.",
         ),
     };
     let body = format!(
@@ -163,6 +188,14 @@ fn availability(remaining: Option<Duration>, downloads_left: Option<u32>) -> Str
         Some(1) => format!("{time} · 1 download left."),
         Some(n) => format!("{time} · {n} downloads left."),
         None => format!("{time}."),
+    }
+}
+
+fn file_count(n: usize) -> String {
+    if n == 1 {
+        "1 file".to_owned()
+    } else {
+        format!("{n} files")
     }
 }
 
@@ -272,6 +305,8 @@ h1{margin:0;font-size:22px;line-height:28px;font-weight:600;letter-spacing:-.015
 .button .suffix{font-weight:500;opacity:.75}
 .button.disabled{background:var(--muted-bg);color:var(--faint)}
 .note{margin:14px 0 0;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.note a{color:var(--accent);font-weight:500;text-decoration:none}
+.note a:hover{text-decoration:underline}
 .files{list-style:none;margin:24px -8px 0;padding:8px 0 0;border-top:1px solid var(--border);text-align:left}
 .files li{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px;min-height:56px}
 .info{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -292,6 +327,7 @@ mod tests {
 
     fn file(name: &str, remaining: Option<u32>) -> PageFile {
         PageFile {
+            id: name.replace('.', "_"),
             name: name.into(),
             size: 2_400_000,
             kind: FileKind::Document,
@@ -305,6 +341,7 @@ mod tests {
             files: vec![file(r#"<script>alert("x")</script>&'.pdf"#, None)],
             remaining: None,
             download_limit: None,
+            collection: false,
         };
         let html = landing("TOKEN", &view);
         assert!(!html.contains("<script>"));
@@ -317,6 +354,7 @@ mod tests {
             files: vec![file("a.pdf", Some(2))],
             remaining: Some(Duration::from_secs(7 * 60 + 1)),
             download_limit: Some(3),
+            collection: false,
         };
         let html = landing("TOKEN", &view);
         assert!(html.contains(r#"href="/d/TOKEN""#));
@@ -330,15 +368,39 @@ mod tests {
             files: vec![file("a.pdf", Some(1)), file("b.pdf", Some(0))],
             remaining: None,
             download_limit: Some(1),
+            collection: false,
         };
         let html = landing("TOKEN", &view);
         assert!(html.contains("2 files"));
-        assert!(html.contains(r#"href="/d/TOKEN/0""#));
-        assert!(!html.contains(r#"href="/d/TOKEN/1""#));
+        assert!(html.contains(r#"href="/d/TOKEN/a_pdf""#));
+        assert!(!html.contains(r#"href="/d/TOKEN/b_pdf""#));
         assert!(html.contains("Limit reached"));
         // One file is exhausted, so the archive isn't offered.
         assert!(!html.contains(r#"href="/z/TOKEN""#));
         assert!(html.contains("Each file can be downloaded once."));
+    }
+
+    #[test]
+    fn collections_list_even_one_file_and_explain_changes() {
+        let view = PageView {
+            files: vec![file("a.pdf", None)],
+            remaining: None,
+            download_limit: None,
+            collection: true,
+        };
+        let html = landing("TOKEN", &view);
+        assert!(html.contains("<h1>1 file</h1>"));
+        assert!(html.contains(r#"href="/z/TOKEN""#));
+        assert!(html.contains(r#"href="/d/TOKEN/a_pdf""#));
+        assert!(html.contains(r#"<a href="/s/TOKEN">Refresh</a>"#));
+
+        let empty = PageView {
+            files: vec![],
+            ..view
+        };
+        let html = landing("TOKEN", &empty);
+        assert!(html.contains("No files yet"));
+        assert!(!html.contains("/z/TOKEN"));
     }
 
     #[test]

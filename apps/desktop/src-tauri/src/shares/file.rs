@@ -170,11 +170,26 @@ pub async fn read_chunk(file: Arc<SharedFile>, offset: u64) -> io::Result<Bytes>
     .map_err(io::Error::other)?
 }
 
+/// Cancellation for one transfer: it stops when any of its tokens is cancelled,
+/// for example when the share is stopped or one of its files is removed.
+#[derive(Clone, Debug, Default)]
+pub struct Cancel(Vec<CancellationToken>);
+
+impl Cancel {
+    pub fn new(tokens: Vec<CancellationToken>) -> Self {
+        Self(tokens)
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.0.iter().any(CancellationToken::is_cancelled)
+    }
+}
+
 /// Streams the whole file in bounded chunks. Cancellation ends the stream with
 /// an error so the client sees an incomplete transfer, never a short success.
 pub fn stream(
     file: Arc<SharedFile>,
-    cancel: CancellationToken,
+    cancel: Cancel,
 ) -> impl Stream<Item = io::Result<Bytes>> + Send {
     futures_util::stream::try_unfold(0u64, move |offset| {
         let file = file.clone();

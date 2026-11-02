@@ -16,12 +16,23 @@ pub fn generate_id() -> Result<String, getrandom::Error> {
     random_string::<12>()
 }
 
+/// Length of [`generate_id`] results: 12 random bytes as base64url.
+pub const ID_LEN: usize = 16;
+
+/// Shape check for IDs that appear in public URLs, such as bundle file IDs.
+pub fn is_well_formed_id(candidate: &str) -> bool {
+    candidate.len() == ID_LEN && is_url_safe(candidate)
+}
+
 /// Cheap shape check so malformed tokens are rejected before any lookup.
 pub fn is_well_formed(candidate: &str) -> bool {
-    candidate.len() == TOKEN_LEN
-        && candidate
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+    candidate.len() == TOKEN_LEN && is_url_safe(candidate)
+}
+
+fn is_url_safe(candidate: &str) -> bool {
+    candidate
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
 }
 
 fn random_string<const N: usize>() -> Result<String, getrandom::Error> {

@@ -48,9 +48,17 @@ and restrained motion. Never show an online state when binding the server failed
 phone or on another computer. For one file it shows the escaped filename, size,
 type, remaining time, and a download button; `GET /d/{token}` streams the file
 with appropriate media type and attachment headers. For a bundle it lists every
-file with its own download (`GET /d/{token}/{index}`) and offers "Download all" as
-a ZIP (`GET /z/{token}`), streamed without compression or temporary files. The
-page must not depend on CDNs, third-party scripts, external fonts, or an account.
+file with its own download (`GET /d/{token}/{file}`, where `{file}` is a stable
+random file ID) and offers "Download all" as a ZIP (`GET /z/{token}`), streamed
+without compression or temporary files. The page must not depend on CDNs,
+third-party scripts, external fonts, or an account.
+
+A link can also be kept open as a **collection**: the user adds and removes files
+while it is active, and the link, QR code, and file IDs of remaining files stay the
+same. Everyone with the link sees the current files after reloading the page; a
+removed file's link reports that it was removed, and its running downloads stop.
+An empty collection shows "No files yet". A collection's direct-download link is
+always its ZIP, so it doesn't change as files come and go.
 
 Expired, disabled, exhausted, invalid, and unavailable-file requests receive
 understandable pages and suitable HTTP status codes without revealing local paths.
