@@ -79,6 +79,8 @@ export const ShareSchema = z.object({
   zipLink: z.string().nullable(),
   /** One link per custom profile; empty without custom profiles. */
   appLinks: z.array(AppLinkSchema),
+  /** Recipients need a password. The password itself never leaves Rust. */
+  protected: z.boolean(),
 });
 
 export const ServerStateSchema = z.discriminatedUnion("kind", [

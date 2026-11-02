@@ -7,6 +7,7 @@ import {
   ImageDown,
   Infinity as InfinityIcon,
   Link2,
+  Lock,
   Pencil,
   QrCode,
   RotateCcw,
@@ -385,7 +386,7 @@ export const ActiveShareRow = memo(function ActiveShareRow({
         <SelectionBar selected={selected} />
         <RowButton
           share={share}
-          label={`${share.fileName}, ${formatBytes(share.byteSize)}, ${timeText}, ${STATUS_LABEL[status]}, ${formatDownloads(share)}`}
+          label={`${share.fileName}, ${formatBytes(share.byteSize)}, ${share.protected ? "password protected, " : ""}${timeText}, ${STATUS_LABEL[status]}, ${formatDownloads(share)}`}
           selected={selected}
           onSelect={onSelect}
           onMenu={() => setMenuOpen(true)}
@@ -403,8 +404,14 @@ export const ActiveShareRow = memo(function ActiveShareRow({
         </span>
         <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5">
           <FileName name={share.fileName} className="text-[14px] leading-5 font-semibold" />
-          <span className="truncate text-[12px] leading-4 text-muted tnum">
-            {formatBytes(share.byteSize)} · {describeType(share)}
+          <span className="flex min-w-0 items-center gap-1 text-[12px] leading-4 text-muted tnum">
+            {share.protected && (
+              <Lock aria-hidden="true" size={11} strokeWidth={2} className="shrink-0 text-accent" />
+            )}
+            <span className="truncate">
+              {formatBytes(share.byteSize)} · {describeType(share)}
+              {share.protected ? " · Password" : ""}
+            </span>
           </span>
         </div>
         <TimerPill share={share} now={now} warning={warning} />

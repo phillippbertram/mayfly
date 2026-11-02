@@ -8,6 +8,7 @@ use std::time::Duration;
 use reqwest::{header, Method, StatusCode};
 
 use super::{HttpState, Listener};
+use crate::shares::password::{Password, Verifier};
 use crate::shares::{test_options, ManualClock, Registry, ShareSnapshot};
 
 struct Harness {
@@ -25,10 +26,7 @@ impl Harness {
         let registry = Arc::new(Registry::new(clock.clone(), Arc::new(|| {})));
         let listener = Listener::bind_addr(
             SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
-            HttpState {
-                registry: registry.clone(),
-                clock: clock.clone(),
-            },
+            HttpState::new(registry.clone(), clock.clone()),
         )
         .await
         .unwrap();
@@ -68,7 +66,7 @@ impl Harness {
         assert!(staged.rejected.is_empty());
         let ids: Vec<_> = staged.files.into_iter().map(|f| f.stage_id).collect();
         self.registry
-            .create(&ids, &test_options(lifetime, limit), separate)
+            .create(&ids, &test_options(lifetime, limit), separate, None)
             .unwrap()
             .remove(0)
     }
@@ -84,6 +82,47 @@ impl Harness {
     async fn request(&self, method: Method, path: &str) -> reqwest::Response {
         self.client
             .request(method, format!("{}{path}", self.base))
+            .send()
+            .await
+            .unwrap()
+    }
+
+    fn protected(
+        &self,
+        files: &[(&str, &[u8])],
+        limit: Option<u32>,
+        password: &str,
+    ) -> ShareSnapshot {
+        let share = self.share(files, Some(30), limit, false);
+        let verifier = Verifier::new(&Password::new(password.into())).unwrap();
+        self.registry
+            .set_password(&share.id, Some(Arc::new(verifier)))
+            .unwrap()
+    }
+
+    /// Posts the password form like a browser on the share page would.
+    async fn submit(&self, token: &str, body: &str, headers: &[(&str, &str)]) -> reqwest::Response {
+        let mut request = self
+            .client
+            .post(format!("{}/s/{token}", self.base))
+            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(body.to_owned());
+        let defaults = [("sec-fetch-site", "same-origin"), ("origin", "null")];
+        for (name, value) in defaults {
+            if !headers.iter().any(|(n, _)| n.eq_ignore_ascii_case(name)) {
+                request = request.header(name, value);
+            }
+        }
+        for (name, value) in headers {
+            request = request.header(*name, *value);
+        }
+        request.send().await.unwrap()
+    }
+
+    async fn get_with(&self, path: &str, cookie: &str) -> reqwest::Response {
+        self.client
+            .get(format!("{}{path}", self.base))
+            .header(header::COOKIE, cookie)
             .send()
             .await
             .unwrap()
@@ -332,11 +371,20 @@ async fn malformed_requests_reveal_nothing() {
     }
     assert_eq!(h.downloads(&share.id), 0);
 
+    // Without a password, the form route only leads back to the page.
     let response = h
         .request(Method::POST, &format!("/s/{}", share.token))
         .await;
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert!(header(&response, header::SET_COOKIE).is_empty());
+    let response = h
+        .request(
+            Method::POST,
+            &format!("/d/{}/{}", share.token, share.files[0].id),
+        )
+        .await;
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
-    assert_eq!(header(&response, header::ALLOW), "GET, HEAD");
+    assert!(header(&response, header::ALLOW).contains("GET"));
 }
 
 #[tokio::test]
@@ -449,10 +497,7 @@ async fn reports_port_conflicts() {
     let port: u16 = h.base.rsplit(':').next().unwrap().parse().unwrap();
     let error = Listener::bind_addr(
         SocketAddr::from((Ipv4Addr::LOCALHOST, port)),
-        HttpState {
-            registry: h.registry.clone(),
-            clock: h.clock.clone(),
-        },
+        HttpState::new(h.registry.clone(), h.clock.clone()),
     )
     .await
     .err()
@@ -556,4 +601,286 @@ async fn removing_a_file_cuts_off_its_running_download() {
         }
     }
     assert!(failed, "the transfer should end with an error");
+}
+
+/// The unlock cookie from a successful password response, as a `Cookie` value.
+fn unlock_cookie(response: &reqwest::Response) -> String {
+    let cookie = response
+        .headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .next()
+        .unwrap()
+        .to_str()
+        .unwrap();
+    cookie.split(';').next().unwrap().to_owned()
+}
+
+#[tokio::test]
+async fn protected_shares_hide_everything_until_unlocked() {
+    let h = Harness::new().await;
+    let share = h.protected(&[("Secret plan.pdf", b"top secret")], None, "pass word");
+    let token = &share.token;
+    h.registry
+        .update(
+            &share.id,
+            &serde_json::from_str(r#"{"title":"Board meeting"}"#).unwrap(),
+        )
+        .unwrap();
+
+    let response = h.get(&format!("/s/{token}")).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(header(&response, header::CACHE_CONTROL), "no-store");
+    assert!(header(&response, header::CONTENT_SECURITY_POLICY).contains("form-action 'self'"));
+    let html = response.text().await.unwrap();
+    assert!(html.contains("Password required"));
+    assert!(html.contains(&format!(r#"action="/s/{token}""#)));
+    for secret in ["Secret plan", "Board meeting", "10 B", &share.files[0].id] {
+        assert!(!html.contains(secret), "{secret}");
+    }
+
+    // Direct links, HEAD, ranges, and forged cookies are all refused.
+    let file = format!("/d/{token}/{}", share.files[0].id);
+    let zip = format!("/z/{token}");
+    for path in [&file, &zip] {
+        let response = h.get(path).await;
+        assert_eq!(response.status(), StatusCode::FORBIDDEN, "{path}");
+        assert!(header(&response, header::CONTENT_DISPOSITION).is_empty());
+        let html = response.text().await.unwrap();
+        assert!(html.contains(&format!(r#"href="/s/{token}""#)));
+        assert!(!html.contains("Secret plan"));
+        let head = h.request(Method::HEAD, path).await;
+        assert_eq!(head.status(), StatusCode::FORBIDDEN, "HEAD {path}");
+        let ranged = h
+            .client
+            .get(format!("{}{path}", h.base))
+            .header(header::RANGE, "bytes=0-3")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(ranged.status(), StatusCode::FORBIDDEN, "range {path}");
+    }
+    let forged = format!(
+        "filehop_unlock={}",
+        crate::shares::token::generate().unwrap()
+    );
+    assert_eq!(
+        h.get_with(&file, &forged).await.status(),
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        h.get_with(&format!("/s/{token}"), "filehop_unlock=../../x")
+            .await
+            .status(),
+        StatusCode::OK
+    );
+    assert_eq!(h.downloads(&share.id), 0);
+}
+
+#[tokio::test]
+async fn the_right_password_unlocks_one_share_for_one_browser() {
+    let h = Harness::new().await;
+    let contents = b"original bytes".repeat(1000);
+    let share = h.protected(&[("a.bin", &contents)], None, "pass word & more");
+    let other = h.protected(&[("b.bin", b"other")], None, "pass word & more");
+    let token = &share.token;
+
+    let wrong = h.submit(token, "password=nope", &[]).await;
+    assert_eq!(wrong.status(), StatusCode::FORBIDDEN);
+    assert!(header(&wrong, header::SET_COOKIE).is_empty());
+    let html = wrong.text().await.unwrap();
+    assert!(html.contains("That password isn&#39;t right."));
+    assert!(html.contains(r#"aria-invalid="true""#));
+    assert_eq!(
+        h.submit(token, "", &[]).await.status(),
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
+        h.submit(token, "password=", &[]).await.status(),
+        StatusCode::BAD_REQUEST
+    );
+
+    let response = h.submit(token, "password=pass+word+%26+more", &[]).await;
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(header(&response, header::LOCATION), format!("/s/{token}"));
+    let cookies: Vec<_> = response
+        .headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .map(|v| v.to_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(cookies.len(), 3);
+    for (cookie, prefix) in cookies.iter().zip(["s", "d", "z"]) {
+        assert!(
+            cookie.contains(&format!("; Path=/{prefix}/{token};")),
+            "{cookie}"
+        );
+        assert!(cookie.contains("HttpOnly") && cookie.contains("SameSite=Strict"));
+        assert!(cookie.contains("Max-Age=1800"), "{cookie}");
+        assert!(!cookie.contains("pass"));
+    }
+    let cookie = unlock_cookie(&response);
+    assert_eq!(h.downloads(&share.id), 0);
+
+    let page = h.get_with(&format!("/s/{token}"), &cookie).await;
+    assert_eq!(page.status(), StatusCode::OK);
+    assert!(page.text().await.unwrap().contains("a.bin"));
+    let file = format!("/d/{token}/{}", share.files[0].id);
+    let head = h
+        .client
+        .head(format!("{}{file}", h.base))
+        .header(header::COOKIE, &cookie)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(head.status(), StatusCode::OK);
+    let download = h.get_with(&file, &cookie).await;
+    assert_eq!(download.status(), StatusCode::OK);
+    assert_eq!(
+        download.bytes().await.unwrap().as_ref(),
+        contents.as_slice()
+    );
+    let zip = h.get_with(&format!("/z/{token}"), &cookie).await;
+    assert_eq!(zip.status(), StatusCode::OK);
+    assert_eq!(h.downloads(&share.id), 2);
+
+    // The same cookie proves nothing for another share.
+    let elsewhere = h
+        .get_with(
+            &format!("/d/{}/{}", other.token, other.files[0].id),
+            &cookie,
+        )
+        .await;
+    assert_eq!(elsewhere.status(), StatusCode::FORBIDDEN);
+    assert_eq!(h.downloads(&other.id), 0);
+}
+
+#[tokio::test]
+async fn password_attempts_are_throttled_per_share() {
+    let h = Harness::new().await;
+    let share = h.protected(&[("a.txt", b"a")], None, "right");
+    for _ in 0..5 {
+        assert_eq!(
+            h.submit(&share.token, "password=wrong", &[]).await.status(),
+            StatusCode::FORBIDDEN
+        );
+    }
+    let throttled = h.submit(&share.token, "password=right", &[]).await;
+    assert_eq!(throttled.status(), StatusCode::TOO_MANY_REQUESTS);
+    let wait: u64 = header(&throttled, header::RETRY_AFTER).parse().unwrap();
+    assert!((1..=12).contains(&wait));
+    assert!(header(&throttled, header::SET_COOKIE).is_empty());
+    assert!(throttled
+        .text()
+        .await
+        .unwrap()
+        .contains("Too many attempts"));
+
+    h.clock.advance(Duration::from_secs(12));
+    let response = h.submit(&share.token, "password=right", &[]).await;
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(h.downloads(&share.id), 0);
+}
+
+#[tokio::test]
+async fn foreign_and_oversized_password_posts_are_refused() {
+    let h = Harness::new().await;
+    let share = h.protected(&[("a.txt", b"a")], None, "right");
+    let host = h.base.trim_start_matches("http://").to_owned();
+    for headers in [
+        vec![("sec-fetch-site", "cross-site")],
+        vec![("sec-fetch-site", "same-site")],
+        vec![(header::ORIGIN.as_str(), "http://evil.example")],
+    ] {
+        let response = h.submit(&share.token, "password=right", &headers).await;
+        assert_eq!(response.status(), StatusCode::FORBIDDEN, "{headers:?}");
+        assert!(header(&response, header::SET_COOKIE).is_empty());
+    }
+    let origin = format!("http://{host}");
+    let response = h
+        .submit(
+            &share.token,
+            "password=right",
+            &[(header::ORIGIN.as_str(), &origin)],
+        )
+        .await;
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+    let long = format!("password={}", "a".repeat(129));
+    assert_eq!(
+        h.submit(&share.token, &long, &[]).await.status(),
+        StatusCode::BAD_REQUEST
+    );
+    let huge = format!("password={}", "a".repeat(4096));
+    assert_eq!(
+        h.submit(&share.token, &huge, &[]).await.status(),
+        StatusCode::PAYLOAD_TOO_LARGE
+    );
+    // Refused posts never used up attempts.
+    for _ in 0..4 {
+        assert_eq!(
+            h.submit(&share.token, "password=wrong", &[]).await.status(),
+            StatusCode::FORBIDDEN
+        );
+    }
+}
+
+#[tokio::test]
+async fn revocation_and_password_changes_end_unlocks() {
+    let h = Harness::new().await;
+    let share = h.protected(&[("a.txt", b"a")], None, "right");
+    let page = format!("/s/{}", share.token);
+    let cookie = unlock_cookie(&h.submit(&share.token, "password=right", &[]).await);
+    assert_eq!(h.get_with(&page, &cookie).await.status(), StatusCode::OK);
+
+    let verifier = Verifier::new(&Password::new("changed".into())).unwrap();
+    h.registry
+        .set_password(&share.id, Some(Arc::new(verifier)))
+        .unwrap();
+    let response = h.get_with(&page, &cookie).await;
+    assert!(response.text().await.unwrap().contains("Password required"));
+
+    let cookie = unlock_cookie(&h.submit(&share.token, "password=changed", &[]).await);
+    h.registry.stop(&share.id).unwrap();
+    assert_eq!(h.get_with(&page, &cookie).await.status(), StatusCode::GONE);
+    let file = format!("/d/{}/{}", share.token, share.files[0].id);
+    assert_eq!(h.get_with(&file, &cookie).await.status(), StatusCode::GONE);
+    assert_eq!(
+        h.submit(&share.token, "password=changed", &[])
+            .await
+            .status(),
+        StatusCode::GONE
+    );
+}
+
+#[tokio::test]
+async fn unlocked_concurrent_downloads_still_obey_the_limit() {
+    let h = Harness::new().await;
+    let share = h.protected(&[("a.txt", b"contents")], Some(3), "right");
+    let cookie = unlock_cookie(&h.submit(&share.token, "password=right", &[]).await);
+    let url = format!("{}/d/{}/{}", h.base, share.token, share.files[0].id);
+    let tasks: Vec<_> = (0..20)
+        .map(|_| {
+            let client = h.client.clone();
+            let url = url.clone();
+            let cookie = cookie.clone();
+            tokio::spawn(async move {
+                client
+                    .get(url)
+                    .header(header::COOKIE, cookie)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status()
+            })
+        })
+        .collect();
+    let mut ok = 0;
+    for task in tasks {
+        if task.await.unwrap() == StatusCode::OK {
+            ok += 1;
+        }
+    }
+    assert_eq!(ok, 3);
+    assert_eq!(h.downloads(&share.id), 3);
 }

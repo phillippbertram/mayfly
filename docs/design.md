@@ -138,8 +138,11 @@ It lists the files, with a remove button for each when there are several, and
 offers the lifetime (5, 10, 30, or 60 minutes, until stopped, or a custom number
 of minutes) and the download limit (none, 1, 3, 5, or custom, per file). With
 several files, a switch "Give each file its own link" creates one share per file;
-by default all files go behind one link. Nothing else is asked: files can be added
-or removed later, and every share has a page, a ZIP, and direct file links.
+by default all files go behind one link. A "Protect with a password" switch reveals
+a password field with show/hide, generate, and copy buttons and the note "Send it
+separately from the link"; Share stays disabled until the password is usable, and
+the field is cleared when the sheet closes. Nothing else is asked: files can be
+added or removed later, and every share has a page, a ZIP, and direct file links.
 Every field starts from the defaults in settings, and the primary Share button has
 focus, so Return shares with the defaults in one keystroke; Cmd/Ctrl+Return shares
 from anywhere in the sheet. A live summary reads like "Until about 14:42 · up to 3
@@ -235,6 +238,9 @@ The inspector answers "how does my device get this?" in one view:
    download limit shows a note that chat-app link previews can use up a download.
 5. A details block: expires at a wall-clock time with a remaining-time ring,
    downloads used against the limit or "unlimited", and the creation time.
+   Below it, a password card: "Password set" with Change and Remove, or "No
+   password" with Add, which opens the same password field inline. A protected
+   row shows a small lock and "Password" in the list.
 6. Actions: Copy link, Copy QR image, Save PNG... (native save dialog), and Stop
    sharing. Below the QR caption, a collapsed "Can't open the link on another
    device?" lists the usual causes: same network (with the current address),
@@ -243,7 +249,8 @@ The inspector answers "how does my device get this?" in one view:
    asks for confirmation inline in the button ("Stop sharing? Confirm") instead of
    opening a dialog, so the keyboard flow stays short.
 7. A one-line trust note: "Anyone with this link on your network can download its
-   files until it expires, including files you add later."
+   files until it expires, including files you add later." Protected shares say
+   that the link and the password are needed and that plain HTTP encrypts neither.
 
 When the share expires or is stopped while the inspector is open, the QR fades to
 a disabled state with an overlay label, the actions reduce to "Share again" and

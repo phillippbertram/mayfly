@@ -1,6 +1,6 @@
-//! Self-contained HTML for the public landing and error pages: inline CSS
-//! (allowed by hash), inline SVG, no scripts, no external requests. Every value
-//! that came from a filename is HTML-escaped.
+//! Self-contained HTML for the public landing, password, and error pages:
+//! inline CSS (allowed by hash), inline SVG, no scripts, no external requests.
+//! Every value that came from a filename is HTML-escaped.
 
 use std::fmt::Write;
 use std::sync::LazyLock;
@@ -10,13 +10,14 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use sha2::{Digest, Sha256};
 
+use crate::shares::password::MAX_PASSWORD_CHARS;
 use crate::shares::{FileKind, PageView, Unavailable};
 
 /// Content-Security-Policy for every HTML page.
 pub static PAGE_CSP: LazyLock<String> = LazyLock::new(|| {
     let hash = STANDARD.encode(Sha256::digest(CSS.as_bytes()));
     format!(
-        "default-src 'none'; style-src 'sha256-{hash}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+        "default-src 'none'; style-src 'sha256-{hash}'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
     )
 });
 
@@ -131,6 +132,45 @@ pub fn landing(token: &str, view: &PageView) -> String {
     document(&page_title, &body)
 }
 
+/// The password form of a protected share. Reveals nothing about its files,
+/// not even the title.
+pub fn locked(token: &str, message: Option<&str>) -> String {
+    let token = escape(token);
+    let (invalid, alert) = match message {
+        Some(message) => (
+            r#" aria-invalid="true" aria-describedby="password-error""#,
+            format!(
+                r#"<p id="password-error" class="error" role="alert">{}</p>"#,
+                escape(message)
+            ),
+        ),
+        None => ("", String::new()),
+    };
+    let body = format!(
+        r#"<div class="glyph bundle">{LOCK_ICON}</div>
+<h1>Password required</h1>
+<p class="meta">Enter the password you got from the person sharing these files.</p>
+<form class="unlock" method="post" action="/s/{token}">
+<label for="password">Password</label>
+<input id="password" name="password" type="password" required maxlength="{MAX_PASSWORD_CHARS}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" autofocus{invalid}>
+{alert}<button class="button" type="submit">Unlock</button>
+</form>"#
+    );
+    document("Password required", &body)
+}
+
+/// A direct file or ZIP link of a protected share opened without unlocking.
+pub fn locked_download(token: &str) -> String {
+    let body = format!(
+        r#"<div class="glyph bundle">{LOCK_ICON}</div>
+<h1>Password required</h1>
+<p class="meta">These files are protected. Enter the password on the share page first.</p>
+<a class="button" href="/s/{token}">Enter password</a>"#,
+        token = escape(token),
+    );
+    document("Password required", &body)
+}
+
 pub fn error(reason: Unavailable) -> String {
     let (headline, sentence) = match reason {
         Unavailable::Expired => (
@@ -157,6 +197,10 @@ pub fn error(reason: Unavailable) -> String {
         Unavailable::Empty => (
             "No files yet",
             "Nothing has been added to this link yet. Try again later.",
+        ),
+        Unavailable::Locked => (
+            "Password required",
+            "Open the share link and enter the password first.",
         ),
     };
     let body = format!(
@@ -301,6 +345,7 @@ const VIDEO_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d=
 const BUNDLE_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/></svg>"#;
 const DOWNLOAD_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>"#;
 const ALERT_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>"#;
+const LOCK_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>"#;
 const MARK_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>"#;
 
 const CSS: &str = r#":root{--bg:#f7f7f8;--surface:#fff;--muted-bg:#f0f1f3;--border:#e2e4e8;--text:#17191d;--muted:#6b7280;--faint:#9ba3ae;--accent:#0e7c66;--accent-hover:#0b6a57;--accent-fg:#fff;--image:#7c5cd6;--document:#3f6fd1;--archive:#a2641a;--audio:#c2437b;--video:#c24a3a;--shadow:0 1px 2px rgb(23 25 29/.06),0 8px 24px rgb(23 25 29/.06)}
@@ -339,6 +384,13 @@ h1{margin:0;font-size:22px;line-height:28px;font-weight:600;letter-spacing:-.015
 .mini:hover{background:var(--muted-bg)}
 .mini svg{width:19px;height:19px;stroke-width:1.9}
 .done{flex:none;font-size:12px;color:var(--faint)}
+.unlock{margin:24px 0 0;text-align:left}
+.unlock label{display:block;margin:0 0 6px;font-size:13px;font-weight:500;color:var(--muted)}
+.unlock input{display:block;width:100%;min-height:48px;padding:0 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font:inherit;font-size:17px}
+.unlock input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+.unlock input[aria-invalid]{border-color:var(--video)}
+.error{margin:8px 0 0;color:var(--video);font-size:13px}
+button.button{width:100%;border:0;font:inherit;font-size:17px;font-weight:600;cursor:pointer}
 footer{margin-top:auto;padding-top:28px;color:var(--faint);font-size:12px;line-height:1.6;text-align:center}
 @media (min-width:600px){main{padding-top:64px}.card{padding:40px 36px 28px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}"#;
@@ -452,6 +504,18 @@ mod tests {
         let html = landing("TOKEN", &single);
         assert!(html.contains("<h1>Contract</h1>"));
         assert!(html.contains("a.pdf · 2.4 MB · Document"));
+    }
+
+    #[test]
+    fn password_form_hides_the_share_and_escapes_messages() {
+        let html = locked("TOKEN", Some("<b>wrong</b>"));
+        assert!(html.contains(r#"<form class="unlock" method="post" action="/s/TOKEN">"#));
+        assert!(html.contains(r#"type="password""#));
+        assert!(html.contains(r#"role="alert">&lt;b&gt;wrong&lt;/b&gt;</p>"#));
+        assert!(html.contains(r#"aria-invalid="true""#));
+        assert!(!locked("TOKEN", None).contains(r#"aria-invalid="true""#));
+        assert!(locked_download("TOKEN").contains(r#"href="/s/TOKEN""#));
+        assert!(PAGE_CSP.contains("form-action 'self'"));
     }
 
     #[test]

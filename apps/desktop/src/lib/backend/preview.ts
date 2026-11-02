@@ -49,6 +49,15 @@ const fail = (message: string): never => {
   throw new BackendError(message);
 };
 
+/** The same rules Rust applies; the preview stores no password at all. */
+function checkPassword(password: string) {
+  if (!password.trim()) fail("Enter a password.");
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: rejecting control characters is the point.
+  if (/[\u0000-\u001f\u007f]/.test(password))
+    fail("Passwords can't contain line breaks or control characters.");
+  if ([...password].length > 128) fail("Keep the password under 128 characters.");
+}
+
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return btoa(String.fromCharCode(...bytes))
@@ -204,6 +213,7 @@ export function createPreviewBackend(): Backend {
         downloadCount: 0,
         downloadLimit: options.downloadLimit,
         status: "active",
+        protected: false,
         ...overrides,
       },
     };
@@ -352,16 +362,18 @@ export function createPreviewBackend(): Backend {
       for (const id of ids) staged.delete(id);
     },
 
-    async createShares(ids, options, separate) {
+    async createShares(ids, options, separate, password) {
       requireOnline();
+      if (password != null) checkPassword(password);
+      const protect = { protected: password != null };
       const files = ids.map((id) => {
         const file = staged.get(id) ?? fail("A file is no longer available. Add it again.");
         staged.delete(id);
         return file;
       });
       const created = separate
-        ? files.map((file) => makeEntry([file], options))
-        : [makeEntry(files, options)];
+        ? files.map((file) => makeEntry([file], options, protect))
+        : [makeEntry(files, options, protect)];
       entries = [...[...created].reverse(), ...entries];
       changed("shares");
       return created.map(resolve);
@@ -376,6 +388,7 @@ export function createPreviewBackend(): Backend {
           lifetimeMinutes: settings.defaultLifetimeMinutes,
           downloadLimit: settings.defaultDownloadLimit,
         },
+        { protected: old.protected },
       );
       entries = [entry, ...entries];
       changed("shares");
@@ -400,6 +413,21 @@ export function createPreviewBackend(): Backend {
       const files = share.files.filter((f) => f.id !== fileId);
       if (files.length === share.files.length) fail("This file is no longer part of the link.");
       update(id, { files, ...summarize(files, share.title) });
+      return resolve(find(id));
+    },
+
+    async generatePassword() {
+      const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+      const bytes = crypto.getRandomValues(new Uint8Array(12));
+      const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+      return chars.match(/.{4}/g)?.join("-") ?? chars;
+    },
+
+    async setSharePassword(id, password) {
+      const { share } = find(id);
+      if (share.status !== "active") fail("Only active shares can be changed.");
+      if (password !== null) checkPassword(password);
+      update(id, { protected: password !== null });
       return resolve(find(id));
     },
 

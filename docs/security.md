@@ -91,10 +91,33 @@ share options offer one link per file for separate audiences. Files can only be
 added while the share is active; an expired, stopped, or exhausted share never
 reopens by adding files.
 
+## Share passwords
+
+Optional per share ([ADR 0011](decisions/0011-share-passwords.md)):
+
+- Rust hashes passwords with Argon2id (19 MiB, 2 passes, 1 lane, random 16-byte
+  salt) and keeps only the verifier in memory. Passwords, verifiers, and unlock
+  credentials are never persisted, logged, put in URLs or QR codes, returned in
+  DTOs, or offered to link profiles. Plaintext is wiped when dropped.
+- A protected share's page shows only a password form. Every page, HEAD, GET,
+  range, and retry request needs the share's unlock cookie: a random 256-bit
+  credential scoped by path to that share's `/s`, `/d`, and `/z` routes,
+  `HttpOnly`, `SameSite=Strict`, valid for at most one hour or the remaining
+  lifetime. The registry stores only its SHA-256, at most 32 per share.
+- The form accepts urlencoded bodies up to 2 KiB and passwords up to 128
+  characters, and refuses posts whose Fetch Metadata or `Origin` show another site.
+- Attempts are throttled per share (5, then one per 12 seconds; `429` with
+  `Retry-After`); at most two Argon2 checks run at once (`503` beyond that). Failed
+  attempts, form views, and unlocks never count as downloads.
+- Changing or removing the password, stopping, expiry, and quitting end all
+  unlocks. Plain HTTP exposes passwords, cookies, and files to network observers;
+  a password limits who can use a link, it doesn't encrypt anything.
+
 ## Public HTTP listener
 
-- Expose only share pages and their download endpoints: `/s/{token}`,
-  `/d/{token}/{file}`, and `/z/{token}`, GET and HEAD only. No
+- Expose only share pages, the password form, and download endpoints:
+  `/s/{token}` (GET, HEAD, and POST for the password), `/d/{token}/{file}`, and
+  `/z/{token}` (GET and HEAD). No
   management routes, arbitrary static-file routes, directory listing, or uploads.
   File IDs are random 16-character base64url values, checked for shape and then
   resolved against the in-memory share; IDs of removed files are never reused.
@@ -160,6 +183,12 @@ sanitized errors, and failed binds. Verify large-file transfers without whole-fi
 
 Profile tests cover every placeholder, Unicode, percent signs, inserted braces,
 single-pass substitution, unknown placeholders, and disallowed schemes.
+
+Password tests cover correct, wrong, and missing passwords over real HTTP; direct
+file, ZIP, HEAD, and range requests without unlocking; cookies of other shares and
+forged cookies; throttling and refill; cross-site and oversized posts; password
+changes, revocation, and expiry; counters after failed attempts and unlocks; and
+download limits under concurrent unlocked requests.
 
 If the management API is delivered, test actual bound addresses, authentication,
 Host allowlisting, forged forwarded headers, Origin/fetch metadata rejection, request

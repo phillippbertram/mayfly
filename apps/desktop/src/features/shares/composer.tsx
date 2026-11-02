@@ -13,13 +13,14 @@ import { useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import { FileGlyph } from "./file-glyph";
 import { FileName } from "./file-name";
+import { PasswordField, passwordProblem } from "./password-field";
 import { LifetimeField, LimitField } from "./share-options";
 import type { ShareActions } from "./use-share-actions";
 
 /**
- * Options sheet shown before staged files become a share: how long it lasts and
- * how often each file may be downloaded. Files can still be added or removed
- * later, so nothing else is asked up front. Enter shares right away.
+ * Options sheet shown before staged files become a share: how long it lasts,
+ * how often each file may be downloaded, and an optional password. Files can
+ * still be added or removed later. Enter shares right away.
  */
 export function Composer({ actions }: { actions: ShareActions }) {
   const staged = useUi((s) => s.composer);
@@ -29,6 +30,9 @@ export function Composer({ actions }: { actions: ShareActions }) {
   const updateSettings = useUpdateSettings();
   const [options, setOptions] = useState<ShareOptions>(actions.defaults);
   const [separate, setSeparate] = useState(false);
+  const [protect, setProtect] = useState(false);
+  // Plaintext only lives here until the share exists or the sheet closes.
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const open = staged !== null;
   const files = staged?.files ?? [];
@@ -39,9 +43,12 @@ export function Composer({ actions }: { actions: ShareActions }) {
       setOptions(actions.defaults());
       setSeparate(false);
     }
+    setProtect(false);
+    setPassword("");
   }, [open, actions]);
   const many = files.length > 1;
   const split = many && separate;
+  const problem = protect ? passwordProblem(password) : null;
 
   const cancel = () => {
     if (staged) actions.discardStaged(staged.files.map((f) => f.stageId));
@@ -49,15 +56,19 @@ export function Composer({ actions }: { actions: ShareActions }) {
   };
 
   const share = async () => {
-    if (!staged || files.length === 0 || busy) return;
+    if (!staged || files.length === 0 || busy || problem) return;
     setBusy(true);
     const ok = await actions.createShares(
       files.map((f) => f.stageId),
       options,
       split,
+      protect ? password : null,
     );
     setBusy(false);
-    if (ok) close();
+    if (ok) {
+      setPassword("");
+      close();
+    }
   };
 
   const [now] = useState(() => Date.now());
@@ -69,6 +80,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
     options.downloadLimit === null
       ? "unlimited downloads"
       : `${many && !split ? "each file " : ""}up to ${options.downloadLimit} ${options.downloadLimit === 1 ? "download" : "downloads"}`,
+    ...(protect ? [split ? "one password for all links" : "password protected"] : []),
   ].join(" · ");
   const summary = parts.charAt(0).toUpperCase() + parts.slice(1);
 
@@ -147,6 +159,43 @@ export function Composer({ actions }: { actions: ShareActions }) {
           value={options.downloadLimit}
           onChange={(downloadLimit) => setOptions((o) => ({ ...o, downloadLimit }))}
         />
+        <span className="pt-1.5 text-[13px] font-medium">Password</span>
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="protect-share"
+            className="flex h-8 items-center gap-2.5 text-[12px] text-muted"
+          >
+            <Switch id="protect-share" checked={protect} onCheckedChange={setProtect} />
+            Protect with a password
+          </label>
+          <AnimatePresence initial={false}>
+            {protect && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-col gap-1.5 p-0.5">
+                  <PasswordField
+                    id="share-password"
+                    value={password}
+                    onChange={setPassword}
+                    onGenerate={actions.generatePassword}
+                    describedBy="share-password-hint"
+                    invalid={password.length > 0 && problem !== null}
+                    autoFocus
+                  />
+                  <p id="share-password-hint" className="text-[11.5px] text-muted">
+                    {password.length > 0 && problem
+                      ? problem
+                      : "Send it separately from the link. FileHop can't show it again later."}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {many && (
@@ -190,7 +239,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
           <Button
             variant="primary"
             size="lg"
-            disabled={files.length === 0 || busy}
+            disabled={files.length === 0 || busy || problem !== null}
             onClick={share}
             data-autofocus
           >

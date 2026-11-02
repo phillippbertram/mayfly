@@ -8,9 +8,11 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tokio_util::sync::CancellationToken;
 
 use super::file::{Cancel, FileKind, SharedFile};
+use super::password::{constant_time_eq, Verifier};
 use super::token;
 
 /// Longest share title, in characters.
@@ -22,6 +24,15 @@ pub const MAX_DOWNLOAD_LIMIT: u32 = 999;
 const MAX_STAGED: usize = 1_000;
 /// Staged files the UI never shared or discarded are dropped after this.
 const STAGE_TTL: Duration = Duration::from_secs(60 * 60);
+/// Password attempts per share: a burst, then one more per interval. Counted
+/// per share so changing addresses doesn't help, and refilled so a legitimate
+/// recipient is never locked out for long.
+const UNLOCK_BURST: u32 = 5;
+const UNLOCK_REFILL: Duration = Duration::from_secs(12);
+/// How long an unlocked browser stays unlocked, at most.
+const UNLOCK_TTL: Duration = Duration::from_secs(60 * 60);
+/// Unlocked browsers per share; the oldest is dropped beyond this.
+const MAX_UNLOCKS: usize = 32;
 
 pub trait Clock: Send + Sync {
     /// Monotonic time; authoritative for lifetimes.
@@ -115,6 +126,32 @@ pub enum Unavailable {
     FileRemoved,
     /// A share without files has nothing to download yet.
     Empty,
+    /// The share has a password and this request didn't prove it.
+    Locked,
+}
+
+/// Why a password attempt isn't checked.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UnlockRefusal {
+    Unavailable(Unavailable),
+    /// The share has no password; the page is open.
+    NotProtected,
+    /// Too many attempts for this share; try again after this long.
+    Throttled(Duration),
+}
+
+/// A password attempt that passed throttling. Check the candidate against
+/// `verifier` outside the registry, then call [`Registry::finish_unlock`].
+pub struct UnlockAttempt {
+    share_id: String,
+    pub verifier: Arc<Verifier>,
+}
+
+/// Proof of a correct password, for one share, held by one browser.
+#[derive(Debug)]
+pub struct Unlocked {
+    pub credential: String,
+    pub max_age: Duration,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -162,6 +199,8 @@ pub struct ShareSnapshot {
     pub status: ShareStatus,
     /// Set by the owner; `None` means the name is derived from the files.
     pub title: Option<String>,
+    /// A password is required to see or download anything.
+    pub protected: bool,
 }
 
 impl ShareSnapshot {
@@ -241,6 +280,61 @@ struct Entry {
     removed: Vec<String>,
     /// Status last reported to the UI, to detect expiry transitions.
     reported: ShareStatus,
+    protection: Option<Protection>,
+}
+
+struct Protection {
+    verifier: Arc<Verifier>,
+    attempts: u32,
+    refilled: Instant,
+    /// SHA-256 of each unlock credential, with its end.
+    unlocks: Vec<([u8; 32], Instant)>,
+}
+
+impl Protection {
+    fn new(verifier: Arc<Verifier>, now: Instant) -> Self {
+        Self {
+            verifier,
+            attempts: UNLOCK_BURST,
+            refilled: now,
+            unlocks: Vec::new(),
+        }
+    }
+
+    /// Takes one attempt from the bucket, or says how long until one is free.
+    fn take_attempt(&mut self, now: Instant) -> Result<(), Duration> {
+        let since = now.saturating_duration_since(self.refilled);
+        if self.attempts < UNLOCK_BURST {
+            let earned = (since.as_millis() / UNLOCK_REFILL.as_millis()) as u32;
+            if earned > 0 {
+                self.attempts = (self.attempts + earned).min(UNLOCK_BURST);
+                self.refilled += UNLOCK_REFILL * earned;
+            }
+        }
+        if self.attempts == 0 {
+            return Err(UNLOCK_REFILL.saturating_sub(now.saturating_duration_since(self.refilled)));
+        }
+        // A full bucket starts refilling from its first use.
+        if self.attempts == UNLOCK_BURST {
+            self.refilled = now;
+        }
+        self.attempts -= 1;
+        Ok(())
+    }
+
+    fn admits(&self, credential: Option<&str>, now: Instant) -> bool {
+        let Some(credential) = credential.filter(|c| token::is_well_formed(c)) else {
+            return false;
+        };
+        let digest = digest(credential);
+        self.unlocks
+            .iter()
+            .any(|(d, until)| *until > now && constant_time_eq(d, &digest))
+    }
+}
+
+fn digest(credential: &str) -> [u8; 32] {
+    Sha256::digest(credential.as_bytes()).into()
 }
 
 impl Entry {
@@ -308,6 +402,7 @@ impl Entry {
             download_limit: self.download_limit,
             status,
             title: self.title.clone(),
+            protected: self.protection.is_some(),
         }
     }
 
@@ -318,6 +413,18 @@ impl Entry {
             ShareStatus::Stopped => Some(Unavailable::Stopped),
             ShareStatus::Expired => Some(Unavailable::Expired),
             ShareStatus::LimitReached => Some(Unavailable::LimitReached),
+        }
+    }
+
+    /// Availability first, then the password: a valid token alone never reveals
+    /// or serves anything of a protected share.
+    fn admit(&self, credential: Option<&str>, now: Instant) -> Result<(), Unavailable> {
+        if let Some(refusal) = self.refusal(now) {
+            return Err(refusal);
+        }
+        match &self.protection {
+            Some(p) if !p.admits(credential, now) => Err(Unavailable::Locked),
+            _ => Ok(()),
         }
     }
 }
@@ -418,11 +525,14 @@ impl Registry {
     // ---- Share management --------------------------------------------------
 
     /// Turns staged files into one share, or one share per file when `separate`.
+    /// With a verifier, every share of the batch needs that password from the
+    /// first request on.
     pub fn create(
         &self,
         stage_ids: &[String],
         options: &ShareOptions,
         separate: bool,
+        password: Option<Arc<Verifier>>,
     ) -> Result<Vec<ShareSnapshot>, ShareError> {
         options.validate()?;
         if stage_ids.is_empty() {
@@ -448,7 +558,9 @@ impl Registry {
             };
             let mut created = Vec::with_capacity(groups.len());
             for group in groups {
-                created.push(new_entry(group, options, now, wall)?);
+                let mut entry = new_entry(group, options, now, wall)?;
+                entry.protection = password.clone().map(|v| Protection::new(v, now));
+                created.push(entry);
             }
             let snapshots: Vec<_> = created.iter().map(|e| e.snapshot(now)).collect();
             // Newest first, keeping the batch in selection order.
@@ -479,6 +591,7 @@ impl Registry {
     }
 
     /// Shares the same files again under a new token; the old share is untouched.
+    /// A password carries over; nobody is unlocked for the new token yet.
     pub fn share_again(
         &self,
         id: &str,
@@ -491,9 +604,11 @@ impl Registry {
             let mut inner = self.lock();
             let previous = find(&inner, id)?;
             let title = previous.title.clone();
+            let password = previous.protection.as_ref().map(|p| p.verifier.clone());
             let files = previous.files.iter().map(|f| f.file.clone()).collect();
             let mut entry = new_entry(files, options, now, wall)?;
             entry.title = title;
+            entry.protection = password.map(|v| Protection::new(v, now));
             let snapshot = entry.snapshot(now);
             inner.shares.insert(0, entry);
             snapshot
@@ -551,6 +666,27 @@ impl Registry {
                 entry.title = title;
             }
             entry.reported = entry.status(now);
+            entry.snapshot(now)
+        };
+        self.changed();
+        Ok(snapshot)
+    }
+
+    /// Sets, changes, or removes the password of an active share. Any change
+    /// signs out every unlocked browser; running downloads continue.
+    pub fn set_password(
+        &self,
+        id: &str,
+        password: Option<Arc<Verifier>>,
+    ) -> Result<ShareSnapshot, ShareError> {
+        let now = self.clock.now();
+        let snapshot = {
+            let mut inner = self.lock();
+            let entry = find_mut(&mut inner, id)?;
+            if entry.status(now) != ShareStatus::Active {
+                return Err(ShareError::new("Only active shares can be changed."));
+            }
+            entry.protection = password.map(|v| Protection::new(v, now));
             entry.snapshot(now)
         };
         self.changed();
@@ -738,13 +874,12 @@ impl Registry {
     // ---- Public HTTP access ------------------------------------------------
 
     /// What the landing page for `token` should show. Never counts as a download.
-    pub fn page(&self, token: &str) -> Result<PageView, Unavailable> {
+    /// `credential` is the unlock cookie, if the browser sent one.
+    pub fn page(&self, token: &str, credential: Option<&str>) -> Result<PageView, Unavailable> {
         let now = self.clock.now();
         let inner = self.lock();
         let entry = find_token(&inner, token)?;
-        if let Some(refusal) = entry.refusal(now) {
-            return Err(refusal);
-        }
+        entry.admit(credential, now)?;
         Ok(PageView {
             files: entry
                 .files
@@ -767,13 +902,16 @@ impl Registry {
     }
 
     /// Checks a download without reserving anything, for HEAD requests.
-    pub fn peek(&self, token: &str, target: Target) -> Result<Vec<Arc<SharedFile>>, Unavailable> {
+    pub fn peek(
+        &self,
+        token: &str,
+        credential: Option<&str>,
+        target: Target,
+    ) -> Result<Vec<Arc<SharedFile>>, Unavailable> {
         let now = self.clock.now();
         let inner = self.lock();
         let entry = find_token(&inner, token)?;
-        if let Some(refusal) = entry.refusal(now) {
-            return Err(refusal);
-        }
+        entry.admit(credential, now)?;
         let indices = resolve_target(entry, &target)?;
         if indices
             .iter()
@@ -788,15 +926,18 @@ impl Registry {
     }
 
     /// Atomically takes one download from every targeted file, or none at all.
-    pub fn reserve(&self, token: &str, target: Target) -> Result<Reservation, Unavailable> {
+    pub fn reserve(
+        &self,
+        token: &str,
+        credential: Option<&str>,
+        target: Target,
+    ) -> Result<Reservation, Unavailable> {
         let now = self.clock.now();
         let wall = self.clock.wall_ms();
         let reservation = {
             let mut inner = self.lock();
             let entry = find_token_mut(&mut inner, token)?;
-            if let Some(refusal) = entry.refusal(now) {
-                return Err(refusal);
-            }
+            entry.admit(credential, now)?;
             let indices = resolve_target(entry, &target)?;
             if indices
                 .iter()
@@ -828,6 +969,59 @@ impl Registry {
         };
         self.changed();
         Ok(reservation)
+    }
+
+    /// Starts a password attempt: the share must be available and protected, and
+    /// its attempt budget not used up. Never counts as a download.
+    pub fn begin_unlock(&self, token: &str) -> Result<UnlockAttempt, UnlockRefusal> {
+        let now = self.clock.now();
+        let mut inner = self.lock();
+        let entry = find_token_mut(&mut inner, token).map_err(UnlockRefusal::Unavailable)?;
+        if let Some(refusal) = entry.refusal(now) {
+            return Err(UnlockRefusal::Unavailable(refusal));
+        }
+        let share_id = entry.id.clone();
+        let protection = entry
+            .protection
+            .as_mut()
+            .ok_or(UnlockRefusal::NotProtected)?;
+        protection
+            .take_attempt(now)
+            .map_err(UnlockRefusal::Throttled)?;
+        Ok(UnlockAttempt {
+            share_id,
+            verifier: protection.verifier.clone(),
+        })
+    }
+
+    /// Records a correct password and returns a new unlock credential. Fails if
+    /// the share ended or its password changed while the attempt was checked.
+    pub fn finish_unlock(&self, attempt: UnlockAttempt) -> Result<Unlocked, Unavailable> {
+        let now = self.clock.now();
+        let mut inner = self.lock();
+        let entry = find_mut(&mut inner, &attempt.share_id).map_err(|_| Unavailable::NotFound)?;
+        if let Some(refusal) = entry.refusal(now) {
+            return Err(refusal);
+        }
+        let max_age = entry.deadline.map_or(UNLOCK_TTL, |d| {
+            d.saturating_duration_since(now).min(UNLOCK_TTL)
+        });
+        let protection = match entry.protection.as_mut() {
+            Some(p) if Arc::ptr_eq(&p.verifier, &attempt.verifier) => p,
+            _ => return Err(Unavailable::Locked),
+        };
+        let credential = token::generate().map_err(|_| Unavailable::Locked)?;
+        protection.unlocks.retain(|(_, until)| *until > now);
+        if protection.unlocks.len() >= MAX_UNLOCKS {
+            protection.unlocks.remove(0);
+        }
+        protection
+            .unlocks
+            .push((digest(&credential), now + max_age));
+        Ok(Unlocked {
+            credential,
+            max_age,
+        })
     }
 
     /// Returns capacity for a download that failed before its first byte.
@@ -879,6 +1073,7 @@ fn new_entry(
         title: None,
         removed: Vec::new(),
         reported: ShareStatus::Active,
+        protection: None,
     };
     for file in files {
         entry.add(file).map_err(|_| unavailable())?;
@@ -1093,7 +1288,7 @@ pub mod tests {
             let staged = self.registry.stage(paths);
             assert!(staged.rejected.is_empty());
             let ids: Vec<_> = staged.files.into_iter().map(|f| f.stage_id).collect();
-            self.registry.create(&ids, options, separate).unwrap()
+            self.registry.create(&ids, options, separate, None).unwrap()
         }
     }
 
@@ -1133,11 +1328,11 @@ pub mod tests {
         assert_eq!(staged.rejected.len(), 1);
         let ids = vec![staged.files[0].stage_id.clone()];
         fx.registry
-            .create(&ids, &options(None, None), true)
+            .create(&ids, &options(None, None), true, None)
             .unwrap();
         assert!(fx
             .registry
-            .create(&ids, &options(None, None), true)
+            .create(&ids, &options(None, None), true, None)
             .is_err());
     }
 
@@ -1159,11 +1354,11 @@ pub mod tests {
             options(None, Some(0)),
             options(None, Some(1000)),
         ] {
-            assert!(fx.registry.create(&ids, &bad, true).is_err());
+            assert!(fx.registry.create(&ids, &bad, true, None).is_err());
         }
         assert!(fx
             .registry
-            .create(&ids, &options(Some(1440), Some(999)), true)
+            .create(&ids, &options(Some(1440), Some(999)), true, None)
             .is_ok());
     }
 
@@ -1175,16 +1370,19 @@ pub mod tests {
             .remove(0);
         fx.clock
             .advance(Duration::from_secs(5 * 60) - Duration::from_millis(1));
-        assert!(fx.registry.page(&share.token).is_ok());
-        assert!(fx.registry.reserve(&share.token, first(&share)).is_ok());
+        assert!(fx.registry.page(&share.token, None).is_ok());
+        assert!(fx
+            .registry
+            .reserve(&share.token, None, first(&share))
+            .is_ok());
         fx.clock.advance(Duration::from_millis(1));
         assert_eq!(
-            fx.registry.page(&share.token).unwrap_err(),
+            fx.registry.page(&share.token, None).unwrap_err(),
             Unavailable::Expired
         );
         assert_eq!(
             fx.registry
-                .reserve(&share.token, first(&share))
+                .reserve(&share.token, None, first(&share))
                 .unwrap_err(),
             Unavailable::Expired
         );
@@ -1200,7 +1398,7 @@ pub mod tests {
         let fx = Fixture::new();
         let share = fx.share(&["a.txt"], &options(None, None), true).remove(0);
         fx.clock.advance(Duration::from_secs(365 * 24 * 3600));
-        assert!(fx.registry.page(&share.token).is_ok());
+        assert!(fx.registry.page(&share.token, None).is_ok());
         assert_eq!(share.expires_at, None);
     }
 
@@ -1217,10 +1415,10 @@ pub mod tests {
         };
         fx.registry.update(&share.id, &patch).unwrap();
         fx.clock.advance(Duration::from_secs(5 * 60));
-        assert!(fx.registry.page(&share.token).is_ok());
+        assert!(fx.registry.page(&share.token, None).is_ok());
         fx.clock.advance(Duration::from_secs(60));
         assert_eq!(
-            fx.registry.page(&share.token).unwrap_err(),
+            fx.registry.page(&share.token, None).unwrap_err(),
             Unavailable::Expired
         );
         // Ended shares can't be changed.
@@ -1231,22 +1429,25 @@ pub mod tests {
     fn stopping_revokes_and_cancels_transfers() {
         let fx = Fixture::new();
         let share = fx.share(&["a.txt"], &options(None, None), true).remove(0);
-        let reservation = fx.registry.reserve(&share.token, first(&share)).unwrap();
+        let reservation = fx
+            .registry
+            .reserve(&share.token, None, first(&share))
+            .unwrap();
         fx.registry.stop(&share.id).unwrap();
         assert!(reservation.cancel.is_cancelled());
         assert_eq!(
-            fx.registry.page(&share.token).unwrap_err(),
+            fx.registry.page(&share.token, None).unwrap_err(),
             Unavailable::Stopped
         );
         assert_eq!(
             fx.registry
-                .reserve(&share.token, first(&share))
+                .reserve(&share.token, None, first(&share))
                 .unwrap_err(),
             Unavailable::Stopped
         );
         fx.registry.remove(&share.id).unwrap();
         assert_eq!(
-            fx.registry.page(&share.token).unwrap_err(),
+            fx.registry.page(&share.token, None).unwrap_err(),
             Unavailable::NotFound
         );
     }
@@ -1266,11 +1467,17 @@ pub mod tests {
         let share = fx
             .share(&["a.txt"], &options(None, Some(2)), true)
             .remove(0);
-        let earlier = fx.registry.reserve(&share.token, first(&share)).unwrap();
-        let _second = fx.registry.reserve(&share.token, first(&share)).unwrap();
+        let earlier = fx
+            .registry
+            .reserve(&share.token, None, first(&share))
+            .unwrap();
+        let _second = fx
+            .registry
+            .reserve(&share.token, None, first(&share))
+            .unwrap();
         assert_eq!(
             fx.registry
-                .reserve(&share.token, first(&share))
+                .reserve(&share.token, None, first(&share))
                 .unwrap_err(),
             Unavailable::LimitReached
         );
@@ -1283,9 +1490,12 @@ pub mod tests {
             fx.registry.get(&share.id).unwrap().status,
             ShareStatus::Active
         );
-        assert!(fx.registry.reserve(&share.token, first(&share)).is_ok());
+        assert!(fx
+            .registry
+            .reserve(&share.token, None, first(&share))
+            .is_ok());
         // HEAD-style checks never take capacity.
-        assert!(fx.registry.peek(&share.token, first(&share)).is_err());
+        assert!(fx.registry.peek(&share.token, None, first(&share)).is_err());
     }
 
     #[test]
@@ -1294,13 +1504,17 @@ pub mod tests {
         let share = fx
             .share(&["a.txt"], &options(None, Some(2)), true)
             .remove(0);
-        fx.registry.reserve(&share.token, first(&share)).unwrap();
+        fx.registry
+            .reserve(&share.token, None, first(&share))
+            .unwrap();
         let too_low = SharePatch {
             download_limit: Some(Some(1)),
             ..Default::default()
         };
         assert!(fx.registry.update(&share.id, &too_low).is_err());
-        fx.registry.reserve(&share.token, first(&share)).unwrap();
+        fx.registry
+            .reserve(&share.token, None, first(&share))
+            .unwrap();
         // A share that reached its limit is no longer active and can't be raised.
         let raise = SharePatch {
             download_limit: Some(Some(3)),
@@ -1323,7 +1537,7 @@ pub mod tests {
                 let granted = granted.clone();
                 let file = first(&share);
                 std::thread::spawn(move || {
-                    if registry.reserve(&token, file).is_ok() {
+                    if registry.reserve(&token, None, file).is_ok() {
                         granted.fetch_add(1, Ordering::SeqCst);
                     }
                 })
@@ -1344,23 +1558,29 @@ pub mod tests {
             .remove(0);
         assert_eq!(
             fx.registry
-                .reserve(&share.token, Target::File(token::generate_id().unwrap()))
+                .reserve(
+                    &share.token,
+                    None,
+                    Target::File(token::generate_id().unwrap())
+                )
                 .unwrap_err(),
             Unavailable::NotFound
         );
         let file = |i: usize| Target::File(share.files[i].id.clone());
-        fx.registry.reserve(&share.token, file(0)).unwrap();
+        fx.registry.reserve(&share.token, None, file(0)).unwrap();
         // One file is exhausted, so the ZIP can't be served and takes nothing.
         assert_eq!(
-            fx.registry.reserve(&share.token, Target::All).unwrap_err(),
+            fx.registry
+                .reserve(&share.token, None, Target::All)
+                .unwrap_err(),
             Unavailable::LimitReached
         );
-        let page = fx.registry.page(&share.token).unwrap();
+        let page = fx.registry.page(&share.token, None).unwrap();
         assert!(!page.all_available());
         assert_eq!(page.files[1].remaining_downloads, Some(1));
-        fx.registry.reserve(&share.token, file(1)).unwrap();
+        fx.registry.reserve(&share.token, None, file(1)).unwrap();
         assert_eq!(
-            fx.registry.page(&share.token).unwrap_err(),
+            fx.registry.page(&share.token, None).unwrap_err(),
             Unavailable::LimitReached
         );
     }
@@ -1371,7 +1591,10 @@ pub mod tests {
         let share = fx
             .share(&["a.txt", "b.txt", "c.txt"], &options(None, Some(1)), false)
             .remove(0);
-        let reservation = fx.registry.reserve(&share.token, Target::All).unwrap();
+        let reservation = fx
+            .registry
+            .reserve(&share.token, None, Target::All)
+            .unwrap();
         assert_eq!(reservation.files.len(), 3);
         assert_eq!(
             fx.registry.get(&share.id).unwrap().status,
@@ -1395,9 +1618,9 @@ pub mod tests {
             .share_again(&share.id, &options(Some(5), None))
             .unwrap();
         assert_ne!(again.token, share.token);
-        assert!(fx.registry.page(&again.token).is_ok());
+        assert!(fx.registry.page(&again.token, None).is_ok());
         assert_eq!(
-            fx.registry.page(&share.token).unwrap_err(),
+            fx.registry.page(&share.token, None).unwrap_err(),
             Unavailable::Stopped
         );
     }
@@ -1411,7 +1634,7 @@ pub mod tests {
         assert!(!fx.registry.has_active());
         for share in shares {
             assert_eq!(
-                fx.registry.page(&share.token).unwrap_err(),
+                fx.registry.page(&share.token, None).unwrap_err(),
                 Unavailable::Stopped
             );
         }
@@ -1422,12 +1645,12 @@ pub mod tests {
         let fx = Fixture::new();
         fx.share(&["a.txt"], &options(None, None), true);
         assert_eq!(
-            fx.registry.page("../../etc/passwd").unwrap_err(),
+            fx.registry.page("../../etc/passwd", None).unwrap_err(),
             Unavailable::NotFound
         );
         let unknown = token::generate().unwrap();
         assert_eq!(
-            fx.registry.page(&unknown).unwrap_err(),
+            fx.registry.page(&unknown, None).unwrap_err(),
             Unavailable::NotFound
         );
     }
@@ -1454,11 +1677,14 @@ pub mod tests {
         // A removed file's link explains itself; the other IDs keep working.
         assert_eq!(
             fx.registry
-                .reserve(&share.token, Target::File(b.clone()))
+                .reserve(&share.token, None, Target::File(b.clone()))
                 .unwrap_err(),
             Unavailable::FileRemoved
         );
-        assert!(fx.registry.reserve(&share.token, Target::File(c)).is_ok());
+        assert!(fx
+            .registry
+            .reserve(&share.token, None, Target::File(c))
+            .is_ok());
         assert!(fx.registry.remove_file(&share.id, &b).is_err());
     }
 
@@ -1468,11 +1694,11 @@ pub mod tests {
         let share = fx
             .share(&["a.txt", "b.txt"], &options(None, None), false)
             .remove(0);
-        assert!(!fx.registry.page(&share.token).unwrap().edited);
+        assert!(!fx.registry.page(&share.token, None).unwrap().edited);
         fx.registry
             .remove_file(&share.id, &share.files[0].id)
             .unwrap();
-        assert!(fx.registry.page(&share.token).unwrap().edited);
+        assert!(fx.registry.page(&share.token, None).unwrap().edited);
     }
 
     #[test]
@@ -1483,13 +1709,16 @@ pub mod tests {
             .remove(0);
         let a = fx
             .registry
-            .reserve(&share.token, Target::File(share.files[0].id.clone()))
+            .reserve(&share.token, None, Target::File(share.files[0].id.clone()))
             .unwrap();
         let b = fx
             .registry
-            .reserve(&share.token, Target::File(share.files[1].id.clone()))
+            .reserve(&share.token, None, Target::File(share.files[1].id.clone()))
             .unwrap();
-        let zip = fx.registry.reserve(&share.token, Target::All).unwrap();
+        let zip = fx
+            .registry
+            .reserve(&share.token, None, Target::All)
+            .unwrap();
         fx.registry
             .remove_file(&share.id, &share.files[0].id)
             .unwrap();
@@ -1515,17 +1744,19 @@ pub mod tests {
             fx.registry.get(&share.id).unwrap().status,
             ShareStatus::Active
         );
-        let page = fx.registry.page(&share.token).unwrap();
+        let page = fx.registry.page(&share.token, None).unwrap();
         assert!(page.files.is_empty() && !page.all_available());
         assert_eq!(
-            fx.registry.reserve(&share.token, Target::All).unwrap_err(),
+            fx.registry
+                .reserve(&share.token, None, Target::All)
+                .unwrap_err(),
             Unavailable::Empty
         );
         // Adding to the empty collection makes it downloadable again.
         fx.registry
             .add_files(&share.id, &fx.stage(&["b.txt"]))
             .unwrap();
-        assert!(fx.registry.reserve(&share.token, Target::All).is_ok());
+        assert!(fx.registry.reserve(&share.token, None, Target::All).is_ok());
     }
 
     #[test]
@@ -1534,7 +1765,9 @@ pub mod tests {
         let share = fx
             .share(&["a.txt"], &options(None, Some(1)), false)
             .remove(0);
-        fx.registry.reserve(&share.token, Target::All).unwrap();
+        fx.registry
+            .reserve(&share.token, None, Target::All)
+            .unwrap();
         assert_eq!(
             fx.registry.get(&share.id).unwrap().status,
             ShareStatus::LimitReached
@@ -1564,7 +1797,11 @@ pub mod tests {
             .unwrap();
         assert_eq!(titled.title.as_deref(), Some("Holiday photos"));
         assert_eq!(
-            fx.registry.page(&share.token).unwrap().title.as_deref(),
+            fx.registry
+                .page(&share.token, None)
+                .unwrap()
+                .title
+                .as_deref(),
             Some("Holiday photos")
         );
 
@@ -1626,10 +1863,12 @@ pub mod tests {
         assert!(share.files.is_empty());
         assert_eq!(share.status, ShareStatus::Active);
         assert_eq!(fx.registry.list()[0].id, share.id);
-        let page = fx.registry.page(&share.token).unwrap();
+        let page = fx.registry.page(&share.token, None).unwrap();
         assert!(page.files.is_empty());
         assert_eq!(
-            fx.registry.reserve(&share.token, Target::All).unwrap_err(),
+            fx.registry
+                .reserve(&share.token, None, Target::All)
+                .unwrap_err(),
             Unavailable::Empty
         );
         let filled = fx
@@ -1637,7 +1876,7 @@ pub mod tests {
             .add_files(&share.id, &fx.stage(&["a.txt"]))
             .unwrap();
         assert_eq!(filled.files.len(), 1);
-        assert!(fx.registry.reserve(&share.token, Target::All).is_ok());
+        assert!(fx.registry.reserve(&share.token, None, Target::All).is_ok());
         assert!(fx.registry.create_empty(&options(Some(0), None)).is_err());
     }
 
@@ -1648,5 +1887,219 @@ pub mod tests {
         assert_eq!(patch.download_limit, None);
         let patch: SharePatch = serde_json::from_str(r#"{"downloadLimit":4}"#).unwrap();
         assert_eq!(patch.download_limit, Some(Some(4)));
+    }
+
+    fn verifier(password: &str) -> Arc<Verifier> {
+        Arc::new(Verifier::new(&super::super::password::Password::new(password.into())).unwrap())
+    }
+
+    impl Fixture {
+        fn protected(
+            &self,
+            names: &[&str],
+            options: &ShareOptions,
+            password: &str,
+        ) -> ShareSnapshot {
+            let ids = self.stage(names);
+            self.registry
+                .create(&ids, options, false, Some(verifier(password)))
+                .unwrap()
+                .remove(0)
+        }
+
+        /// Runs the whole unlock flow as the HTTP layer does.
+        fn unlock(&self, token: &str, password: &str) -> Result<Unlocked, UnlockRefusal> {
+            let attempt = self.registry.begin_unlock(token)?;
+            if !attempt.verifier.matches(password) {
+                return Err(UnlockRefusal::Unavailable(Unavailable::Locked));
+            }
+            self.registry
+                .finish_unlock(attempt)
+                .map_err(UnlockRefusal::Unavailable)
+        }
+    }
+
+    #[test]
+    fn protected_shares_reveal_and_serve_nothing_without_an_unlock() {
+        let fx = Fixture::new();
+        let share = fx.protected(&["a.txt", "b.txt"], &options(Some(10), Some(2)), "secret");
+        let other = fx.protected(&["c.txt"], &options(Some(10), None), "secret");
+        assert!(share.protected);
+        let t = &share.token;
+        assert_eq!(fx.registry.page(t, None).unwrap_err(), Unavailable::Locked);
+        assert_eq!(
+            fx.registry.peek(t, None, first(&share)).unwrap_err(),
+            Unavailable::Locked
+        );
+        assert_eq!(
+            fx.registry.reserve(t, None, Target::All).unwrap_err(),
+            Unavailable::Locked
+        );
+        assert_eq!(
+            fx.unlock(t, "wrong").unwrap_err(),
+            UnlockRefusal::Unavailable(Unavailable::Locked)
+        );
+
+        let unlocked = fx.unlock(t, "secret").unwrap();
+        let credential = Some(unlocked.credential.as_str());
+        assert!(token::is_well_formed(&unlocked.credential));
+        assert_eq!(unlocked.max_age, Duration::from_secs(10 * 60));
+        assert_eq!(fx.registry.page(t, credential).unwrap().files.len(), 2);
+        // Unlocking never counts as a download; reserving after it does.
+        assert_eq!(fx.registry.get(&share.id).unwrap().download_count(), 0);
+        fx.registry.reserve(t, credential, first(&share)).unwrap();
+        assert_eq!(fx.registry.get(&share.id).unwrap().download_count(), 1);
+
+        // A credential belongs to one share; forged ones prove nothing.
+        assert_eq!(
+            fx.registry.page(&other.token, credential).unwrap_err(),
+            Unavailable::Locked
+        );
+        for forged in ["", "x", &token::generate().unwrap(), &share.token] {
+            assert_eq!(
+                fx.registry.page(t, Some(forged)).unwrap_err(),
+                Unavailable::Locked,
+                "{forged:?}"
+            );
+        }
+        // Limits stay authoritative after unlocking.
+        fx.registry.reserve(t, credential, first(&share)).unwrap();
+        assert_eq!(
+            fx.registry
+                .reserve(t, credential, first(&share))
+                .unwrap_err(),
+            Unavailable::LimitReached
+        );
+    }
+
+    #[test]
+    fn unprotected_shares_need_no_unlock() {
+        let fx = Fixture::new();
+        let share = fx.share(&["a.txt"], &options(None, None), true).remove(0);
+        assert!(!share.protected);
+        assert!(fx.registry.page(&share.token, None).is_ok());
+        assert_eq!(
+            fx.registry.begin_unlock(&share.token).err(),
+            Some(UnlockRefusal::NotProtected)
+        );
+        assert_eq!(
+            fx.registry.begin_unlock("../x").err(),
+            Some(UnlockRefusal::Unavailable(Unavailable::NotFound))
+        );
+    }
+
+    #[test]
+    fn attempts_are_throttled_per_share_and_refill() {
+        let fx = Fixture::new();
+        let share = fx.protected(&["a.txt"], &options(None, None), "secret");
+        let other = fx.protected(&["b.txt"], &options(None, None), "secret");
+        for _ in 0..UNLOCK_BURST {
+            assert!(fx.registry.begin_unlock(&share.token).is_ok());
+        }
+        let Err(UnlockRefusal::Throttled(wait)) = fx.registry.begin_unlock(&share.token) else {
+            panic!("expected throttling");
+        };
+        assert!(wait > Duration::ZERO && wait <= UNLOCK_REFILL);
+        // Even the right password waits; other shares are unaffected.
+        assert!(matches!(
+            fx.unlock(&share.token, "secret"),
+            Err(UnlockRefusal::Throttled(_))
+        ));
+        assert!(fx.unlock(&other.token, "secret").is_ok());
+
+        fx.clock.advance(UNLOCK_REFILL);
+        assert!(fx.unlock(&share.token, "secret").is_ok());
+        assert!(matches!(
+            fx.registry.begin_unlock(&share.token),
+            Err(UnlockRefusal::Throttled(_))
+        ));
+        // After a quiet period the full burst is back, not more.
+        fx.clock.advance(UNLOCK_REFILL * 20);
+        for _ in 0..UNLOCK_BURST {
+            assert!(fx.registry.begin_unlock(&share.token).is_ok());
+        }
+        assert!(fx.registry.begin_unlock(&share.token).is_err());
+        assert_eq!(fx.registry.get(&share.id).unwrap().download_count(), 0);
+    }
+
+    #[test]
+    fn unlocks_end_with_the_share_the_ttl_or_a_password_change() {
+        let fx = Fixture::new();
+        let short = fx.protected(&["a.txt"], &options(Some(5), None), "secret");
+        let unlocked = fx.unlock(&short.token, "secret").unwrap();
+        assert_eq!(unlocked.max_age, Duration::from_secs(5 * 60));
+        fx.clock.advance(Duration::from_secs(5 * 60));
+        assert_eq!(
+            fx.registry
+                .page(&short.token, Some(&unlocked.credential))
+                .unwrap_err(),
+            Unavailable::Expired
+        );
+
+        let open = fx.protected(&["b.txt"], &options(None, None), "secret");
+        let unlocked = fx.unlock(&open.token, "secret").unwrap();
+        assert_eq!(unlocked.max_age, UNLOCK_TTL);
+        fx.clock.advance(UNLOCK_TTL);
+        assert_eq!(
+            fx.registry
+                .page(&open.token, Some(&unlocked.credential))
+                .unwrap_err(),
+            Unavailable::Locked
+        );
+
+        let unlocked = fx.unlock(&open.token, "secret").unwrap();
+        let pending = fx.registry.begin_unlock(&open.token).unwrap();
+        let changed = fx
+            .registry
+            .set_password(&open.id, Some(verifier("new")))
+            .unwrap();
+        assert!(changed.protected);
+        assert_eq!(
+            fx.registry
+                .page(&open.token, Some(&unlocked.credential))
+                .unwrap_err(),
+            Unavailable::Locked
+        );
+        // An attempt checked against the old password can't finish.
+        assert_eq!(
+            fx.registry.finish_unlock(pending).unwrap_err(),
+            Unavailable::Locked
+        );
+        assert!(fx.unlock(&open.token, "secret").is_err());
+        assert!(fx.unlock(&open.token, "new").is_ok());
+
+        let again = fx
+            .registry
+            .share_again(&open.id, &options(None, None))
+            .unwrap();
+        assert!(again.protected);
+        assert_eq!(
+            fx.registry.page(&again.token, None).unwrap_err(),
+            Unavailable::Locked
+        );
+        assert!(fx.unlock(&again.token, "new").is_ok());
+
+        let cleared = fx.registry.set_password(&open.id, None).unwrap();
+        assert!(!cleared.protected);
+        assert!(fx.registry.page(&open.token, None).is_ok());
+        fx.registry.stop(&open.id).unwrap();
+        assert!(fx
+            .registry
+            .set_password(&open.id, Some(verifier("x")))
+            .is_err());
+    }
+
+    #[test]
+    fn unlocked_browsers_per_share_are_bounded() {
+        let fx = Fixture::new();
+        let share = fx.protected(&["a.txt"], &options(None, None), "pw");
+        let mut credentials = Vec::new();
+        for _ in 0..=MAX_UNLOCKS {
+            fx.clock.advance(UNLOCK_REFILL);
+            credentials.push(fx.unlock(&share.token, "pw").unwrap().credential);
+        }
+        let page = |c: &String| fx.registry.page(&share.token, Some(c));
+        assert_eq!(page(&credentials[0]).unwrap_err(), Unavailable::Locked);
+        assert!(credentials[1..].iter().all(|c| page(c).is_ok()));
     }
 }

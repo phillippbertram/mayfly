@@ -14,6 +14,7 @@ use crate::network::{self, NetworkInterface};
 use crate::profiles::{self, Profile, MAX_PROFILES};
 use crate::server::{HttpState, Listener};
 use crate::settings::{self, Settings, SettingsPatch};
+use crate::shares::password::{Password, Verifier};
 use crate::shares::{
     Clock, FileKind, Registry, ShareError, ShareOptions, SharePatch, ShareSnapshot, ShareStatus,
     StagedFiles, SystemClock,
@@ -116,6 +117,8 @@ pub struct ShareDto {
     pub files: Vec<ShareFileDto>,
     /// The share link through each custom link profile, for compatible apps.
     pub app_links: Vec<AppLinkDto>,
+    /// Recipients need a password; the password itself is never returned.
+    pub protected: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -247,10 +250,7 @@ impl App {
     }
 
     fn http_state(&self) -> HttpState {
-        HttpState {
-            registry: self.registry.clone(),
-            clock: self.clock.clone(),
-        }
+        HttpState::new(self.registry.clone(), self.clock.clone())
     }
 
     // ---- Server ------------------------------------------------------------
@@ -581,16 +581,23 @@ impl App {
             .collect()
     }
 
-    pub fn create_shares(
+    /// With a password, it is hashed before any share exists, so the shares are
+    /// protected from their first request. One batch shares one verifier.
+    pub async fn create_shares(
         &self,
         stage_ids: &[String],
         options: &ShareOptions,
         separate: bool,
+        password: Option<Password>,
     ) -> Result<Vec<ShareDto>, String> {
+        let verifier = match password {
+            Some(password) => Some(hash(password).await?),
+            None => None,
+        };
         let advertised = self.advertised();
         Ok(self
             .registry
-            .create(stage_ids, options, separate)
+            .create(stage_ids, options, separate, verifier)
             .map_err(|e| e.0)?
             .into_iter()
             .map(|s| self.dto(s, advertised.as_deref()))
@@ -607,6 +614,20 @@ impl App {
     pub fn create_empty_share(&self) -> Result<ShareDto, String> {
         let options = self.settings().default_options();
         let snapshot = self.registry.create_empty(&options).map_err(|e| e.0)?;
+        Ok(self.dto(snapshot, self.advertised().as_deref()))
+    }
+
+    /// Sets, changes, or removes (`None`) a share's password.
+    pub async fn set_share_password(
+        &self,
+        id: &str,
+        password: Option<Password>,
+    ) -> Result<ShareDto, String> {
+        let verifier = match password {
+            Some(password) => Some(hash(password).await?),
+            None => None,
+        };
+        let snapshot = self.registry.set_password(id, verifier).map_err(|e| e.0)?;
         Ok(self.dto(snapshot, self.advertised().as_deref()))
     }
 
@@ -627,6 +648,16 @@ impl App {
             .map_err(|e: ShareError| e.0)?;
         Ok(self.dto(snapshot, self.advertised().as_deref()))
     }
+}
+
+/// Argon2id runs on the blocking pool; the plaintext is dropped right after.
+async fn hash(password: Password) -> Result<Arc<Verifier>, String> {
+    password.validate().map_err(|e| e.0)?;
+    tokio::task::spawn_blocking(move || Verifier::new(&password))
+        .await
+        .map_err(|_| "FileHop couldn't protect this share.".to_owned())?
+        .map(Arc::new)
+        .map_err(|e| e.0)
 }
 
 fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>, custom: &[Profile]) -> ShareDto {
@@ -686,6 +717,7 @@ fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>, custom: &[Profile])
             })
             .collect(),
         app_links,
+        protected: snapshot.protected,
     }
 }
 
@@ -747,6 +779,7 @@ mod tests {
             download_limit: None,
             status: ShareStatus::Active,
             title: None,
+            protected: false,
         }
     }
 

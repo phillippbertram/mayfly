@@ -9,7 +9,8 @@ cloud service, external server, or mobile application is required.
 This document defines the intended product. Local sharing is implemented: native
 selection and drop, in-memory shares and bundles, the LAN listener, landing pages,
 streamed downloads, ZIP downloads, QR PNG export, persistent settings, the tray
-lifecycle, and custom link profiles. GitHub Issues track delivery.
+lifecycle, custom link profiles, and optional share passwords. GitHub Issues track
+delivery.
 
 ## MVP scope
 
@@ -67,6 +68,14 @@ files after reloading the page; a removed file's link reports that it was remove
 and its running downloads stop. A share without files shows "No files yet"; one can
 be created empty to open its link elsewhere first. An optional title (up to 80
 characters) replaces the derived name in the app and heads the share page.
+
+A share can require a password, chosen or generated in the composer or added,
+changed, and removed later in its details. Its page then shows only a password form;
+after the right password, that browser sees the page and downloads for up to an
+hour. The password is sent separately from the link and is never shown again. See
+[ADR 0011](decisions/0011-share-passwords.md) and
+[security.md](security.md#share-passwords); over plain HTTP it doesn't protect
+against someone observing the network.
 
 Expired, disabled, exhausted, invalid, and unavailable-file requests receive
 understandable pages and suitable HTTP status codes without revealing local paths.

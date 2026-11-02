@@ -57,8 +57,20 @@ export interface Backend {
   pickFiles(): Promise<StagedFiles | null>;
   stageDropped(files: DroppedFiles): Promise<StagedFiles>;
   discardStaged(stageIds: string[]): Promise<void>;
-  /** One share for all files, or one per file when `separate`. */
-  createShares(stageIds: string[], options: ShareOptions, separate: boolean): Promise<Share[]>;
+  /**
+   * One share for all files, or one per file when `separate`. With a password,
+   * every created share needs it from the first request on.
+   */
+  createShares(
+    stageIds: string[],
+    options: ShareOptions,
+    separate: boolean,
+    password?: string | null,
+  ): Promise<Share[]>;
+  /** A random password to show in the composer; nothing is stored. */
+  generatePassword(): Promise<string>;
+  /** Sets, changes, or removes (`null`) a share's password; unlocked browsers sign out. */
+  setSharePassword(id: string, password: string | null): Promise<Share>;
   /** A share without files, with the default lifetime and limit. */
   createEmptyShare(): Promise<Share>;
   /** Adds staged files to an active share. */

@@ -83,8 +83,15 @@ export function createDesktopBackend(): Backend {
     discardStaged: async (stageIds) => {
       await call("discard_staged", done, { stageIds });
     },
-    createShares: (stageIds, options, separate) =>
-      call("create_shares", z.array(ShareSchema), { stageIds, options, separate }),
+    createShares: (stageIds, options, separate, password) =>
+      call("create_shares", z.array(ShareSchema), {
+        stageIds,
+        options,
+        separate,
+        password: password ?? null,
+      }),
+    generatePassword: () => call("generate_password", z.string().min(1)),
+    setSharePassword: (id, password) => call("set_share_password", ShareSchema, { id, password }),
     createEmptyShare: () => call("create_empty_share", ShareSchema),
     addFiles: (id, stageIds) => call("add_files", ShareSchema, { id, stageIds }),
     removeFile: (id, fileId) => call("remove_file", ShareSchema, { id, fileId }),

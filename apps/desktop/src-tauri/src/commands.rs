@@ -11,6 +11,7 @@ use crate::app::{App, LinkProfile, ProfileInput, ServerState, ShareDto};
 use crate::export;
 use crate::network::NetworkInterface;
 use crate::settings::{Settings, SettingsPatch};
+use crate::shares::password::{self, Password};
 use crate::shares::{ShareOptions, SharePatch, StagedFiles};
 
 type AppState<'a> = State<'a, Arc<App>>;
@@ -132,13 +133,33 @@ pub fn discard_staged(state: AppState, stage_ids: Vec<String>) {
 }
 
 #[tauri::command]
-pub fn create_shares(
-    state: AppState,
+pub async fn create_shares(
+    state: AppState<'_>,
     stage_ids: Vec<String>,
     options: ShareOptions,
     separate: bool,
+    password: Option<Password>,
 ) -> Result<Vec<ShareDto>, String> {
-    state.create_shares(&stage_ids, &options, separate)
+    state
+        .create_shares(&stage_ids, &options, separate, password)
+        .await
+}
+
+/// A random password for the composer to show. Nothing is stored.
+#[tauri::command]
+pub fn generate_password() -> Result<String, String> {
+    password::generate()
+        .map(|p| p.expose().to_owned())
+        .map_err(|e| e.0)
+}
+
+#[tauri::command]
+pub async fn set_share_password(
+    state: AppState<'_>,
+    id: String,
+    password: Option<Password>,
+) -> Result<ShareDto, String> {
+    state.set_share_password(&id, password).await
 }
 
 #[tauri::command]

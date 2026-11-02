@@ -102,6 +102,8 @@ pub fn run() -> tauri::Result<()> {
             commands::stage_dropped,
             commands::discard_staged,
             commands::create_shares,
+            commands::generate_password,
+            commands::set_share_password,
             commands::create_empty_share,
             commands::add_files,
             commands::remove_file,

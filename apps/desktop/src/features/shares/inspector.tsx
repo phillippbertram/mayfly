@@ -43,6 +43,7 @@ import { FileGlyph } from "./file-glyph";
 import { QrCard } from "./qr-card";
 import { RollingText } from "./rolling-text";
 import { ShareFiles } from "./share-files";
+import { SharePassword } from "./share-password";
 import { EXTEND_OPTIONS, limitOptions } from "./share-row";
 import { ShareTitle } from "./share-title";
 import { StatusChip } from "./status-chip";
@@ -363,6 +364,8 @@ export function InspectorBody({
         </div>
       </div>
 
+      <SharePassword share={share} actions={actions} />
+
       <AnimatePresence mode="wait" initial={false}>
         {ended ? (
           <motion.div
@@ -437,7 +440,9 @@ export function InspectorBody({
         <span>
           {ended
             ? "This link no longer works. Share again to create a new link."
-            : "Anyone with this link on your network can download its files until it expires, including files you add later."}
+            : share.protected
+              ? "Anyone on your network with this link and the password can download its files until it expires. Plain HTTP doesn't encrypt the password or the files."
+              : "Anyone with this link on your network can download its files until it expires, including files you add later."}
         </span>
       </div>
       <div className="flex items-center justify-between text-[11px] text-faint">

@@ -14,9 +14,11 @@ crate-type = ["rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+argon2 = { version = "0.6.0", default-features = false, features = ["alloc", "zeroize"] }
 axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio", "query"] }
 base64 = "0.23.1"
 crc32fast = "1.5.4"
+form_urlencoded = "1"
 futures-util = "0.3.34"
 getrandom = "0.4.3"
 if-addrs = "0.15.0"
@@ -29,6 +31,7 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-dialog = "2.8.4"
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "net", "fs", "sync", "time", "macros"] }
 tokio-util = "0.7.20"
+zeroize = "1.9.1"
 
 [dev-dependencies]
 reqwest = { version = "0.13.5", default-features = false, features = ["stream"] }
@@ -37,3 +40,10 @@ zip = { version = "9.2.2", default-features = false }
 
 [target."cfg(unix)".dependencies]
 libc = "0.2.191"
+
+# Password checks would take seconds in unoptimized builds.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3

@@ -62,6 +62,23 @@ heading of the page recipients open. Clear it to go back to the file name.
 
 <Screenshot name="file-drop" alt="FileHop's current sample-data interface with a share titled Weekend away and three editable files behind one link" />
 
+## Protect a link with a password
+
+Turn on **Protect with a password** in the share options, then type a password or
+generate one. Recipients see only a password field until they enter it; after
+that, their browser can open the page and download for up to an hour. Send the
+password another way than the link, for example by telling it. FileHop doesn't show
+it again later.
+
+In the share details you can add a password to an existing link, change it, or
+remove it. Changing it signs out everyone who already entered the old one; running
+downloads continue. Files shared by dropping them without the share options start
+without a password. To protect a link from the start, use the share options.
+
+A password limits who can use a forwarded link. It doesn't encrypt anything: on
+plain HTTP, someone watching the network can still see the password and the files.
+Too many wrong attempts pause the form for a few seconds.
+
 ## A QR code for one file
 
 The QR code normally opens the share page. To let someone scan a single file's direct

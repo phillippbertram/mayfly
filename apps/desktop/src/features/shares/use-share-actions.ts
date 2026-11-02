@@ -38,9 +38,17 @@ export function useShareActions() {
       if (shares.length > 1) toast(`${shares.length} files are now shared.`, "success");
     };
 
-    /** All files go behind one link unless `separate` asks for one link per file. */
-    const createShares = async (stageIds: string[], options: ShareOptions, separate = false) => {
-      const shares = await run(() => backend.createShares(stageIds, options, separate));
+    /**
+     * All files go behind one link unless `separate` asks for one link per file.
+     * A password protects every created share from its first request on.
+     */
+    const createShares = async (
+      stageIds: string[],
+      options: ShareOptions,
+      separate = false,
+      password: string | null = null,
+    ) => {
+      const shares = await run(() => backend.createShares(stageIds, options, separate, password));
       if (shares) await reveal(shares);
       return Boolean(shares);
     };
@@ -183,6 +191,22 @@ export function useShareActions() {
           );
       },
       setLimit: (share: Share, downloadLimit: number | null) => update(share, { downloadLimit }),
+      generatePassword: () => run(() => backend.generatePassword()),
+      /** Sets, changes, or removes (`null`) the password; `true` when it worked. */
+      async setPassword(share: Share, password: string | null): Promise<boolean> {
+        const updated = await run(() => backend.setSharePassword(share.id, password));
+        if (!updated) return false;
+        await client.invalidateQueries({ queryKey: queryKeys.shares });
+        toast(
+          password === null
+            ? "Password removed. Anyone with the link can open it."
+            : share.protected
+              ? "Password changed. Recipients need the new one."
+              : "Password added.",
+          "success",
+        );
+        return true;
+      },
       stop: (share: Share) => run(() => backend.stopShare(share.id)),
       stopAll: () => run(() => backend.stopAll()),
       remove: (share: Share) => run(() => backend.removeShare(share.id)),
