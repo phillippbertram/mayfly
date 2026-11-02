@@ -226,13 +226,14 @@ network rebind can be reported next to the control that caused it.
   Applying a change that fails to bind keeps the previous working configuration and
   says so.
 - **Appearance**: System, Light, or Dark.
-- **Link profiles**: a list with the built-in HTTP profile pinned at the top and a
-  star marking the default. The editor is a sheet with a name field, a monospace
-  template field, placeholder chips that insert the exact placeholder token at the
-  caret, a live preview built from an example filename and the current address, and
-  validation messages for unknown placeholders, missing schemes, control characters,
-  and disallowed schemes. The Save button stays disabled while validation fails, so
-  a misleading QR can never be generated from a broken template.
+- **Link profiles**: a list with the built-in Download page and Direct download
+  profiles pinned at the top and a star marking the default. The editor is a sheet
+  with a name field, a monospace template field, placeholder chips that insert the
+  exact placeholder token at the caret, a live preview built from an example
+  filename and the current address, and validation messages for unknown
+  placeholders, missing schemes, control characters, and disallowed schemes. The
+  Save button stays disabled while validation fails, so a misleading QR can never
+  be generated from a broken template.
 
 ### Server status and recovery
 

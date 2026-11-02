@@ -65,6 +65,11 @@ Implemented counting semantics ([ADR 0005](decisions/0005-share-bundles-and-land
 | Bundle file `GET /d/{token}/{index}` | One download of that file; limits apply per file                                 |
 | Bundle ZIP `GET /z/{token}`          | One download of every file, reserved all-or-nothing; refused if any is exhausted |
 
+Link previews in chat apps and security scanners fetch URLs before a person does.
+A landing-page link is safe to preview; a direct-download link (`/d`, `/z`) is a
+GET download and counts. The interface warns about this when a direct link has a
+download limit.
+
 Expiry blocks new requests and lets running transfers finish. Stopping, removing,
 or quitting cancels running transfers within one 64 KiB chunk, so the client sees
 an incomplete transfer rather than a short success.

@@ -13,7 +13,10 @@ import type {
 
 export type * from "./schemas";
 
+/** Built-in profile: links open the landing page. */
 export const HTTP_PROFILE_ID = "http";
+/** Built-in profile: links download the file, or a bundle's ZIP, without the page. */
+export const DOWNLOAD_PROFILE_ID = "download";
 
 /** Lifetime presets offered in the UI, in minutes. */
 export const LIFETIME_PRESETS = [5, 10, 30, 60] as const;

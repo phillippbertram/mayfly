@@ -9,11 +9,12 @@ import { Segmented } from "../../components/ui/segmented";
 import { Select } from "../../components/ui/select";
 import { Switch } from "../../components/ui/switch";
 import type { ShareOptions } from "../../lib/backend";
-import { HTTP_PROFILE_ID } from "../../lib/backend/types";
+import { DOWNLOAD_PROFILE_ID } from "../../lib/backend/types";
 import { formatBytes, formatClock } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
 import { useProfiles, useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
+import { DirectLinkHint } from "./direct-link-hint";
 import { FileGlyph } from "./file-glyph";
 import { FileName } from "./file-name";
 import { LifetimeField, LimitField } from "./share-options";
@@ -148,9 +149,11 @@ export function Composer({ actions }: { actions: ShareActions }) {
                 className="self-start"
               />
               <span className="text-[12px] text-muted">
-                {grouping === "one"
-                  ? "One page lists every file, with a ZIP of all of them."
-                  : "Each file gets its own link and QR code."}
+                {grouping === "separate"
+                  ? "Each file gets its own link and QR code."
+                  : options.profileId === DOWNLOAD_PROFILE_ID
+                    ? "The link downloads all files as one ZIP."
+                    : "One page lists every file, with a ZIP of all of them."}
               </span>
             </div>
           </>
@@ -169,16 +172,16 @@ export function Composer({ actions }: { actions: ShareActions }) {
         {profiles.length > 1 && (
           <>
             <span className="pt-1.5 text-[13px] font-medium">Link</span>
-            <Select
-              label="Link profile"
-              className="w-64"
-              value={options.profileId}
-              onValueChange={(profileId) => setOptions((o) => ({ ...o, profileId }))}
-              options={profiles.map((p) => ({
-                value: p.id,
-                label: p.id === HTTP_PROFILE_ID ? "HTTP (download page)" : p.name,
-              }))}
-            />
+            <div className="flex flex-col gap-1.5">
+              <Select
+                label="Link profile"
+                className="w-64"
+                value={options.profileId}
+                onValueChange={(profileId) => setOptions((o) => ({ ...o, profileId }))}
+                options={profiles.map((p) => ({ value: p.id, label: p.name }))}
+              />
+              <DirectLinkHint profileId={options.profileId} downloadLimit={options.downloadLimit} />
+            </div>
           </>
         )}
       </div>

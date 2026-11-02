@@ -60,9 +60,15 @@ previews are not part of the MVP.
 
 ## Link profiles
 
-The built-in HTTP profile always remains available. A custom profile consists of
-an ID, name, and URL template. Settings record an optional default profile ID;
-deleting the default falls back to HTTP.
+Two built-in profiles always remain available: **Download page** (`http`) links to
+the landing page, `/s/{token}`; **Direct download** (`download`) links to the file
+itself, `/d/{token}`, or for a bundle to its ZIP, `/z/{token}`, so the browser
+starts the download without showing a page. Because chat apps fetch links to build
+previews, a direct link with a download limit warns that a preview can use up a
+download; the landing page never counts. A custom profile consists of an ID, name,
+and URL template. Settings record an optional default profile ID; deleting the
+default falls back to the download page. Selectors stay hidden while only one
+profile exists.
 
 | Placeholder         | Replacement                                         |
 | ------------------- | --------------------------------------------------- |

@@ -1,7 +1,14 @@
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { AnimatePresence, motion } from "motion/react";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn";
+
+/**
+ * Where menus and tooltips portal to. A modal <dialog> sits in the browser's top
+ * layer and makes the rest of the page inert, so popovers rendered into <body>
+ * would be hidden behind it and unclickable; inside a dialog they portal into it.
+ */
+export const PortalContainer = createContext<HTMLElement | null>(null);
 
 /**
  * Native modal <dialog> (focus containment, inert background, Escape) with
@@ -27,6 +34,7 @@ export function Modal({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [container, setContainer] = useState<HTMLDialogElement | null>(null);
   const [mounted, setMounted] = useState(open);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -80,7 +88,10 @@ export function Modal({
 
   return (
     <dialog
-      ref={ref}
+      ref={(element) => {
+        ref.current = element;
+        setContainer(element);
+      }}
       aria-labelledby={labelledBy}
       data-visible={open}
       className={cn(
@@ -111,7 +122,7 @@ export function Modal({
             )}
           >
             <HotkeysProvider scope={labelledBy} exclusive>
-              {children}
+              <PortalContainer.Provider value={container}>{children}</PortalContainer.Provider>
             </HotkeysProvider>
           </motion.div>
         )}

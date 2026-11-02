@@ -1,7 +1,8 @@
 import type { Hotkey } from "@tanstack/react-hotkeys";
 import { Tooltip as T } from "radix-ui";
-import type { ReactElement, ReactNode } from "react";
+import { type ReactElement, type ReactNode, useContext } from "react";
 import { Kbd } from "./kbd";
+import { PortalContainer } from "./modal";
 
 export const TooltipProvider = ({ children }: { children: ReactNode }) => (
   <T.Provider delayDuration={450} skipDelayDuration={250}>
@@ -23,7 +24,7 @@ export function Tooltip({
   return (
     <T.Root>
       <T.Trigger asChild>{children}</T.Trigger>
-      <T.Portal>
+      <T.Portal container={useContext(PortalContainer)}>
         <T.Content
           side={side}
           sideOffset={6}

@@ -8,7 +8,7 @@ import { useToast } from "../../components/ui/toast";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useBackend } from "../../hooks/use-backend";
 import type { LinkProfile, TemplatePreview } from "../../lib/backend";
-import { HTTP_PROFILE_ID } from "../../lib/backend/types";
+import { DOWNLOAD_PROFILE_ID } from "../../lib/backend/types";
 import { cn } from "../../lib/cn";
 import { errorMessage, useProfiles, useSettings, useUpdateSettings } from "../../lib/queries";
 import { Field, InlineMessage, inputClass, SectionHeader } from "./field";
@@ -80,13 +80,14 @@ function ProfileList({
     <div>
       <SectionHeader
         title="Link profiles"
-        description="Choose what a QR code opens: the download page, or an app on the phone."
+        description="Choose what a QR code opens: the download page, the file itself, or an app on the phone."
       />
       <ul className="flex flex-col gap-1.5">
         <AnimatePresence initial={false}>
           {profiles.map((profile) => {
             const isDefault = defaultProfileId === profile.id;
-            const builtIn = profile.id === HTTP_PROFILE_ID;
+            // Built-in profiles have no template and can't be edited.
+            const builtIn = profile.template === null;
             return (
               <motion.li
                 key={profile.id}
@@ -116,7 +117,10 @@ function ProfileList({
                     )}
                   </span>
                   <span className="truncate font-mono text-[11px] text-muted">
-                    {profile.template ?? "http://<address>:<port>/s/<token> · built in"}
+                    {profile.template ??
+                      (profile.id === DOWNLOAD_PROFILE_ID
+                        ? "http://<address>:<port>/d/<token> · built in, ZIP for bundles"
+                        : "http://<address>:<port>/s/<token> · built in")}
                   </span>
                 </div>
                 <Tooltip label={isDefault ? "Default for new shares" : "Make default"}>

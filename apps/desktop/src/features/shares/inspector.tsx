@@ -23,7 +23,6 @@ import { useNow } from "../../hooks/use-now";
 import { maskLink, useQrVisible } from "../../hooks/use-qr-visible";
 import { useSignal } from "../../hooks/use-signal";
 import type { Share } from "../../lib/backend";
-import { HTTP_PROFILE_ID } from "../../lib/backend/types";
 import { cn } from "../../lib/cn";
 import {
   describeType,
@@ -38,6 +37,7 @@ import { useUi } from "../../store/ui";
 import { BundleFiles } from "./bundle-files";
 import { CopyButton } from "./copy-button";
 import { CountdownRing } from "./countdown-ring";
+import { DirectLinkHint } from "./direct-link-hint";
 import { FileGlyph } from "./file-glyph";
 import { QrCard } from "./qr-card";
 import { RollingText } from "./rolling-text";
@@ -174,10 +174,7 @@ export function InspectorBody({
                 onOpenChange={setProfileOpen}
                 onValueChange={(id) => actions.setProfile(share, id)}
                 prefix={<span className="w-14 text-[12px] text-muted">Profile</span>}
-                options={profiles.map((p) => ({
-                  value: p.id,
-                  label: p.id === HTTP_PROFILE_ID ? "HTTP (default)" : p.name,
-                }))}
+                options={profiles.map((p) => ({ value: p.id, label: p.name }))}
               />
             </span>
           </Tooltip>
@@ -221,6 +218,9 @@ export function InspectorBody({
             onCopy={() => actions.copyLink(share)}
           />
         </div>
+        {!ended && (
+          <DirectLinkHint profileId={share.profileId} downloadLimit={share.downloadLimit} />
+        )}
         <AnimatePresence initial={false}>
           {customScheme && !ended && (
             <motion.p

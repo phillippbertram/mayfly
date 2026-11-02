@@ -1,9 +1,10 @@
 import type { Hotkey } from "@tanstack/react-hotkeys";
 import { Check, ChevronRight, type LucideIcon } from "lucide-react";
 import { DropdownMenu as M } from "radix-ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useContext } from "react";
 import { cn } from "../../lib/cn";
 import { hotkeyLabel } from "../../lib/hotkeys";
+import { PortalContainer } from "./modal";
 
 export const MenuRoot = M.Root;
 export const MenuTrigger = M.Trigger;
@@ -25,7 +26,7 @@ export function MenuContent({
   className?: string;
 }) {
   return (
-    <M.Portal>
+    <M.Portal container={useContext(PortalContainer)}>
       <M.Content align={align} sideOffset={6} collisionPadding={8} className={cn(panel, className)}>
         {children}
       </M.Content>
@@ -89,7 +90,7 @@ export function MenuSubTrigger({
 
 export function MenuSubContent({ children }: { children: ReactNode }) {
   return (
-    <M.Portal>
+    <M.Portal container={useContext(PortalContainer)}>
       <M.SubContent sideOffset={6} collisionPadding={8} className={panel}>
         {children}
       </M.SubContent>

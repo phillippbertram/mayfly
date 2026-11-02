@@ -307,11 +307,18 @@ impl App {
     }
 
     pub fn profiles(&self) -> Vec<LinkProfile> {
-        vec![LinkProfile {
-            id: settings::HTTP_PROFILE_ID,
-            name: "HTTP",
-            template: None,
-        }]
+        vec![
+            LinkProfile {
+                id: settings::HTTP_PROFILE_ID,
+                name: "Download page",
+                template: None,
+            },
+            LinkProfile {
+                id: settings::DOWNLOAD_PROFILE_ID,
+                name: "Direct download",
+                template: None,
+            },
+        ]
     }
 
     // ---- Shares ------------------------------------------------------------
@@ -405,6 +412,12 @@ impl App {
 
 fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
     let download_count = snapshot.download_count();
+    // Direct links skip the landing page: the file itself, or a bundle's ZIP.
+    let route = match (snapshot.profile_id.as_str(), snapshot.files.len()) {
+        (settings::DOWNLOAD_PROFILE_ID, 1) => "d",
+        (settings::DOWNLOAD_PROFILE_ID, _) => "z",
+        _ => "s",
+    };
     let (file_name, kind) = match snapshot.files.as_slice() {
         [file] => (file.name.clone(), file.kind),
         files => (format!("{} files", files.len()), FileKind::Bundle),
@@ -421,7 +434,7 @@ fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
         download_limit: snapshot.download_limit,
         status: snapshot.status,
         profile_id: snapshot.profile_id,
-        link: advertised.map(|at| format!("http://{at}/s/{}", snapshot.token)),
+        link: advertised.map(|at| format!("http://{at}/{route}/{}", snapshot.token)),
         link_error: None,
         files: snapshot
             .files
@@ -438,4 +451,64 @@ fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shares::FileSnapshot;
+
+    fn snapshot(profile_id: &str, files: usize) -> ShareSnapshot {
+        ShareSnapshot {
+            id: "id".into(),
+            token: "TOKEN".into(),
+            files: (0..files)
+                .map(|i| FileSnapshot {
+                    name: format!("file-{i}.txt"),
+                    size: 10,
+                    kind: FileKind::Document,
+                    downloads: i as u32,
+                })
+                .collect(),
+            created_at: 0,
+            expires_at: None,
+            ended_at: None,
+            download_limit: None,
+            status: ShareStatus::Active,
+            profile_id: profile_id.into(),
+        }
+    }
+
+    fn link(profile_id: &str, files: usize) -> Option<String> {
+        to_dto(snapshot(profile_id, files), Some("192.168.1.20:8765")).link
+    }
+
+    #[test]
+    fn links_follow_the_selected_profile() {
+        let page = Some("http://192.168.1.20:8765/s/TOKEN".to_owned());
+        assert_eq!(link(settings::HTTP_PROFILE_ID, 1), page);
+        assert_eq!(link(settings::HTTP_PROFILE_ID, 3), page);
+        assert_eq!(
+            link(settings::DOWNLOAD_PROFILE_ID, 1).as_deref(),
+            Some("http://192.168.1.20:8765/d/TOKEN")
+        );
+        assert_eq!(
+            link(settings::DOWNLOAD_PROFILE_ID, 3).as_deref(),
+            Some("http://192.168.1.20:8765/z/TOKEN")
+        );
+        assert_eq!(
+            to_dto(snapshot(settings::DOWNLOAD_PROFILE_ID, 1), None).link,
+            None
+        );
+    }
+
+    #[test]
+    fn bundles_summarize_their_files() {
+        let dto = to_dto(snapshot(settings::HTTP_PROFILE_ID, 3), None);
+        assert_eq!(dto.file_name, "3 files");
+        assert_eq!(dto.kind, FileKind::Bundle);
+        assert_eq!(dto.byte_size, 30);
+        assert_eq!(dto.download_count, 2);
+        assert_eq!(dto.files.len(), 3);
+    }
 }

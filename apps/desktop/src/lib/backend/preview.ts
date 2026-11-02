@@ -4,7 +4,7 @@
  * services. The UI labels it as sample data. It never ships behavior to the
  * desktop build; Rust remains the source of truth for the real application.
  */
-import { DEFAULT_SETTINGS, HTTP_PROFILE } from "./defaults";
+import { DEFAULT_SETTINGS, DOWNLOAD_PROFILE, HTTP_PROFILE } from "./defaults";
 import { createEmitter } from "./emitter";
 import {
   type Backend,
@@ -108,6 +108,7 @@ export function createPreviewBackend(): Backend {
   let settings: Settings = { ...DEFAULT_SETTINGS, interfaceId: "en0" };
   let profiles: LinkProfile[] = [
     HTTP_PROFILE,
+    DOWNLOAD_PROFILE,
     {
       id: "docs-app",
       name: "Documents app",
@@ -126,6 +127,14 @@ export function createPreviewBackend(): Backend {
     if (!at) return { ...entry.share, link: null, linkError: null };
     const url = `http://${at.address}:${at.port}/s/${entry.token}`;
     const profile = profiles.find((p) => p.id === entry.share.profileId) ?? HTTP_PROFILE;
+    if (profile.id === DOWNLOAD_PROFILE.id) {
+      const route = entry.share.files.length > 1 ? "z" : "d";
+      return {
+        ...entry.share,
+        link: `http://${at.address}:${at.port}/${route}/${entry.token}`,
+        linkError: null,
+      };
+    }
     if (!profile.template) return { ...entry.share, link: url, linkError: null };
     const valid = validateTemplate(profile.template);
     if (!valid.ok) return { ...entry.share, link: null, linkError: valid.error };
@@ -450,7 +459,8 @@ export function createPreviewBackend(): Backend {
     },
 
     async deleteProfile(id) {
-      if (id === HTTP_PROFILE_ID) fail("The HTTP profile is always available.");
+      if (id === HTTP_PROFILE_ID || id === DOWNLOAD_PROFILE.id)
+        fail("Built-in profiles are always available.");
       profiles = profiles.filter((p) => p.id !== id);
       if (settings.defaultProfileId === id)
         settings = { ...settings, defaultProfileId: HTTP_PROFILE_ID };

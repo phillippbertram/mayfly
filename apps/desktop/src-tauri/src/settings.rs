@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::shares::{ShareError, ShareOptions};
 
+/// Built-in link profile: the landing page, `/s/{token}`.
 pub const HTTP_PROFILE_ID: &str = "http";
+/// Built-in link profile: the file itself, `/d/{token}`, or a bundle's ZIP, `/z/{token}`.
+pub const DOWNLOAD_PROFILE_ID: &str = "download";
 pub const DEFAULT_PORT: u16 = 8765;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -107,9 +110,9 @@ impl Settings {
     }
 }
 
-/// Only the built-in HTTP profile exists until link profiles land (#6).
+/// Only the built-in profiles exist until custom link profiles land (#6).
 pub fn validate_profile(id: &str) -> Result<(), ShareError> {
-    if id == HTTP_PROFILE_ID {
+    if id == HTTP_PROFILE_ID || id == DOWNLOAD_PROFILE_ID {
         Ok(())
     } else {
         Err(ShareError("That profile no longer exists.".into()))
@@ -162,6 +165,9 @@ mod tests {
         assert!(settings
             .apply(&patch(r#"{"defaultProfileId":"other"}"#))
             .is_err());
+        assert!(settings
+            .apply(&patch(r#"{"defaultProfileId":"download"}"#))
+            .is_ok());
         assert!(serde_json::from_str::<SettingsPatch>(r#"{"port":70000}"#).is_err());
         assert!(serde_json::from_str::<SettingsPatch>(r#"{"unknown":1}"#).is_err());
     }
