@@ -115,6 +115,11 @@ pub fn create_shares(
 }
 
 #[tauri::command]
+pub fn create_empty_share(state: AppState) -> Result<ShareDto, String> {
+    state.create_empty_share()
+}
+
+#[tauri::command]
 pub fn add_files(state: AppState, id: String, stage_ids: Vec<String>) -> Result<ShareDto, String> {
     state.add_files(&id, &stage_ids)
 }

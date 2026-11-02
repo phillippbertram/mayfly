@@ -145,6 +145,7 @@ function Shell({ client }: { client: QueryClient }) {
                 server={server}
                 dragging={dragging}
                 onChoose={actions.chooseFiles}
+                onNewEmpty={actions.newEmptyShare}
               />
             ) : (
               <motion.div

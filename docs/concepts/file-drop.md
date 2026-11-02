@@ -1,6 +1,7 @@
 # Concept: the file drop
 
-- Status: Phase 1 implemented, 2026-11-02 ([ADR 0008](../decisions/0008-file-drop.md))
+- Status: Phases 1 and 2 implemented, 2026-11-02 ([ADR 0008](../decisions/0008-file-drop.md),
+  [ADR 0009](../decisions/0009-titles-empty-shares-file-qr.md))
 - Supersedes, once accepted: the grouping and link-profile model in
   [ADR 0005](../decisions/0005-share-bundles-and-landing-page.md),
   [ADR 0006](../decisions/0006-direct-download-links.md), and

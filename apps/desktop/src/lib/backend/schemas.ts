@@ -47,7 +47,10 @@ export const ShareFileSchema = z.object({
  */
 export const ShareSchema = z.object({
   id: z.string().min(1),
+  /** Display name: the title if set, else the file name, "3 files", or "No files yet". */
   fileName: z.string().min(1),
+  /** The owner's title; `null` when the name comes from the files. */
+  title: z.string().nullable(),
   byteSize: z.int().nonnegative(),
   kind: FileKindSchema,
   files: z.array(ShareFileSchema),
@@ -146,6 +149,8 @@ export const SharePatchSchema = z
       .max(24 * 60)
       .nullable(),
     downloadLimit: DownloadLimitSchema,
+    /** A blank title or `null` returns to the name derived from the files. */
+    title: z.string().max(80, { error: "Keep the title under 80 characters." }).nullable(),
   })
   .partial();
 

@@ -83,7 +83,8 @@ export function describeType(share: Share): string {
       .map(([kind, n]) => `${n} ${KIND_PLURAL[kind][n === 1 ? 0 : 1]}`)
       .join(", ");
   }
-  const { ext } = splitFileName(share.fileName);
+  // The file's own name: a title doesn't carry an extension.
+  const { ext } = splitFileName(share.files[0]?.name ?? share.fileName);
   const label = KIND_LABEL[share.kind];
   return ext ? `${ext.slice(1).toUpperCase()} ${label.toLowerCase()}` : label;
 }

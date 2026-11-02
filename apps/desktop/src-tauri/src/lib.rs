@@ -70,6 +70,7 @@ pub fn run() -> tauri::Result<()> {
             commands::stage_dropped,
             commands::discard_staged,
             commands::create_shares,
+            commands::create_empty_share,
             commands::add_files,
             commands::remove_file,
             commands::share_again,

@@ -80,7 +80,10 @@ pub struct ShareFileDto {
 #[serde(rename_all = "camelCase")]
 pub struct ShareDto {
     pub id: String,
+    /// Display name: the title if set, else the file name or "N files".
     pub file_name: String,
+    /// The owner's title, or `None` when the name comes from the files.
+    pub title: Option<String>,
     pub byte_size: u64,
     pub kind: FileKind,
     pub created_at: u64,
@@ -387,6 +390,13 @@ impl App {
         Ok(to_dto(snapshot, self.advertised().as_deref()))
     }
 
+    /// A share without files, using the default lifetime and limit.
+    pub fn create_empty_share(&self) -> Result<ShareDto, String> {
+        let options = self.settings().default_options();
+        let snapshot = self.registry.create_empty(&options).map_err(|e| e.0)?;
+        Ok(to_dto(snapshot, self.advertised().as_deref()))
+    }
+
     pub fn add_files(&self, id: &str, stage_ids: &[String]) -> Result<ShareDto, String> {
         let snapshot = self.registry.add_files(id, stage_ids).map_err(|e| e.0)?;
         Ok(to_dto(snapshot, self.advertised().as_deref()))
@@ -410,14 +420,16 @@ fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
     let download_count = snapshot.download_count();
     let base = advertised.map(|at| format!("http://{at}"));
     let token = &snapshot.token;
-    let (file_name, kind) = match snapshot.files.as_slice() {
+    let (derived, kind) = match snapshot.files.as_slice() {
         [file] => (file.name.clone(), file.kind),
         [] => ("No files yet".to_owned(), FileKind::Bundle),
         files => (format!("{} files", files.len()), FileKind::Bundle),
     };
+    let file_name = snapshot.title.clone().unwrap_or(derived);
     ShareDto {
         id: snapshot.id,
         file_name,
+        title: snapshot.title,
         byte_size: snapshot.files.iter().map(|f| f.size).sum(),
         kind,
         created_at: snapshot.created_at,
@@ -470,6 +482,7 @@ mod tests {
             ended_at: None,
             download_limit: None,
             status: ShareStatus::Active,
+            title: None,
         }
     }
 
@@ -509,5 +522,16 @@ mod tests {
         let empty = to_dto(snapshot(0), None);
         assert_eq!(empty.file_name, "No files yet");
         assert_eq!(empty.kind, FileKind::Bundle);
+    }
+
+    #[test]
+    fn titles_replace_the_derived_name_but_keep_the_kind() {
+        let mut titled = snapshot(1);
+        titled.title = Some("Contract for Alex".into());
+        let dto = to_dto(titled, None);
+        assert_eq!(dto.file_name, "Contract for Alex");
+        assert_eq!(dto.title.as_deref(), Some("Contract for Alex"));
+        assert_eq!(dto.kind, FileKind::Document);
+        assert_eq!(to_dto(snapshot(1), None).title, None);
     }
 }

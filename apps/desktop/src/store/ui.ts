@@ -11,6 +11,8 @@ interface UiState {
   qrPulse: number;
   stopSignal: number;
   limitMenuSignal: number;
+  /** Incremented to start renaming the selected share in the inspector. */
+  renameSignal: number;
   settingsOpen: boolean;
   settingsSection: SettingsSection;
   overlay: Overlay;
@@ -23,6 +25,7 @@ interface UiState {
   pulseQr: () => void;
   armStop: () => void;
   openLimitMenu: () => void;
+  startRename: () => void;
   openSettings: (section?: SettingsSection) => void;
   closeSettings: () => void;
   setSettingsSection: (section: SettingsSection) => void;
@@ -40,6 +43,7 @@ export const useUi = create<UiState>()((set) => ({
   qrPulse: 0,
   stopSignal: 0,
   limitMenuSignal: 0,
+  renameSignal: 0,
   settingsOpen: false,
   settingsSection: "general",
   overlay: null,
@@ -53,6 +57,7 @@ export const useUi = create<UiState>()((set) => ({
   armStop: () => set((s) => ({ stopSignal: s.stopSignal + 1, inspectorOpen: true })),
   openLimitMenu: () =>
     set((s) => ({ limitMenuSignal: s.limitMenuSignal + 1, inspectorOpen: true })),
+  startRename: () => set((s) => ({ renameSignal: s.renameSignal + 1, inspectorOpen: true })),
   openSettings: (section) =>
     set((s) => ({
       settingsOpen: true,

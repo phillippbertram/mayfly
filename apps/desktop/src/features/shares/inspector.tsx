@@ -40,6 +40,7 @@ import { QrCard } from "./qr-card";
 import { RollingText } from "./rolling-text";
 import { ShareFiles } from "./share-files";
 import { EXTEND_OPTIONS, limitOptions } from "./share-row";
+import { ShareTitle } from "./share-title";
 import { StatusChip } from "./status-chip";
 import { StopButton } from "./stop-button";
 import type { ShareActions } from "./use-share-actions";
@@ -96,6 +97,10 @@ export function InspectorBody({
   const stopSignal = useUi((s) => s.stopSignal);
   const [limitOpen, setLimitOpen] = useSignalledOpen(useUi((s) => s.limitMenuSignal));
   const [extendOpen, setExtendOpen] = useState(false);
+  const renameSignal = useUi((s) => s.renameSignal);
+  // The QR code shows the share page, or one file's direct link on request.
+  const [qrFileId, setQrFileId] = useState<string | null>(null);
+  const qrFile = share.status === "active" ? share.files.find((f) => f.id === qrFileId) : undefined;
 
   const status = displayStatus(share, now);
   const qrVisible = useQrVisible(share.id);
@@ -109,12 +114,11 @@ export function InspectorBody({
       <div className="flex items-start gap-3">
         <FileGlyph kind={share.kind} size="lg" muted={ended} />
         <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
-          <h2
-            id="inspector-title"
-            className="selectable line-clamp-2 text-[17px] leading-[22px] font-semibold tracking-[-0.01em] break-all"
-          >
-            {share.fileName}
-          </h2>
+          <ShareTitle
+            share={share}
+            renameSignal={renameSignal}
+            onRename={(title) => actions.rename(share, title)}
+          />
           <span className="text-[12px] text-muted tnum">
             {formatBytes(share.byteSize)} · {describeType(share)}
           </span>
@@ -127,20 +131,38 @@ export function InspectorBody({
         />
       </div>
 
-      <ShareFiles share={share} actions={actions} />
+      <ShareFiles
+        share={share}
+        actions={actions}
+        qrFileId={qrFile?.id ?? null}
+        onToggleQr={(id) => setQrFileId((current) => (current === id ? null : id))}
+      />
 
       <div className="flex flex-col items-center gap-2">
         <QrCard
           share={share}
+          link={qrFile ? qrFile.link : share.link}
           pulse={qrPulse}
           visible={qrVisible}
           onToggleVisible={() => setQrVisible(share.id, !qrVisible)}
-          onCopy={() => actions.copyQr(share)}
+          onCopy={() => actions.copyQr(share, qrFile?.link)}
         />
-        <span className="flex items-center gap-1.5 text-[12px] text-muted">
-          <QrCode aria-hidden="true" size={13} strokeWidth={1.6} />
-          {ended ? "This code no longer opens the file" : "Scan with any camera, or open the link"}
-        </span>
+        {qrFile ? (
+          <span className="flex max-w-full items-center gap-1.5 text-[12px] text-muted">
+            <QrCode aria-hidden="true" size={13} strokeWidth={1.6} className="shrink-0" />
+            <span className="truncate">Downloads {qrFile.name} directly</span>
+            <Button size="sm" variant="ghost" onClick={() => setQrFileId(null)}>
+              Show share QR
+            </Button>
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-[12px] text-muted">
+            <QrCode aria-hidden="true" size={13} strokeWidth={1.6} />
+            {ended
+              ? "This code no longer opens the share"
+              : "Scan with any camera, or open the link"}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">

@@ -112,7 +112,9 @@ leaving a laptop on a dashed arc toward another device), the heading "Share a fi
 with your phone", where the last word rolls through phone, tablet, laptop, and
 computer in step with the animation, one supporting sentence that names any device
 with a browser on the network, and a primary button "Choose files..." with its shortcut
-shown as a hint. The header already shows the real server status so the user knows
+shown as a hint. A quieter "New empty link" button next to it creates a share without
+files (Cmd/Ctrl+N), for opening the link on the other device first and adding files
+afterwards. The header already shows the real server status so the user knows
 scanning will work before the first file is added.
 
 The illustration loops gently while idle: a soft glow breathes behind it, a file
@@ -194,11 +196,17 @@ Selecting any row opens it in the inspector.
 
 The inspector answers "how does my device get this?" in one view:
 
-1. Filename (or "N files"), size, and contents at the top, with the file-type glyph.
+1. The share's name, size, and contents at the top, with the file-type glyph. The
+   name is the owner's title, or the file name, "N files", or "No files yet". It
+   can be renamed inline: a pencil on hover, a double-click, or T opens a field;
+   Return saves, Escape cancels, and an empty title returns to the derived name.
+   The title also heads the share page.
 2. The files: a header with the count (and "up to N per file" when limited) and an
    "Add files…" button, then one row per file with glyph, name, size, download
-   count, a button that copies the file's direct link, and a remove button while
-   more than one file remains. Below it, "Drop files here to add them. Everyone with
+   count, a button that copies the file's direct link, a QR button that switches
+   the inspector's code to that file's direct link ("Downloads Beach.jpg directly",
+   with "Show share QR" to switch back), and a remove button while more than one
+   file remains. An empty share shows a dashed "No files yet" drop area instead. Below it, "Drop files here to add them. Everyone with
    the link sees them." The section is a drop target with the same outline as rows.
 3. The QR code on a white card with a generous quiet zone, 240 points wide. The card
    stays white in dark mode because phone cameras scan a dark-on-light code more
@@ -405,6 +413,7 @@ ignored while typing or while a menu is open; dialogs suspend global shortcuts.
 | Cmd/Ctrl+K               | Command palette: search shares and commands |
 | Cmd/Ctrl+/               | Keyboard shortcut overview                  |
 | Cmd/Ctrl+O               | Choose files to share                       |
+| Cmd/Ctrl+N               | Create an empty link                        |
 | Cmd/Ctrl+,               | Settings                                    |
 | Cmd/Ctrl+Shift+L         | Switch light and dark                       |
 | J / K, Up / Down         | Next or previous share                      |
@@ -421,6 +430,7 @@ ignored while typing or while a menu is open; dialogs suspend global shortcuts.
 | E                        | Add 10 minutes                              |
 | L                        | Change the download limit                   |
 | A                        | Add files to the selected share             |
+| T                        | Rename the selected share                   |
 | R                        | Share an ended file again                   |
 | Backspace / Delete       | Stop sharing after inline confirmation      |
 | Cmd/Ctrl+Backspace       | Clear finished shares                       |

@@ -3,6 +3,7 @@ import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Kbd } from "../../components/ui/kbd";
+import { Tooltip } from "../../components/ui/tooltip";
 import type { ServerState } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { appHotkeys } from "../../lib/hotkeys";
@@ -21,10 +22,13 @@ export function EmptyState({
   server,
   dragging,
   onChoose,
+  onNewEmpty,
 }: {
   server: ServerState | undefined;
   dragging: boolean;
   onChoose: () => void;
+  /** Creates a link without files, to open elsewhere first and fill later. */
+  onNewEmpty: () => void;
 }) {
   const [hover, setHover] = useState(false);
   const [device, setDevice] = useState(0);
@@ -126,11 +130,19 @@ export function EmptyState({
           Phone, tablet, or another computer: anything with a browser on your network can download
           it. Nothing leaves your network, and every share ends on its own.
         </motion.p>
-        <motion.div variants={rise} className="mt-1.5">
+        <motion.div variants={rise} className="mt-1.5 flex items-center gap-2">
           <Button variant="primary" size="lg" disabled={!online} onClick={onChoose}>
             <Plus aria-hidden="true" size={16} strokeWidth={2} />
             Choose files…
           </Button>
+          <Tooltip
+            label="Open the link on the other device first, then add files"
+            hotkey={appHotkeys["shares.newEmpty"].hotkey}
+          >
+            <Button variant="ghost" size="lg" disabled={!online} onClick={onNewEmpty}>
+              New empty link
+            </Button>
+          </Tooltip>
         </motion.div>
         <motion.div variants={rise}>
           {blocked ? (

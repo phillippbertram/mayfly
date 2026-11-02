@@ -107,6 +107,14 @@ export function useShareActions() {
       drop: async (files: DroppedFiles) =>
         handleStaged(await run(() => backend.stageDropped(files))),
       addFiles: async (share: Share) => addStaged(share, await run(() => backend.pickFiles())),
+      /** A share without files: open its link elsewhere first, fill it afterwards. */
+      async newEmptyShare() {
+        const share = await run(() => backend.createEmptyShare());
+        if (share) await reveal([share]);
+      },
+      /** A blank title returns to the name derived from the files. */
+      rename: (share: Share, title: string | null) =>
+        update(share, { title: title?.trim() ? title.trim() : null }),
       dropInto: async (share: Share, files: DroppedFiles) =>
         addStaged(share, await run(() => backend.stageDropped(files))),
       async removeFile(share: Share, fileId: string) {
@@ -130,10 +138,11 @@ export function useShareActions() {
       },
       copyFileLink: (share: Share, file: ShareFile) => copyDirect(share, file.link),
       copyZipLink: (share: Share) => copyDirect(share, share.zipLink),
-      async copyQr(share: Share): Promise<boolean> {
-        if (!share.link) return false;
+      /** Copies the QR image of the share page, or of `link` (a file's direct link). */
+      async copyQr(share: Share, link: string | null = share.link): Promise<boolean> {
+        if (!link) return false;
         try {
-          await copyQrImage(share.link);
+          await copyQrImage(link);
           return true;
         } catch {
           toast("The QR image couldn't be copied.", "error");

@@ -82,6 +82,7 @@ export function createDesktopBackend(): Backend {
     },
     createShares: (stageIds, options, separate) =>
       call("create_shares", z.array(ShareSchema), { stageIds, options, separate }),
+    createEmptyShare: () => call("create_empty_share", ShareSchema),
     addFiles: (id, stageIds) => call("add_files", ShareSchema, { id, stageIds }),
     removeFile: (id, fileId) => call("remove_file", ShareSchema, { id, fileId }),
     shareAgain: (id, options) => call("share_again", ShareSchema, { id, options: options ?? null }),

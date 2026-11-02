@@ -75,6 +75,10 @@ or quitting cancels running transfers within one 64 KiB chunk, so the client see
 an incomplete transfer rather than a short success. Removing a file from a share
 cancels its own transfers and any ZIP download that includes it.
 
+Share titles are shown to everyone who opens the link, escaped like file names;
+they are trimmed, limited to 80 characters, and refuse control characters. They
+are not a place for secrets.
+
 A share's token authorizes whatever files the share holds at request time,
 including files added after the link was sent. Every file link contains the token,
 so whoever has one file's link can also open the share page and see all its files:

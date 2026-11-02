@@ -13,6 +13,8 @@ use tokio_util::sync::CancellationToken;
 use super::file::{Cancel, FileKind, SharedFile};
 use super::token;
 
+/// Longest share title, in characters.
+pub const MAX_TITLE_CHARS: usize = 80;
 /// Longest lifetime or extension, in minutes.
 pub const MAX_LIFETIME_MINUTES: u32 = 24 * 60;
 pub const MAX_DOWNLOAD_LIMIT: u32 = 999;
@@ -87,6 +89,9 @@ pub struct SharePatch {
     pub extend_minutes: Option<Option<u32>>,
     #[serde(default, with = "double_option")]
     pub download_limit: Option<Option<u32>>,
+    /// A display title; `Some(None)` or a blank string clears it.
+    #[serde(default, with = "double_option")]
+    pub title: Option<Option<String>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -155,6 +160,8 @@ pub struct ShareSnapshot {
     pub ended_at: Option<u64>,
     pub download_limit: Option<u32>,
     pub status: ShareStatus,
+    /// Set by the owner; `None` means the name is derived from the files.
+    pub title: Option<String>,
 }
 
 impl ShareSnapshot {
@@ -172,6 +179,7 @@ pub struct PageView {
     pub download_limit: Option<u32>,
     /// Files were added or removed after the share was created.
     pub edited: bool,
+    pub title: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -228,6 +236,7 @@ struct Entry {
     cancel: CancellationToken,
     /// Files were added or removed after creation; the page then says so.
     edited: bool,
+    title: Option<String>,
     /// IDs of files taken out of the share, so their links explain why.
     removed: Vec<String>,
     /// Status last reported to the UI, to detect expiry transitions.
@@ -298,6 +307,7 @@ impl Entry {
             },
             download_limit: self.download_limit,
             status,
+            title: self.title.clone(),
         }
     }
 
@@ -452,6 +462,22 @@ impl Registry {
         Ok(snapshots)
     }
 
+    /// Creates a share without files, to open its link elsewhere and fill it later.
+    pub fn create_empty(&self, options: &ShareOptions) -> Result<ShareSnapshot, ShareError> {
+        options.validate()?;
+        let now = self.clock.now();
+        let wall = self.clock.wall_ms();
+        let snapshot = {
+            let mut inner = self.lock();
+            let entry = new_entry(Vec::new(), options, now, wall)?;
+            let snapshot = entry.snapshot(now);
+            inner.shares.insert(0, entry);
+            snapshot
+        };
+        self.changed();
+        Ok(snapshot)
+    }
+
     /// Shares the same files again under a new token; the old share is untouched.
     pub fn share_again(
         &self,
@@ -463,12 +489,11 @@ impl Registry {
         let wall = self.clock.wall_ms();
         let snapshot = {
             let mut inner = self.lock();
-            let files = find(&inner, id)?
-                .files
-                .iter()
-                .map(|f| f.file.clone())
-                .collect();
-            let entry = new_entry(files, options, now, wall)?;
+            let previous = find(&inner, id)?;
+            let title = previous.title.clone();
+            let files = previous.files.iter().map(|f| f.file.clone()).collect();
+            let mut entry = new_entry(files, options, now, wall)?;
+            entry.title = title;
             let snapshot = entry.snapshot(now);
             inner.shares.insert(0, entry);
             snapshot
@@ -486,6 +511,11 @@ impl Registry {
             if entry.status(now) != ShareStatus::Active {
                 return Err(ShareError::new("Only active shares can be changed."));
             }
+            // Validate everything before changing anything.
+            let title = match &patch.title {
+                Some(title) => Some(normalize_title(title.as_deref())?),
+                None => None,
+            };
             if let Some(Some(limit)) = patch.download_limit {
                 validate_limit(Some(limit))?;
                 let started = entry.max_downloads();
@@ -516,6 +546,9 @@ impl Registry {
             if let Some(limit) = patch.download_limit {
                 entry.download_limit = limit;
                 entry.limit_reached_at = None;
+            }
+            if let Some(title) = title {
+                entry.title = title;
             }
             entry.reported = entry.status(now);
             entry.snapshot(now)
@@ -729,6 +762,7 @@ impl Registry {
             remaining: entry.deadline.map(|d| d.saturating_duration_since(now)),
             download_limit: entry.download_limit,
             edited: entry.edited,
+            title: entry.title.clone(),
         })
     }
 
@@ -842,6 +876,7 @@ fn new_entry(
         limit_reached_at: None,
         cancel: CancellationToken::new(),
         edited: false,
+        title: None,
         removed: Vec::new(),
         reported: ShareStatus::Active,
     };
@@ -849,6 +884,24 @@ fn new_entry(
         entry.add(file).map_err(|_| unavailable())?;
     }
     Ok(entry)
+}
+
+/// Trims a title; blank clears it. Control characters and overlong titles are refused.
+fn normalize_title(title: Option<&str>) -> Result<Option<String>, ShareError> {
+    let Some(title) = title.map(str::trim).filter(|t| !t.is_empty()) else {
+        return Ok(None);
+    };
+    if title.chars().any(char::is_control) {
+        return Err(ShareError::new(
+            "Titles can't contain line breaks or control characters.",
+        ));
+    }
+    if title.chars().count() > MAX_TITLE_CHARS {
+        return Err(ShareError(format!(
+            "Keep the title under {MAX_TITLE_CHARS} characters."
+        )));
+    }
+    Ok(Some(title.to_owned()))
 }
 
 fn validate_limit(limit: Option<u32>) -> Result<(), ShareError> {
@@ -1495,6 +1548,97 @@ pub mod tests {
             .share_again(&share.id, &options(None, None))
             .unwrap();
         assert_eq!(again.files.len(), 1);
+    }
+
+    #[test]
+    fn titles_are_trimmed_validated_and_cleared() {
+        let fx = Fixture::new();
+        let share = fx.share(&["a.txt"], &options(None, None), false).remove(0);
+        let rename = |title: Option<&str>| SharePatch {
+            title: Some(title.map(str::to_owned)),
+            ..Default::default()
+        };
+        let titled = fx
+            .registry
+            .update(&share.id, &rename(Some("  Holiday photos  ")))
+            .unwrap();
+        assert_eq!(titled.title.as_deref(), Some("Holiday photos"));
+        assert_eq!(
+            fx.registry.page(&share.token).unwrap().title.as_deref(),
+            Some("Holiday photos")
+        );
+
+        assert!(fx
+            .registry
+            .update(&share.id, &rename(Some("a\nb")))
+            .is_err());
+        let long = "x".repeat(MAX_TITLE_CHARS + 1);
+        assert!(fx.registry.update(&share.id, &rename(Some(&long))).is_err());
+        // A refused title changes nothing else in the same patch either.
+        let mixed = SharePatch {
+            download_limit: Some(Some(5)),
+            title: Some(Some("a\u{7}b".into())),
+            ..Default::default()
+        };
+        assert!(fx.registry.update(&share.id, &mixed).is_err());
+        assert_eq!(fx.registry.get(&share.id).unwrap().download_limit, None);
+
+        assert_eq!(
+            fx.registry
+                .update(&share.id, &rename(Some("   ")))
+                .unwrap()
+                .title,
+            None
+        );
+        fx.registry
+            .update(&share.id, &rename(Some("Again")))
+            .unwrap();
+        assert_eq!(
+            fx.registry.update(&share.id, &rename(None)).unwrap().title,
+            None
+        );
+    }
+
+    #[test]
+    fn share_again_keeps_the_title() {
+        let fx = Fixture::new();
+        let share = fx.share(&["a.txt"], &options(None, None), false).remove(0);
+        let patch = SharePatch {
+            title: Some(Some("Contract".into())),
+            ..Default::default()
+        };
+        fx.registry.update(&share.id, &patch).unwrap();
+        fx.registry.stop(&share.id).unwrap();
+        let again = fx
+            .registry
+            .share_again(&share.id, &options(None, None))
+            .unwrap();
+        assert_eq!(again.title.as_deref(), Some("Contract"));
+    }
+
+    #[test]
+    fn empty_shares_can_be_created_and_filled() {
+        let fx = Fixture::new();
+        let share = fx
+            .registry
+            .create_empty(&options(Some(10), Some(2)))
+            .unwrap();
+        assert!(share.files.is_empty());
+        assert_eq!(share.status, ShareStatus::Active);
+        assert_eq!(fx.registry.list()[0].id, share.id);
+        let page = fx.registry.page(&share.token).unwrap();
+        assert!(page.files.is_empty());
+        assert_eq!(
+            fx.registry.reserve(&share.token, Target::All).unwrap_err(),
+            Unavailable::Empty
+        );
+        let filled = fx
+            .registry
+            .add_files(&share.id, &fx.stage(&["a.txt"]))
+            .unwrap();
+        assert_eq!(filled.files.len(), 1);
+        assert!(fx.registry.reserve(&share.token, Target::All).is_ok());
+        assert!(fx.registry.create_empty(&options(Some(0), None)).is_err());
     }
 
     #[test]

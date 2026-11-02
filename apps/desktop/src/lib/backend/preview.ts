@@ -138,11 +138,13 @@ export function createPreviewBackend(): Backend {
   }
 
   /** The share's summary fields, derived from its files like the Rust backend does. */
-  function summarize(files: Share["files"]) {
+  function summarize(files: Share["files"], title: string | null = null) {
     const [first] = files;
     const single = first && files.length === 1;
     return {
-      fileName: single ? first.name : files.length === 0 ? "No files yet" : `${files.length} files`,
+      fileName:
+        title ??
+        (single ? first.name : files.length === 0 ? "No files yet" : `${files.length} files`),
       byteSize: files.reduce((sum, f) => sum + f.byteSize, 0),
       kind: single ? first.kind : ("bundle" as const),
     };
@@ -172,6 +174,7 @@ export function createPreviewBackend(): Backend {
       share: {
         id: crypto.randomUUID(),
         ...summarize(shareFiles),
+        title: null,
         files: shareFiles,
         createdAt,
         expiresAt:
@@ -367,7 +370,7 @@ export function createPreviewBackend(): Backend {
         return toShareFile(file);
       });
       const files = [...share.files, ...added];
-      update(id, { files, ...summarize(files) });
+      update(id, { files, ...summarize(files, share.title) });
       return resolve(find(id));
     },
 
@@ -375,8 +378,19 @@ export function createPreviewBackend(): Backend {
       const { share } = find(id);
       const files = share.files.filter((f) => f.id !== fileId);
       if (files.length === share.files.length) fail("This file is no longer part of the link.");
-      update(id, { files, ...summarize(files) });
+      update(id, { files, ...summarize(files, share.title) });
       return resolve(find(id));
+    },
+
+    async createEmptyShare() {
+      requireOnline();
+      const entry = makeEntry([], {
+        lifetimeMinutes: settings.defaultLifetimeMinutes,
+        downloadLimit: settings.defaultDownloadLimit,
+      });
+      entries = [entry, ...entries];
+      changed("shares");
+      return resolve(entry);
     },
 
     async updateShare(id, patch) {
@@ -395,6 +409,13 @@ export function createPreviewBackend(): Backend {
             `The limit must be higher than the ${share.downloadCount} downloads already started.`,
           );
         next.downloadLimit = patch.downloadLimit;
+      }
+      if (patch.title !== undefined) {
+        const title = patch.title?.trim() || null;
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: rejecting control characters is the point.
+        if (title && /[\u0000-\u001f\u007f]/.test(title))
+          fail("Titles can't contain line breaks or control characters.");
+        Object.assign(next, { title, ...summarize(share.files, title) });
       }
       update(id, next);
       return resolve(find(id));

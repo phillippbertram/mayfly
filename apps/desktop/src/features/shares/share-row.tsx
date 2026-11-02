@@ -7,6 +7,7 @@ import {
   ImageDown,
   Infinity as InfinityIcon,
   Link2,
+  Pencil,
   QrCode,
   RotateCcw,
   Square,
@@ -42,6 +43,7 @@ import {
   remainingMs,
 } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
+import { useUi } from "../../store/ui";
 import { CopyButton } from "./copy-button";
 import { DownloadMeter } from "./download-meter";
 import { FileName } from "./file-name";
@@ -293,6 +295,16 @@ function ActiveActions({
           <MenuSeparator />
           <MenuItem icon={FilePlus2} onSelect={() => actions.addFiles(share)}>
             Add files…
+          </MenuItem>
+          <MenuItem
+            icon={Pencil}
+            hotkey={appHotkeys["share.rename"].hotkey}
+            onSelect={() => {
+              useUi.getState().select(share.id);
+              useUi.getState().startRename();
+            }}
+          >
+            Rename…
           </MenuItem>
           <MenuItem
             icon={Link2}

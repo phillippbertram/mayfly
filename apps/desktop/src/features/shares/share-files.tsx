@@ -1,4 +1,4 @@
-import { FilePlus2, Link2, X } from "lucide-react";
+import { FilePlus2, Link2, QrCode, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "../../components/ui/button";
 import type { Share } from "../../lib/backend";
@@ -13,7 +13,18 @@ import type { ShareActions } from "./use-share-actions";
  * The files behind a share, each with its download count and direct link. While
  * the share is active, files can be added (button or drop) and removed.
  */
-export function ShareFiles({ share, actions }: { share: Share; actions: ShareActions }) {
+export function ShareFiles({
+  share,
+  actions,
+  qrFileId,
+  onToggleQr,
+}: {
+  share: Share;
+  actions: ShareActions;
+  /** The file whose direct link the inspector's QR code currently shows. */
+  qrFileId: string | null;
+  onToggleQr: (fileId: string) => void;
+}) {
   const active = share.status === "active";
   const limit = share.downloadLimit;
   const many = share.files.length > 1;
@@ -82,6 +93,17 @@ export function ShareFiles({ share, actions }: { share: Share; actions: ShareAct
                         disabled={!file.link || exhausted}
                         onCopy={() => actions.copyFileLink(share, file)}
                       />
+                      <Button
+                        size="iconSm"
+                        variant="ghost"
+                        aria-label={`Show QR code for ${file.name}`}
+                        aria-pressed={qrFileId === file.id}
+                        disabled={!file.link || exhausted}
+                        className={cn(qrFileId === file.id && "bg-accent-soft text-accent-strong")}
+                        onClick={() => onToggleQr(file.id)}
+                      >
+                        <QrCode aria-hidden="true" size={14} />
+                      </Button>
                       {/* The last file stays; "Stop sharing" ends the link instead. */}
                       {many && (
                         <Button
@@ -101,7 +123,7 @@ export function ShareFiles({ share, actions }: { share: Share; actions: ShareAct
           </AnimatePresence>
         </ul>
       )}
-      {active && (
+      {active && share.files.length > 0 && (
         <span className="text-[11px] text-faint">
           Drop files here to add them. Everyone with the link sees them.
         </span>

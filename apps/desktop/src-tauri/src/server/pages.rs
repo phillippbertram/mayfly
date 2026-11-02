@@ -25,6 +25,7 @@ pub fn landing(token: &str, view: &PageView) -> String {
     let mut body = String::new();
     // Without scripts the page can't update itself; once the owner changed the
     // files, or while there are none, it offers a plain reload.
+    let title = view.title.as_deref().map(escape);
     let refresh = if view.edited || view.files.is_empty() {
         format!(r#" The owner may add or remove files. <a href="/s/{token}">Refresh</a>"#)
     } else {
@@ -34,14 +35,20 @@ pub fn landing(token: &str, view: &PageView) -> String {
         let _ = write!(
             body,
             r#"<div class="glyph {kind}">{icon}</div>
-<h1>{name}</h1>
-<p class="meta">{size} · {label}</p>
+<h1>{heading}</h1>
+<p class="meta">{named}{size} · {label}</p>
 <a class="button" href="/d/{token}/{id}" download>{download}Download</a>
 <p class="note">{availability}{refresh}</p>"#,
             id = escape(&file.id),
             kind = kind_class(file.kind),
             icon = icon(file.kind),
-            name = escape(&file.name),
+            // A titled share keeps the file name visible under the title.
+            heading = title.clone().unwrap_or_else(|| escape(&file.name)),
+            named = if title.is_some() {
+                format!("{} · ", escape(&file.name))
+            } else {
+                String::new()
+            },
             size = format_bytes(file.size),
             label = kind_label(file.kind),
             download = DOWNLOAD_ICON,
@@ -51,10 +58,16 @@ pub fn landing(token: &str, view: &PageView) -> String {
         let _ = write!(
             body,
             r#"<div class="glyph bundle">{icon}</div>
-<h1>No files yet</h1>
-<p class="meta">Files appear here when the owner adds them.</p>
+<h1>{heading}</h1>
+<p class="meta">{empty}Files appear here when the owner adds them.</p>
 <p class="note">{availability}{refresh}</p>"#,
             icon = icon(FileKind::Bundle),
+            heading = title.clone().unwrap_or_else(|| "No files yet".to_owned()),
+            empty = if title.is_some() {
+                "No files yet. "
+            } else {
+                ""
+            },
             availability = availability(view.remaining, None),
         );
     } else {
@@ -73,13 +86,20 @@ pub fn landing(token: &str, view: &PageView) -> String {
         let _ = write!(
             body,
             r#"<div class="glyph bundle">{icon}</div>
-<h1>{count}</h1>
-<p class="meta">{size} in total</p>
+<h1>{heading}</h1>
+<p class="meta">{counted}{size} in total</p>
 {button}
 <p class="note">{availability}{limit}{refresh}</p>
 <ul class="files">"#,
             icon = icon(FileKind::Bundle),
-            count = file_count(view.files.len()),
+            heading = title
+                .clone()
+                .unwrap_or_else(|| file_count(view.files.len())),
+            counted = if title.is_some() {
+                format!("{} · ", file_count(view.files.len()))
+            } else {
+                String::new()
+            },
             size = format_bytes(total),
             availability = availability(view.remaining, None),
         );
@@ -103,12 +123,12 @@ pub fn landing(token: &str, view: &PageView) -> String {
         }
         body.push_str("</ul>");
     }
-    let title = match view.files.as_slice() {
+    let page_title = title.unwrap_or_else(|| match view.files.as_slice() {
         [file] => escape(&file.name),
         [] => "No files yet".to_owned(),
         files => file_count(files.len()),
-    };
-    document(&title, &body)
+    });
+    document(&page_title, &body)
 }
 
 pub fn error(reason: Unavailable) -> String {
@@ -345,6 +365,7 @@ mod tests {
             remaining: None,
             download_limit: None,
             edited: false,
+            title: None,
         };
         let html = landing("TOKEN", &view);
         assert!(!html.contains("<script>"));
@@ -358,6 +379,7 @@ mod tests {
             remaining: Some(Duration::from_secs(7 * 60 + 1)),
             download_limit: Some(3),
             edited: false,
+            title: None,
         };
         let html = landing("TOKEN", &view);
         assert!(html.contains(r#"href="/d/TOKEN/a_pdf""#));
@@ -373,6 +395,7 @@ mod tests {
             remaining: None,
             download_limit: Some(1),
             edited: false,
+            title: None,
         };
         let html = landing("TOKEN", &view);
         assert!(html.contains("2 files"));
@@ -391,6 +414,7 @@ mod tests {
             remaining: None,
             download_limit: None,
             edited: true,
+            title: None,
         };
         let html = landing("TOKEN", &view);
         assert!(html.contains("<h1>a.pdf</h1>"));
@@ -404,6 +428,30 @@ mod tests {
         let html = landing("TOKEN", &empty);
         assert!(html.contains("No files yet"));
         assert!(!html.contains("/z/TOKEN"));
+    }
+
+    #[test]
+    fn titles_head_the_page_and_are_escaped() {
+        let view = PageView {
+            files: vec![file("a.pdf", None), file("b.pdf", None)],
+            remaining: None,
+            download_limit: None,
+            edited: false,
+            title: Some("<b>Holiday</b> photos".into()),
+        };
+        let html = landing("TOKEN", &view);
+        assert!(html.contains("<h1>&lt;b&gt;Holiday&lt;/b&gt; photos</h1>"));
+        assert!(html.contains("2 files · "));
+        assert!(html.contains("<title>&lt;b&gt;Holiday&lt;/b&gt; photos · FileHop</title>"));
+
+        let single = PageView {
+            files: vec![file("a.pdf", None)],
+            title: Some("Contract".into()),
+            ..view
+        };
+        let html = landing("TOKEN", &single);
+        assert!(html.contains("<h1>Contract</h1>"));
+        assert!(html.contains("a.pdf · 2.4 MB · Document"));
     }
 
     #[test]

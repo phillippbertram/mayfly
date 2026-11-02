@@ -15,12 +15,15 @@ const ENDED = {
 
 export function QrCard({
   share,
+  link = share.link,
   pulse,
   visible,
   onToggleVisible,
   onCopy,
 }: {
   share: Share;
+  /** What the code encodes: the share page unless a file's direct link is shown. */
+  link?: string | null;
   /** Incrementing this plays a short "look here" bounce. */
   pulse: number;
   /** `false` blurs the code, for screen sharing or presenting. */
@@ -30,7 +33,7 @@ export function QrCard({
 }) {
   const ended = share.status === "active" ? null : ENDED[share.status];
   const size = 196;
-  const hasCode = Boolean(share.link) && !ended;
+  const hasCode = Boolean(link) && !ended;
   const hidden = hasCode && !visible;
   const [scope, animate] = useAnimate<HTMLButtonElement>();
   useSignal(pulse, () => {
@@ -73,8 +76,8 @@ export function QrCard({
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
               <AnimatePresence mode="wait">
-                {share.link ? (
-                  <QrCode key={share.link} text={share.link} size={size} />
+                {link ? (
+                  <QrCode key={link} text={link} size={size} />
                 ) : (
                   <motion.div
                     key="waiting"

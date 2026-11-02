@@ -55,6 +55,8 @@ export interface Backend {
   discardStaged(stageIds: string[]): Promise<void>;
   /** One share for all files, or one per file when `separate`. */
   createShares(stageIds: string[], options: ShareOptions, separate: boolean): Promise<Share[]>;
+  /** A share without files, with the default lifetime and limit. */
+  createEmptyShare(): Promise<Share>;
   /** Adds staged files to an active share. */
   addFiles(id: string, stageIds: string[]): Promise<Share>;
   /** Removes a file from a share and cuts off its running downloads. */

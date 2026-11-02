@@ -64,7 +64,9 @@ depend on CDNs, third-party scripts, external fonts, or an account.
 While a share is active, its owner adds and removes files; the share link and the
 links of remaining files stay the same. Everyone with the link sees the current
 files after reloading the page; a removed file's link reports that it was removed,
-and its running downloads stop. A share without files shows "No files yet".
+and its running downloads stop. A share without files shows "No files yet"; one can
+be created empty to open its link elsewhere first. An optional title (up to 80
+characters) replaces the derived name in the app and heads the share page.
 
 Expired, disabled, exhausted, invalid, and unavailable-file requests receive
 understandable pages and suitable HTTP status codes without revealing local paths.

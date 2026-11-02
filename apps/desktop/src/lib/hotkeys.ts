@@ -8,6 +8,7 @@ export const appHotkeys = defineAppHotkeys({
   "palette.open": { hotkey: "Mod+K", meta: { name: "Command palette", group: "General" } },
   "shortcuts.open": { hotkey: "Mod+/", meta: { name: "Keyboard shortcuts", group: "General" } },
   "files.choose": { hotkey: "Mod+O", meta: { name: "Choose files to share", group: "General" } },
+  "shares.newEmpty": { hotkey: "Mod+N", meta: { name: "New empty link", group: "General" } },
   "settings.open": { hotkey: "Mod+,", meta: { name: "Settings", group: "General" } },
   "theme.toggle": {
     hotkey: "Mod+Shift+L",
@@ -32,6 +33,7 @@ export const appHotkeys = defineAppHotkeys({
   "share.extend": { hotkey: "E", meta: { name: "Add 10 minutes", group: "Share" } },
   "share.limit": { hotkey: "L", meta: { name: "Change download limit", group: "Share" } },
   "share.addFiles": { hotkey: "A", meta: { name: "Add files to this link", group: "Share" } },
+  "share.rename": { hotkey: "T", meta: { name: "Rename this link", group: "Share" } },
   "qr.toggle": { hotkey: "H", meta: { name: "Hide or show QR code", group: "Share" } },
   "qr.hideAll": {
     hotkey: "Shift+H",
