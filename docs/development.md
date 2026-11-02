@@ -101,6 +101,29 @@ delete `settings.json` there to start from defaults.
 Port 1420 must be available when starting `pnpm dev`. Stop a running `pnpm dev:web`
 or a previous desktop development process first; Tauri starts Vite itself.
 
+If Vite keeps port 1420 after the native app exits on macOS, inspect Tauri's
+temporary cleanup script:
+
+```sh
+ls -l "$TMPDIR/tauri-stop-dev-processes.sh"
+```
+
+Tauri CLI 2.12.4 reuses this file without checking its contents or permissions.
+An empty or non-executable file prevents it from stopping Vite's process tree
+([upstream issue #15098](https://github.com/tauri-apps/tauri/issues/15098)). Stop
+the development session with Ctrl+C and stop any remaining Vite process after
+identifying it with `lsof -nP -iTCP:1420 -sTCP:LISTEN`. With no Tauri development
+sessions running, remove the broken temporary script so Tauri can recreate it:
+
+```sh
+rm "$TMPDIR/tauri-stop-dev-processes.sh"
+pnpm dev
+```
+
+After closing the app, check that port 1420 is free with the same `lsof` command.
+The normal development command remains `tauri dev`; no separate Vite process
+supervisor is needed.
+
 `pnpm build` uses release mode and the current host's supported bundle formats.
 For a quicker macOS debug app bundle, use
 `pnpm --filter @filehop/desktop tauri build --debug --bundles app`.
@@ -115,6 +138,74 @@ Do not treat a browser preview as verification of native IPC or a desktop build.
 `pnpm dev:web` loads a sample-data simulator for interface review only; the desktop
 build never loads it and reports sharing as unavailable until the Rust services exist.
 
+## Local platform builds
+
+Local build commands are available from the repository root and from `apps/desktop`.
+They prepare the packaging work tracked in
+[#8](https://github.com/phillippbertram/filehop/issues/8); native CI and release
+publishing remain separate work.
+
+| Command                  | Rust target                                  | Tauri bundles  |
+| ------------------------ | -------------------------------------------- | -------------- |
+| `pnpm build:macos`       | Current Mac architecture; no explicit target | `app,dmg`      |
+| `pnpm build:macos:arm64` | `aarch64-apple-darwin`                       | `app,dmg`      |
+| `pnpm build:macos:x64`   | `x86_64-apple-darwin`                        | `app,dmg`      |
+| `pnpm build:windows`     | `x86_64-pc-windows-msvc`                     | `nsis`         |
+| `pnpm build:linux`       | `x86_64-unknown-linux-gnu`                   | `appimage,deb` |
+
+Each new alias invokes `tauri build` in release mode with fixed bundle options and
+passes `--locked` to Cargo. The existing `beforeBuildCommand` runs `pnpm build:web`,
+which checks TypeScript and builds the frontend; a frontend failure stops packaging.
+Run `pnpm install --frozen-lockfile` before building. The existing `pnpm build`
+command retains Tauri's default bundle selection for the host.
+
+### Prerequisites and supported hosts
+
+Use the matching operating system and the
+[official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/):
+
+- **macOS:** Xcode Command Line Tools and a macOS Rust toolchain. Both Apple Silicon
+  and Intel targets can be built on a Mac with the corresponding Rust targets
+  installed. Add a missing target manually with
+  `rustup target add aarch64-apple-darwin` or
+  `rustup target add x86_64-apple-darwin`.
+- **Windows x64:** Microsoft C++ Build Tools with the Desktop development with C++
+  workload, Windows SDK, WebView2, and the `x86_64-pc-windows-msvc` Rust target.
+  Add a missing target with `rustup target add x86_64-pc-windows-msvc`.
+- **Linux x64:** The distribution's Tauri development packages, including WebKitGTK
+  4.1, GTK 3, AppIndicator support for the tray, librsvg, and packaging tools such as
+  `patchelf`, plus the `x86_64-unknown-linux-gnu` Rust target. Add a missing target
+  with `rustup target add x86_64-unknown-linux-gnu`. Build on the oldest supported
+  distribution providing these dependencies; building on a newer system can raise
+  the minimum required glibc version. See the
+  [Tauri AppImage guidance](https://v2.tauri.app/distribute/appimage/#limitations).
+
+The scripts do not install Rust targets or OS packages. Run Windows and Linux
+builds on their respective hosts; cross-compilation between operating systems and
+universal macOS bundles are outside these commands.
+
+### Outputs and customization
+
+`pnpm build:macos` writes bundles under
+`apps/desktop/src-tauri/target/release/bundle/`. Commands with an explicit target
+write under `apps/desktop/src-tauri/target/<target>/release/bundle/`:
+
+- `macos/FileHop.app` and `dmg/*.dmg` on macOS.
+- `nsis/*-setup.exe` on Windows.
+- `appimage/*.AppImage` and `deb/*.deb` on Linux.
+
+Outputs remain in the ignored Tauri target directory. No command uploads artifacts,
+creates releases, configures signing identities, or notarizes the app. macOS may
+apply an ad hoc signature for local execution; this is not Developer ID signing
+or notarization.
+
+The new aliases are fixed release commands. For debug builds or custom Tauri flags,
+invoke the CLI directly, placing Cargo arguments after `--`, for example:
+
+```sh
+pnpm --filter @filehop/desktop tauri build --debug --bundles app -- --locked
+```
+
 ## Current verification
 
 The starter was built and launched on macOS Apple Silicon with Rust 1.99.1.
@@ -123,6 +214,14 @@ frontend production build, Cargo compilation, rustfmt, Clippy, and creation of a
 macOS debug `.app` bundle. The bundled window displayed the version and successful
 desktop connection returned by Rust. Windows, Linux, Intel macOS, signed release
 installers, and file-sharing/phone workflows have not been verified yet.
+
+On 2026-11-02, `pnpm build:macos:arm64` completed from the repository root and
+produced a macOS ARM64 release `.app` and `.dmg`. `lipo -archs` confirmed `arm64`, and `hdiutil verify` confirmed
+the DMG checksum. The release app was launched from its build output, displayed
+the native dashboard, and quit with Cmd+Q. This verifies local packaging and a
+startup/quit smoke test; installation from the DMG was not tested. The Windows,
+Linux, and Intel macOS commands are prepared but have not been built or run on
+their target platforms. Developer ID signing and notarization remain unverified.
 
 ## Quality gates as features arrive
 

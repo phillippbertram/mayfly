@@ -94,10 +94,10 @@ The app uses Tauri 2, Rust, React, strict TypeScript, Vite, Tailwind CSS, Lucide
 Motion, and shadcn-style components on Radix primitives. Axum and Tokio-based sharing
 services will be added when their features are implemented.
 
-Native prerequisites will include Rust through rustup and the platform dependencies
+Native prerequisites include Rust through rustup and the platform dependencies
 in the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/):
 
-| Platform | Native prerequisites and planned targets                               |
+| Platform | Native prerequisites and build targets                                 |
 | -------- | ---------------------------------------------------------------------- |
 | macOS    | Xcode Command Line Tools; Apple Silicon and Intel builds               |
 | Windows  | Microsoft C++ build tools and WebView2; Windows x64 build              |
@@ -110,11 +110,30 @@ pnpm check:rust   # rustfmt and Clippy (requires Rust/native prerequisites)
 pnpm build        # Build and package the native app for the current host OS
 ```
 
-Run native builds on the corresponding macOS, Windows, or Linux host. Generated
-bundles live under `apps/desktop/src-tauri/target/release/bundle/`. Cross-platform
-release CI, signing, and notarization remain separate tickets; local bundles are
-development artifacts rather than signed public releases. The desktop package
-lives at `apps/desktop`; shared packages will be introduced only when needed.
+For explicit local release packages, use these commands from the repository root
+or from `apps/desktop`:
+
+| Command                  | Target                   | Packages               |
+| ------------------------ | ------------------------ | ---------------------- |
+| `pnpm build:macos`       | Current Mac architecture | `.app` and `.dmg`      |
+| `pnpm build:macos:arm64` | macOS Apple Silicon      | `.app` and `.dmg`      |
+| `pnpm build:macos:x64`   | macOS Intel              | `.app` and `.dmg`      |
+| `pnpm build:windows`     | Windows x64 (MSVC)       | NSIS `.exe` installer  |
+| `pnpm build:linux`       | Linux x64 (GNU)          | `.AppImage` and `.deb` |
+
+Run each command on its corresponding operating system with the required Rust
+target installed. Both macOS architecture targets can be built on a Mac. These
+commands use the existing Tauri frontend build hook and Cargo's locked dependencies.
+They do not install toolchains or build Windows/Linux packages from macOS.
+
+Without an explicit target, bundles live under
+`apps/desktop/src-tauri/target/release/bundle/`; architecture-specific commands use
+`apps/desktop/src-tauri/target/<target>/release/bundle/`. See
+[Local platform builds](docs/development.md#local-platform-builds) for target names,
+prerequisites, and verification status. Native build CI, release publishing,
+Developer ID signing, and notarization remain separate tasks; these are local
+development artifacts. The desktop package lives at `apps/desktop`; shared
+packages will be introduced only when needed.
 
 ## Product website and user manual
 
