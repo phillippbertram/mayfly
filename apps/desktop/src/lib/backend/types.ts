@@ -24,7 +24,11 @@ export type Topic = "server" | "shares" | "settings" | "profiles" | "interfaces"
 
 export type BackendEvent =
   | { kind: "changed"; topics: Topic[] }
-  | { kind: "addressChanged"; address: string };
+  | { kind: "addressChanged"; address: string }
+  /** The window is closing; explain that sharing continues in the background. */
+  | { kind: "closeRequested" }
+  /** Quitting would stop active shares; confirm first. */
+  | { kind: "quitRequested"; activeShares: number };
 
 export type DroppedFiles =
   | { kind: "paths"; paths: string[] }
@@ -75,4 +79,11 @@ export interface Backend {
 
   /** Saves a PNG where the user chooses. `false` when they cancel the dialog. */
   savePng(suggestedName: string, data: Blob): Promise<boolean>;
+
+  /** A message from startup, such as a repaired settings file; `null` once read. */
+  takeNotice(): Promise<string | null>;
+  /** Hides the window; sharing continues and the tray brings it back. */
+  hideWindow(): Promise<void>;
+  /** Quits after confirmation; all shares stop. */
+  quit(): Promise<void>;
 }

@@ -112,6 +112,16 @@ versioned local document. Validate on load and write via safe replacement. Repor
 corrupt configuration and recover with documented defaults without silently losing
 the user's profiles. Do not store share history, tokens, active shares, or contents.
 
+Implemented (`config.rs`): `settings.json` holds `{ "version": 1, "settings": {…} }`
+in the app config directory (macOS `~/Library/Application Support/de.phillippbertram.filehop`,
+Windows `%APPDATA%\de.phillippbertram.filehop`, Linux `~/.config/de.phillippbertram.filehop`).
+Saves write a synced temporary file and rename it over the old one. On load, unknown
+fields are ignored and an invalid value falls back to its default while the others
+are kept; an unreadable file, or one from a newer version, is renamed to
+`settings.unreadable-<time>.json` and FileHop starts with defaults. Either case shows
+a one-time notice in the window. Settings that bind the listener are saved only
+after the bind succeeded.
+
 Keep share state synchronized. Never hold a registry lock for an entire download.
 Use a monotonic deadline for elapsed lifetime enforcement and wall-clock timestamps
 for display. Run periodic cleanup for resource usage; correctness must not depend

@@ -11,6 +11,7 @@ import { AppHotkeys } from "./features/commands/app-hotkeys";
 import { CommandPalette } from "./features/commands/command-palette";
 import { ShortcutsDialog } from "./features/commands/shortcuts-dialog";
 import { useCommands } from "./features/commands/use-commands";
+import { CloseNoticeDialog, QuitDialog } from "./features/lifecycle/lifecycle-dialogs";
 import { SettingsDialog } from "./features/settings/settings-dialog";
 import { Composer } from "./features/shares/composer";
 import { DragOverlay } from "./features/shares/drag-overlay";
@@ -205,6 +206,8 @@ function Shell({ client }: { client: QueryClient }) {
         count={shares.filter((s) => s.status === "active").length}
         onConfirm={() => actions.stopAll()}
       />
+      <CloseNoticeDialog activeShares={shares.filter((s) => s.status === "active").length} />
+      <QuitDialog activeShares={shares.filter((s) => s.status === "active").length} />
     </div>
   );
 }

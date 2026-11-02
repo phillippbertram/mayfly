@@ -107,6 +107,8 @@ export const SettingsSchema = z.object({
   hideCodes: z.boolean(),
   theme: ThemePreferenceSchema,
   defaultProfileId: z.string(),
+  /** Explain once that closing the window keeps sharing in the background. */
+  showCloseNotice: z.boolean(),
 });
 
 export const LinkProfileSchema = z.object({

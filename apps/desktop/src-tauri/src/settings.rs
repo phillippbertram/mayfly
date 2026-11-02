@@ -1,5 +1,4 @@
-//! Application settings. Kept in memory for now; persistence arrives with the
-//! settings service (#5), so changes last until FileHop quits.
+//! Application settings and their validation. `config` stores them on disk.
 
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +28,8 @@ pub struct Settings {
     pub hide_codes: bool,
     pub theme: Theme,
     pub default_profile_id: String,
+    /// Explain once that closing the window keeps sharing in the background.
+    pub show_close_notice: bool,
 }
 
 impl Default for Settings {
@@ -42,6 +43,7 @@ impl Default for Settings {
             hide_codes: false,
             theme: Theme::System,
             default_profile_id: HTTP_PROFILE_ID.to_owned(),
+            show_close_notice: true,
         }
     }
 }
@@ -61,6 +63,7 @@ pub struct SettingsPatch {
     pub hide_codes: Option<bool>,
     pub theme: Option<Theme>,
     pub default_profile_id: Option<String>,
+    pub show_close_notice: Option<bool>,
 }
 
 impl Settings {
@@ -90,6 +93,9 @@ impl Settings {
         }
         if let Some(theme) = patch.theme {
             next.theme = theme;
+        }
+        if let Some(show) = patch.show_close_notice {
+            next.show_close_notice = show;
         }
         if let Some(profile) = &patch.default_profile_id {
             validate_profile(profile)?;

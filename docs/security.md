@@ -142,7 +142,11 @@ bound to `127.0.0.1` on a separately configured port.
 - Generate and copy custom links; never execute a scheme automatically on profile changes.
 - Store only settings and profiles in the user config directory. Use validated,
   reliable writes and sanitized errors. Do not commit credentials or signing keys.
-- Explicit quit revokes all shares and stops listeners. Window close only hides
+- Explicit quit revokes all shares and stops listeners: after confirmation,
+  shutdown marks every share stopped so new page and download requests get 410,
+  cancels running transfers within one chunk, stops the listener with a two-second
+  grace period, and exits. Shares and tokens never reach disk, so a restart starts
+  with none. Window close only hides
   the app, with understandable tray behavior.
 
 ## Required security verification

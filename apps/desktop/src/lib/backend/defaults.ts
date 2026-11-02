@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hideCodes: false,
   theme: "system",
   defaultProfileId: HTTP_PROFILE_ID,
+  showCloseNotice: true,
 };
 
 export const HTTP_PROFILE: LinkProfile = {

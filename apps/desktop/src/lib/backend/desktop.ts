@@ -26,6 +26,8 @@ const BackendEventSchema: z.ZodType<BackendEvent> = z.discriminatedUnion("kind",
     topics: z.array(z.enum(["server", "shares", "settings", "profiles", "interfaces"])),
   }),
   z.object({ kind: z.literal("addressChanged"), address: z.string() }),
+  z.object({ kind: z.literal("closeRequested") }),
+  z.object({ kind: z.literal("quitRequested"), activeShares: z.int().nonnegative() }),
 ]);
 
 /**
@@ -108,6 +110,13 @@ export function createDesktopBackend(): Backend {
       error: "Custom link profiles aren't available in this build yet.",
     }),
     // Rust opens the native save dialog; the webview only supplies the image.
+    takeNotice: () => call("take_notice", z.string().nullable()),
+    hideWindow: async () => {
+      await call("hide_window", done);
+    },
+    quit: async () => {
+      await call("quit_app", done);
+    },
     savePng: async (suggestedName, data) =>
       call("save_png", z.boolean(), {
         suggestedName,

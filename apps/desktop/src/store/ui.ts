@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { StagedFiles } from "../lib/backend";
 
 export type SettingsSection = "general" | "network" | "appearance" | "profiles" | "shortcuts";
-export type Overlay = "palette" | "shortcuts" | "stopAll" | null;
+export type Overlay = "palette" | "shortcuts" | "stopAll" | "closeNotice" | "quit" | null;
 
 interface UiState {
   selectedId: string | null;

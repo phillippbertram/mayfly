@@ -29,7 +29,7 @@ export function GeneralSection() {
         </Field>
         <Field
           label="Default download limit"
-          hint="A share stops once this many downloads have started."
+          hint="Each file can be downloaded this many times; a share stops once every file has."
         >
           <LimitField
             label="Default download limit"
@@ -43,13 +43,28 @@ export function GeneralSection() {
               Ask before sharing
             </label>
             <p className="text-[12px] text-muted">
-              Show lifetime, limit, and link options for every new file. Return shares right away.
+              Show the lifetime and download limit before sharing. Return shares right away.
             </p>
           </div>
           <Switch
             id="confirm-switch"
             checked={settings.confirmBeforeSharing}
             onCheckedChange={(confirmBeforeSharing) => update({ confirmBeforeSharing })}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <label htmlFor="close-notice-switch" className="text-[13px] font-medium">
+              Explain closing the window
+            </label>
+            <p className="text-[12px] text-muted">
+              Closing the window keeps sharing in the background. Remind me before hiding it.
+            </p>
+          </div>
+          <Switch
+            id="close-notice-switch"
+            checked={settings.showCloseNotice}
+            onCheckedChange={(showCloseNotice) => update({ showCloseNotice })}
           />
         </div>
         <div className="flex items-center justify-between gap-4">

@@ -8,8 +8,8 @@ cloud service, external server, or mobile application is required.
 
 This document defines the intended product. Local sharing is implemented: native
 selection and drop, in-memory shares and bundles, the LAN listener, landing pages,
-streamed downloads, and ZIP downloads. Persistence, custom link profiles, QR PNG
-export, and the tray remain planned. GitHub Issues track delivery.
+streamed downloads, ZIP downloads, QR PNG export, persistent settings, and the tray
+lifecycle. Custom link profiles remain planned. GitHub Issues track delivery.
 
 ## MVP scope
 

@@ -93,7 +93,10 @@ frontend's status and version are returned by the real `get_app_info` Rust comma
 The capability file grants only native file-drop event listening and title-bar
 dragging; it grants no filesystem, shell, network, or plugin permissions.
 Production CSP is restrictive; development CSP adds the local Vite/HMR origins.
-Window close currently exits the process; tray behavior remains a separate feature.
+Closing the window hides it and keeps sharing; quit from the tray or with Cmd/Ctrl+Q.
+During development, stop the session with Ctrl+C in the terminal, which skips the quit
+confirmation. Settings persist in the app config directory (see architecture.md);
+delete `settings.json` there to start from defaults.
 
 Port 1420 must be available when starting `pnpm dev`. Stop a running `pnpm dev:web`
 or a previous desktop development process first; Tauri starts Vite itself.

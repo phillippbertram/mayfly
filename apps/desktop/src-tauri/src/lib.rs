@@ -1,6 +1,8 @@
 mod app;
 mod commands;
+mod config;
 mod export;
+mod lifecycle;
 mod network;
 pub mod server;
 mod settings;
@@ -11,7 +13,8 @@ use std::time::Duration;
 
 use tauri::{DragDropEvent, Emitter, Manager, RunEvent, WindowEvent};
 
-use app::App;
+use app::{App, BackendEvent, Topic};
+use lifecycle::Lifecycle;
 
 /// The single event channel the frontend listens to.
 const EVENT: &str = "filehop://event";
@@ -19,25 +22,42 @@ const EVENT: &str = "filehop://event";
 pub fn run() -> tauri::Result<()> {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(Lifecycle::default())
         .setup(|app| {
             let handle = app.handle().clone();
-            let state = App::new(Arc::new(move |event| {
-                let _ = handle.emit(EVENT, event);
-            }));
+            // Without a config directory, settings apply until FileHop quits.
+            let config_dir = app.path().app_config_dir().ok();
+            let state = App::new(
+                Arc::new(move |event: BackendEvent| {
+                    let shares_changed = matches!(
+                        &event,
+                        BackendEvent::Changed { topics } if topics.contains(&Topic::Shares)
+                    );
+                    let _ = handle.emit(EVENT, event);
+                    if shares_changed {
+                        lifecycle::refresh_tray(&handle);
+                    }
+                }),
+                config_dir,
+            );
             app.manage(state.clone());
+            lifecycle::setup_tray(app.handle());
 
             tauri::async_runtime::spawn({
                 let state = state.clone();
                 async move { state.start().await }
             });
-            // Status transitions for the UI. Requests enforce lifetimes on their own.
+            // Status transitions for the UI and the tray. Requests enforce
+            // lifetimes on their own.
             tauri::async_runtime::spawn({
                 let state = state.clone();
+                let handle = app.handle().clone();
                 async move {
                     let mut tick = tokio::time::interval(Duration::from_secs(1));
                     loop {
                         tick.tick().await;
                         state.registry.sweep();
+                        lifecycle::refresh_tray(&handle);
                     }
                 }
             });
@@ -54,16 +74,23 @@ pub fn run() -> tauri::Result<()> {
             });
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let WindowEvent::DragDrop(DragDropEvent::Drop { paths, .. }) = event {
+        .on_window_event(|window, event| match event {
+            WindowEvent::DragDrop(DragDropEvent::Drop { paths, .. }) => {
                 window.state::<Arc<App>>().record_drop(paths.clone());
             }
+            WindowEvent::CloseRequested { api, .. } => {
+                // Sharing continues in the background; the tray brings it back.
+                api.prevent_close();
+                lifecycle::on_close_requested(window.app_handle());
+            }
+            _ => {}
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_app_info,
             commands::get_server,
             commands::list_shares,
             commands::get_settings,
+            commands::take_notice,
             commands::update_settings,
             commands::list_profiles,
             commands::list_interfaces,
@@ -81,15 +108,26 @@ pub fn run() -> tauri::Result<()> {
             commands::remove_share,
             commands::clear_finished,
             commands::save_png,
+            commands::hide_window,
+            commands::quit_app,
         ])
         .build(tauri::generate_context!())?;
 
-    app.run(|handle, event| {
-        if let RunEvent::Exit = event {
-            // Revoke shares and stop the listener before the process ends.
+    app.run(|handle, event| match event {
+        // Cmd/Ctrl+Q and other quit requests confirm first while shares are active.
+        RunEvent::ExitRequested { api, .. } if !handle.state::<Lifecycle>().is_quitting() => {
+            api.prevent_exit();
+            lifecycle::request_quit(handle);
+        }
+        #[cfg(target_os = "macos")]
+        RunEvent::Reopen { .. } => lifecycle::show_main(handle),
+        RunEvent::Exit => {
+            // Revoke shares, cancel transfers, and stop the listener before the
+            // process ends.
             let state = handle.state::<Arc<App>>().inner().clone();
             tauri::async_runtime::block_on(state.shutdown());
         }
+        _ => {}
     });
     Ok(())
 }

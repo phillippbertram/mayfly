@@ -2,6 +2,7 @@ import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tansta
 import { useEffect } from "react";
 import { useToast } from "../components/ui/toast";
 import { useBackend } from "../hooks/use-backend";
+import { useUi } from "../store/ui";
 import { DEFAULT_SETTINGS } from "./backend/defaults";
 import type { Settings, Topic } from "./backend/types";
 
@@ -56,12 +57,24 @@ export function useBackendSync(client: QueryClient) {
         if (event.kind === "changed") {
           for (const topic of event.topics)
             client.invalidateQueries({ queryKey: queryKeys[topic] });
-        } else {
+        } else if (event.kind === "addressChanged") {
           toast(`Your network address changed to ${event.address}. QR codes were updated.`);
+        } else if (event.kind === "closeRequested") {
+          useUi.getState().setOverlay("closeNotice");
+        } else {
+          client.invalidateQueries({ queryKey: queryKeys.shares });
+          useUi.getState().setOverlay("quit");
         }
       }),
     [backend, client, toast],
   );
+  // Startup messages, such as a settings file that had to be repaired.
+  useEffect(() => {
+    backend
+      .takeNotice()
+      .then((notice) => notice && toast(notice))
+      .catch(() => {});
+  }, [backend, toast]);
 }
 
 export function errorMessage(error: unknown): string {

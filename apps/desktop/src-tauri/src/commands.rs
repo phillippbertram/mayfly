@@ -45,6 +45,11 @@ pub fn get_settings(state: AppState) -> Settings {
 }
 
 #[tauri::command]
+pub fn take_notice(state: AppState) -> Option<String> {
+    state.take_notice()
+}
+
+#[tauri::command]
 pub async fn update_settings(
     state: AppState<'_>,
     patch: SettingsPatch,
@@ -197,4 +202,16 @@ pub async fn save_png(
         .map_err(|_| "FileHop couldn't save the image.".to_owned())?
         .map_err(|_| "FileHop couldn't save the image there. Choose another folder.".to_owned())?;
     Ok(true)
+}
+
+/// Hides the window; sharing continues and the tray brings it back.
+#[tauri::command]
+pub fn hide_window(app: AppHandle) {
+    crate::lifecycle::hide_main(&app);
+}
+
+/// Quits after the interface confirmed it. Shares stop during cleanup.
+#[tauri::command]
+pub fn quit_app(app: AppHandle) {
+    crate::lifecycle::quit_now(&app);
 }

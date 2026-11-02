@@ -520,6 +520,11 @@ export function createPreviewBackend(): Backend {
       };
     },
 
+    // The browser preview has no window lifecycle of its own.
+    takeNotice: async () => null,
+    hideWindow: async () => {},
+    quit: async () => {},
+
     async savePng(suggestedName, data) {
       const url = URL.createObjectURL(data);
       const anchor = document.createElement("a");

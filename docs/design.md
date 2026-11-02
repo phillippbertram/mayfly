@@ -294,16 +294,22 @@ back.
 
 ### Tray and lifecycle
 
-- The tray icon is a monochrome template glyph on macOS and a tinted glyph on
-  Windows and Linux. A small dot marks active shares.
+- The tray icon is the FileHop arrow as a monochrome template glyph on macOS, so
+  the menu bar tints it, and the colored app icon on Windows and Linux. It is
+  rendered by `apps/desktop/scripts/render-tray-icon.py`.
 - The menu contains "Open FileHop", an informational line such as "3 active
-  shares, next expires in 4 min", a separator, and "Quit FileHop".
-- Closing the window hides it. The first time this happens, a small notice
-  explains "FileHop keeps sharing in the background. Quit from the tray to stop
-  all shares." with a "Don't show again" option.
-- Quit with active shares shows one confirmation: "Quit FileHop? 3 active shares
-  will stop immediately." The window then shows the Stopping state until bounded
-  cleanup finishes.
+  shares · next ends in 4 min" (or "No active shares"), a separator, and "Quit
+  FileHop". The line updates every second when its text changes.
+- Closing the window (red button or Cmd/Ctrl+W) hides it. While "Explain closing
+  the window" is on (General settings), the window stays open first with "FileHop
+  keeps sharing in the background", the number of active shares, "Don't show this
+  again", and the buttons "Quit FileHop" and "Hide window" (default). Clicking the
+  Dock icon on macOS brings the window back.
+- Quitting from the tray, the app menu, or Cmd/Ctrl+Q while shares are active
+  shows the window with "Quit FileHop? N active shares stop immediately, and
+  downloads in progress are cut off." With nothing active, FileHop quits at once.
+- Without a tray (a Linux desktop without AppIndicator support), closing the window
+  goes through the same quit confirmation, because nothing could bring it back.
 
 ### Mobile page
 

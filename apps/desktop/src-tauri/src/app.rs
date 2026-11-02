@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
+use crate::config::ConfigStore;
 use crate::network::{self, NetworkInterface};
 use crate::server::{HttpState, Listener};
 use crate::settings::{self, Settings, SettingsPatch};
@@ -34,10 +35,24 @@ pub enum Topic {
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum BackendEvent {
-    Changed { topics: Vec<Topic> },
-    AddressChanged { address: String },
+    Changed {
+        topics: Vec<Topic>,
+    },
+    AddressChanged {
+        address: String,
+    },
+    /// The window is closing for the first time; explain background sharing.
+    CloseRequested,
+    /// Quitting would stop this many active shares; ask first.
+    QuitRequested {
+        active_shares: usize,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -126,19 +141,37 @@ pub struct App {
     /// Serializes binding and stopping; held across awaits.
     listener: tokio::sync::Mutex<Option<Listener>>,
     dropped: Mutex<Option<(Instant, Vec<PathBuf>)>>,
+    /// Where settings persist; `None` keeps them in memory only.
+    store: Option<ConfigStore>,
+    /// A message for the user from startup, such as a repaired settings file.
+    notice: Mutex<Option<String>>,
     emit: Emit,
 }
 
 impl App {
-    pub fn new(emit: Emit) -> Arc<Self> {
-        Self::with_clock(Arc::new(SystemClock), emit, network::discover())
+    /// Loads settings from `config_dir` when given.
+    pub fn new(emit: Emit, config_dir: Option<PathBuf>) -> Arc<Self> {
+        Self::with_clock(
+            Arc::new(SystemClock),
+            emit,
+            network::discover(),
+            config_dir.map(ConfigStore::new),
+        )
     }
 
     pub fn with_clock(
         clock: Arc<dyn Clock>,
         emit: Emit,
         interfaces: Vec<NetworkInterface>,
+        store: Option<ConfigStore>,
     ) -> Arc<Self> {
+        let (settings, notice) = match &store {
+            Some(store) => {
+                let loaded = store.load();
+                (loaded.settings, loaded.notice)
+            }
+            None => (Settings::default(), None),
+        };
         let notify = emit.clone();
         let registry = Arc::new(Registry::new(
             clock.clone(),
@@ -151,19 +184,38 @@ impl App {
         Arc::new(Self {
             registry,
             clock,
-            settings: Mutex::new(Settings::default()),
+            settings: Mutex::new(settings),
             interfaces: Mutex::new(interfaces),
             phase: Mutex::new(Phase::Starting),
             listener: tokio::sync::Mutex::new(None),
             dropped: Mutex::new(None),
+            store,
+            notice: Mutex::new(notice),
             emit,
         })
     }
 
     fn changed(&self, topics: &[Topic]) {
-        (self.emit)(BackendEvent::Changed {
+        self.emit(BackendEvent::Changed {
             topics: topics.to_vec(),
         });
+    }
+
+    pub fn emit(&self, event: BackendEvent) {
+        (self.emit)(event);
+    }
+
+    pub fn active_share_count(&self) -> usize {
+        self.registry
+            .list()
+            .iter()
+            .filter(|s| s.status == ShareStatus::Active)
+            .count()
+    }
+
+    /// One line for the tray menu, such as "3 active shares · next ends in 4 min".
+    pub fn tray_summary(&self) -> String {
+        tray_summary(&self.registry.list(), self.clock.wall_ms())
     }
 
     fn http_state(&self) -> HttpState {
@@ -287,6 +339,23 @@ impl App {
         lock(&self.settings).clone()
     }
 
+    /// The startup notice, once.
+    pub fn take_notice(&self) -> Option<String> {
+        lock(&self.notice).take()
+    }
+
+    /// Applies settings in memory and saves them. A failed save is reported, but
+    /// the settings still apply until FileHop quits.
+    fn commit_settings(&self, next: Settings) -> Result<(), String> {
+        *lock(&self.settings) = next.clone();
+        match &self.store {
+            Some(store) => store.save(&next).map_err(|_| {
+                "FileHop couldn't save your settings. They apply until FileHop quits.".to_owned()
+            }),
+            None => Ok(()),
+        }
+    }
+
     pub async fn update_settings(&self, patch: SettingsPatch) -> Result<Settings, String> {
         let current = self.settings();
         let next = current.apply(&patch).map_err(|e| e.0)?;
@@ -302,15 +371,15 @@ impl App {
                     return Err(format!("{message} Kept port {}.", current.port));
                 }
                 // Nothing was listening; remember the attempt so status is truthful.
-                *lock(&self.settings) = next;
+                let _ = self.commit_settings(next);
                 self.changed(&[Topic::Settings, Topic::Server, Topic::Shares]);
                 return Err(message);
             }
         }
-        *lock(&self.settings) = next.clone();
+        let saved = self.commit_settings(next.clone());
         self.changed(&[Topic::Settings]);
         self.announce(before);
-        Ok(next)
+        saved.map(|()| next)
     }
 
     pub fn profiles(&self) -> Vec<LinkProfile> {
@@ -455,6 +524,36 @@ fn to_dto(snapshot: ShareSnapshot, advertised: Option<&str>) -> ShareDto {
     }
 }
 
+fn tray_summary(shares: &[ShareSnapshot], now_ms: u64) -> String {
+    let active: Vec<_> = shares
+        .iter()
+        .filter(|s| s.status == ShareStatus::Active)
+        .collect();
+    let count = match active.len() {
+        0 => return "No active shares".to_owned(),
+        1 => "1 active share".to_owned(),
+        n => format!("{n} active shares"),
+    };
+    let next = active.iter().filter_map(|s| s.expires_at).min();
+    let when = match next {
+        None => "until stopped".to_owned(),
+        Some(at) => {
+            let minutes = at.saturating_sub(now_ms).div_ceil(60_000);
+            let prefix = if active.len() == 1 {
+                "ends"
+            } else {
+                "next ends"
+            };
+            match minutes {
+                0 | 1 => format!("{prefix} within a minute"),
+                m if m < 90 => format!("{prefix} in {m} min"),
+                m => format!("{prefix} in about {} h", (m + 30) / 60),
+            }
+        }
+    };
+    format!("{count} · {when}")
+}
+
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|e| e.into_inner())
 }
@@ -522,6 +621,88 @@ mod tests {
         let empty = to_dto(snapshot(0), None);
         assert_eq!(empty.file_name, "No files yet");
         assert_eq!(empty.kind, FileKind::Bundle);
+    }
+
+    #[tokio::test]
+    async fn settings_survive_a_restart_but_shares_do_not() {
+        let dir = tempfile::tempdir().unwrap();
+        let start = || {
+            App::with_clock(
+                Arc::new(SystemClock),
+                Arc::new(|_| {}),
+                Vec::new(),
+                Some(ConfigStore::new(dir.path().to_path_buf())),
+            )
+        };
+        let first = start();
+        let patch: SettingsPatch =
+            serde_json::from_str(r#"{"theme":"dark","defaultLifetimeMinutes":30}"#).unwrap();
+        first.update_settings(patch).await.unwrap();
+        first
+            .registry
+            .create_empty(&first.settings().default_options())
+            .unwrap();
+        assert_eq!(first.active_share_count(), 1);
+
+        let second = start();
+        assert_eq!(second.settings().theme, crate::settings::Theme::Dark);
+        assert_eq!(second.settings().default_lifetime_minutes, Some(30));
+        assert!(second.take_notice().is_none());
+        assert_eq!(second.active_share_count(), 0);
+    }
+
+    #[test]
+    fn tray_summaries_count_active_shares_and_the_next_expiry() {
+        let at = |minutes: Option<u64>, status| {
+            let mut share = snapshot(1);
+            share.expires_at = minutes.map(|m| 1_000_000 + m * 60_000);
+            share.status = status;
+            share
+        };
+        let now = 1_000_000;
+        assert_eq!(tray_summary(&[], now), "No active shares");
+        assert_eq!(
+            tray_summary(&[at(Some(5), ShareStatus::Stopped)], now),
+            "No active shares"
+        );
+        assert_eq!(
+            tray_summary(&[at(Some(4), ShareStatus::Active)], now),
+            "1 active share · ends in 4 min"
+        );
+        assert_eq!(
+            tray_summary(
+                &[
+                    at(None, ShareStatus::Active),
+                    at(Some(30), ShareStatus::Active),
+                    at(Some(9), ShareStatus::Active),
+                ],
+                now
+            ),
+            "3 active shares · next ends in 9 min"
+        );
+        assert_eq!(
+            tray_summary(&[at(None, ShareStatus::Active)], now),
+            "1 active share · until stopped"
+        );
+        assert_eq!(
+            tray_summary(&[at(Some(0), ShareStatus::Active)], now),
+            "1 active share · ends within a minute"
+        );
+        assert_eq!(
+            tray_summary(&[at(Some(150), ShareStatus::Active)], now),
+            "1 active share · ends in about 3 h"
+        );
+    }
+
+    #[test]
+    fn lifecycle_events_serialize_for_the_frontend() {
+        let quit = serde_json::to_value(BackendEvent::QuitRequested { active_shares: 2 }).unwrap();
+        assert_eq!(
+            quit,
+            serde_json::json!({"kind": "quitRequested", "activeShares": 2})
+        );
+        let close = serde_json::to_value(BackendEvent::CloseRequested).unwrap();
+        assert_eq!(close, serde_json::json!({"kind": "closeRequested"}));
     }
 
     #[test]
