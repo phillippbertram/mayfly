@@ -527,6 +527,7 @@ export function createPreviewBackend(): Backend {
       anchor.download = suggestedName;
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
     },
   };
 }

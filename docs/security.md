@@ -32,6 +32,10 @@ untrusted. A malicious website running in a local browser must not create shares
   unavailable instead of serving content that doesn't match its advertised length.
 - Accept only paths from the native picker (opened by Rust) or from the native
   window drop event. The webview can't submit arbitrary paths for sharing.
+- Saving a QR code PNG is the only write the webview can trigger: it sends the
+  image bytes and a suggested name; Rust checks the PNG signature and a 4 MiB
+  limit, reduces the name to a plain `.png` file name, and writes only where the
+  user chose in the native save dialog.
 - Handle deleted, changed, or unreadable files without panics or path disclosure.
 - Stream from the authorized source with bounded memory; do not duplicate file
   contents in a database, temporary upload directory, or webview memory.

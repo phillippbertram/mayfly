@@ -8,6 +8,7 @@ use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::app::{App, LinkProfile, ServerState, ShareDto};
+use crate::export;
 use crate::network::NetworkInterface;
 use crate::settings::{Settings, SettingsPatch};
 use crate::shares::{ShareOptions, SharePatch, StagedFiles};
@@ -161,4 +162,39 @@ pub fn remove_share(state: AppState, id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn clear_finished(state: AppState) {
     state.registry.clear_finished();
+}
+
+/// Saves a PNG the interface generated (a QR code) where the user chooses in the
+/// native save dialog. Returns `false` when the dialog is cancelled. The webview
+/// never names a path; it only supplies the image and a suggested file name.
+#[tauri::command]
+pub async fn save_png(
+    app: AppHandle,
+    suggested_name: String,
+    data: Vec<u8>,
+) -> Result<bool, String> {
+    export::validate_png(&data)?;
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Save QR code")
+        .set_file_name(export::png_file_name(&suggested_name))
+        .add_filter("PNG image", &["png"])
+        .save_file(move |path| {
+            let _ = tx.send(path);
+        });
+    let Some(path) = rx
+        .await
+        .map_err(|_| "The save dialog closed unexpectedly.".to_owned())?
+    else {
+        return Ok(false);
+    };
+    let path = path
+        .into_path()
+        .map_err(|_| "FileHop can't save to that location.".to_owned())?;
+    tokio::task::spawn_blocking(move || std::fs::write(path, data))
+        .await
+        .map_err(|_| "FileHop couldn't save the image.".to_owned())?
+        .map_err(|_| "FileHop couldn't save the image there. Choose another folder.".to_owned())?;
+    Ok(true)
 }

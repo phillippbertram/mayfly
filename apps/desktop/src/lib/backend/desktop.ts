@@ -107,6 +107,11 @@ export function createDesktopBackend(): Backend {
       ok: false,
       error: "Custom link profiles aren't available in this build yet.",
     }),
-    savePng: () => unavailable("Saving QR images isn't available in this build yet."),
+    // Rust opens the native save dialog; the webview only supplies the image.
+    savePng: async (suggestedName, data) =>
+      call("save_png", z.boolean(), {
+        suggestedName,
+        data: Array.from(new Uint8Array(await data.arrayBuffer())),
+      }),
   };
 }

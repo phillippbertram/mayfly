@@ -235,7 +235,11 @@ The inspector answers "how does my device get this?" in one view:
    download limit shows a note that chat-app link previews can use up a download.
 5. A details block: expires at a wall-clock time with a remaining-time ring,
    downloads used against the limit or "unlimited", and the creation time.
-6. Actions: Copy link, Copy QR image, Save PNG..., and Stop sharing. Stop sharing
+6. Actions: Copy link, Copy QR image, Save PNG... (native save dialog), and Stop
+   sharing. Below the QR caption, a collapsed "Can't open the link on another
+   device?" lists the usual causes: same network (with the current address),
+   guest Wi-Fi and client isolation, VPN routing, the platform's firewall prompt,
+   and a check from this computer, plus the plain-HTTP trust note. Stop sharing
    asks for confirmation inline in the button ("Stop sharing? Confirm") instead of
    opening a dialog, so the keyboard flow stays short.
 7. A one-line trust note: "Anyone with this link on your network can download its

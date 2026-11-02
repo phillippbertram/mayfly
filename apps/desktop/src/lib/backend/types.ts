@@ -73,5 +73,6 @@ export interface Backend {
   deleteProfile(id: string): Promise<void>;
   previewTemplate(template: string): Promise<TemplatePreview>;
 
-  savePng(suggestedName: string, data: Blob): Promise<void>;
+  /** Saves a PNG where the user chooses. `false` when they cancel the dialog. */
+  savePng(suggestedName: string, data: Blob): Promise<boolean>;
 }

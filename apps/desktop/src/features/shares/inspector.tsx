@@ -33,6 +33,7 @@ import {
 } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
 import { useUi } from "../../store/ui";
+import { ConnectionHelp } from "./connection-help";
 import { CopyButton } from "./copy-button";
 import { CountdownRing } from "./countdown-ring";
 import { FileGlyph } from "./file-glyph";
@@ -167,6 +168,7 @@ export function InspectorBody({
               : "Scan with any camera, or open the link"}
           </span>
         )}
+        {!ended && <ConnectionHelp />}
       </div>
 
       <div className="flex flex-col gap-1.5">

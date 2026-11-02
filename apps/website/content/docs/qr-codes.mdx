@@ -22,10 +22,14 @@ fails, enlarge the inspector, improve screen brightness, or use the copied link.
 
 - **Copy link** copies the share link the QR code opens.
 - **Copy QR image** copies an image rather than a text URL.
-- **Save QR as PNG** exports the code to an image file.
+- **Save QR as PNG** opens your system's save dialog and writes the code as an image file.
 
-Native clipboard and save integration require backend support and platform testing.
-Browser-preview actions exercise browser APIs, not the native implementations.
+If another device can't open the link, open **Can't open the link on another device?**
+under the QR code in the share details for the usual causes: different networks, guest
+Wi-Fi or client isolation, a VPN, or the firewall. See also [Troubleshooting](../troubleshooting/).
+
+In the browser-only preview, these actions use the browser's own clipboard and download,
+not the desktop app's.
 
 ## A QR code is a credential
 

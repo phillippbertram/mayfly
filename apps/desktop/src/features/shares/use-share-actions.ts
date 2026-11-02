@@ -152,11 +152,9 @@ export function useShareActions() {
       async saveQr(share: Share) {
         if (!share.link) return;
         const link = share.link;
-        const saved = await run(async () => {
-          const png = await qrPng(link);
-          await backend.savePng(`${splitFileName(share.fileName).base}-qr.png`, png);
-          return true;
-        });
+        const saved = await run(async () =>
+          backend.savePng(`${splitFileName(share.fileName).base}-qr.png`, await qrPng(link)),
+        );
         if (saved) toast("QR code saved.", "success");
       },
 

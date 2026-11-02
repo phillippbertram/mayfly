@@ -1,5 +1,6 @@
 mod app;
 mod commands;
+mod export;
 mod network;
 pub mod server;
 mod settings;
@@ -79,6 +80,7 @@ pub fn run() -> tauri::Result<()> {
             commands::stop_all,
             commands::remove_share,
             commands::clear_finished,
+            commands::save_png,
         ])
         .build(tauri::generate_context!())?;
 
