@@ -1,9 +1,10 @@
 import {
+  Clock,
   Copy,
-  Download,
   Ellipsis,
   Hash,
   ImageDown,
+  Infinity as InfinityIcon,
   Link2,
   QrCode,
   RotateCcw,
@@ -12,14 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  memo,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent, memo, type ReactNode, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
 import {
@@ -35,38 +29,25 @@ import {
 } from "../../components/ui/menu";
 import { Tooltip } from "../../components/ui/tooltip";
 import type { LinkProfile, Share } from "../../lib/backend";
+import { HTTP_PROFILE_ID } from "../../lib/backend/types";
 import { cn } from "../../lib/cn";
 import {
+  describeType,
   displayStatus,
   formatBytes,
   formatClock,
+  formatCountdown,
   formatDownloads,
   formatRemaining,
   remainingMs,
 } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
 import { CopyButton } from "./copy-button";
-import { FileGlyph } from "./file-glyph";
+import { DownloadMeter } from "./download-meter";
 import { FileName } from "./file-name";
-import { STATUS_LABEL, StatusChip } from "./status-chip";
+import { LifetimeRing } from "./lifetime-ring";
+import { STATUS_LABEL } from "./status-chip";
 import type { ShareActions } from "./use-share-actions";
-
-function secondaryLine(share: Share, now: number): string {
-  const size = formatBytes(share.byteSize);
-  const at = share.endedAt ? formatClock(share.endedAt) : "";
-  switch (share.status) {
-    case "expired":
-      return `${size} · Expired at ${at}`;
-    case "stopped":
-      return `${size} · Stopped at ${at}`;
-    case "limitReached":
-      return `${size} · Limit reached at ${at}`;
-    case "active": {
-      const left = remainingMs(share, now);
-      return left === null ? `${size} · Until stopped` : `${size} · ${formatRemaining(left)} left`;
-    }
-  }
-}
 
 export function limitOptions(share: Share) {
   const min = share.downloadCount + 1;
@@ -84,6 +65,12 @@ export const EXTEND_OPTIONS = [
   { minutes: 60, label: "Add 1 hour" },
 ] as const;
 
+const ENDED_TEXT = {
+  expired: "Expired",
+  stopped: "Stopped",
+  limitReached: "Limit reached",
+} as const;
+
 function focusSibling(current: HTMLElement, step: number | "first" | "last") {
   const rows = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-share-row]"));
   const index = rows.indexOf(current as HTMLButtonElement);
@@ -92,45 +79,34 @@ function focusSibling(current: HTMLElement, step: number | "first" | "last") {
   target?.click();
 }
 
-export const ShareRow = memo(function ShareRow({
+const rowMotion = {
+  layout: "position" as const,
+  initial: { opacity: 0, y: -10, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: {
+    opacity: 0,
+    x: 28,
+    height: 0,
+    marginBottom: 0,
+    transition: { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const },
+  },
+  transition: { type: "spring" as const, stiffness: 420, damping: 34 },
+};
+
+/** Invisible full-row button: selection, arrow-key navigation, and context menu. */
+function RowButton({
   share,
-  now,
-  position,
+  label,
   selected,
-  fresh,
-  profiles,
-  actions,
   onSelect,
-  onShowQr,
+  onMenu,
 }: {
   share: Share;
-  now: number;
-  position: number;
+  label: string;
   selected: boolean;
-  fresh: boolean;
-  profiles: LinkProfile[];
-  actions: ShareActions;
   onSelect: (id: string) => void;
-  onShowQr: (id: string) => void;
+  onMenu?: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const status = displayStatus(share, now);
-  const ended = share.status !== "active";
-  const secondary = secondaryLine(share, now);
-  const revealed = selected || menuOpen;
-  const left = remainingMs(share, now);
-  const lifetime = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
-  const progress =
-    !ended && left !== null && lifetime ? Math.max(0, Math.min(1, left / lifetime)) : null;
-
-  // The metadata column slides aside by exactly the width of the row's actions.
-  const actionsRef = useRef<HTMLDivElement>(null);
-  const [actionsWidth, setActionsWidth] = useState(96);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the actions change with the ended state.
-  useLayoutEffect(() => {
-    if (actionsRef.current) setActionsWidth(actionsRef.current.offsetWidth);
-  }, [ended]);
-
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const keys: Record<string, number | "first" | "last"> = {
       ArrowDown: 1,
@@ -142,65 +118,264 @@ export const ShareRow = memo(function ShareRow({
     if (step !== undefined) {
       event.preventDefault();
       focusSibling(event.currentTarget, step);
-    } else if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+    } else if (onMenu && (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10"))) {
       event.preventDefault();
-      setMenuOpen(true);
+      onMenu();
     }
   };
+  return (
+    <button
+      type="button"
+      data-share-row
+      data-share-id={share.id}
+      aria-current={selected ? "true" : undefined}
+      aria-label={label}
+      onClick={() => onSelect(share.id)}
+      onKeyDown={onKeyDown}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onSelect(share.id);
+        onMenu?.();
+      }}
+      className="absolute inset-0 rounded-[12px] outline-offset-[-2px]"
+    />
+  );
+}
+
+function SelectionBar({ selected }: { selected: boolean }) {
+  return selected ? (
+    <motion.span
+      layoutId="row-selection"
+      aria-hidden="true"
+      className="absolute top-3 bottom-3 left-0 w-[3px] rounded-r-full bg-accent"
+      transition={{ type: "spring", stiffness: 500, damping: 40 }}
+    />
+  ) : null;
+}
+
+function TimerPill({ share, now, warning }: { share: Share; now: number; warning: boolean }) {
+  const left = remainingMs(share, now);
+  const content: ReactNode =
+    left === null ? (
+      <>
+        <InfinityIcon aria-hidden="true" size={13} strokeWidth={2} />
+        Until stopped
+      </>
+    ) : (
+      <>
+        <Clock aria-hidden="true" size={12} strokeWidth={2} />
+        {left < 3_600_000 ? formatCountdown(left) : formatRemaining(left)}
+      </>
+    );
+  return (
+    <Tooltip
+      label={
+        share.expiresAt === null
+          ? "Shared until you stop it"
+          : `Ends at ${formatClock(share.expiresAt)}`
+      }
+      hotkey={appHotkeys["share.extend"].hotkey}
+    >
+      <span
+        className={cn(
+          "relative z-[1] inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium whitespace-nowrap tnum transition-colors duration-500",
+          left === null
+            ? "bg-surface-muted text-muted"
+            : warning
+              ? "bg-warning-soft text-warning-strong"
+              : "bg-accent-soft text-accent-strong",
+        )}
+      >
+        {content}
+      </span>
+    </Tooltip>
+  );
+}
+
+function ActiveActions({
+  share,
+  profiles,
+  actions,
+  revealed,
+  menuOpen,
+  setMenuOpen,
+  onShowQr,
+}: {
+  share: Share;
+  profiles: LinkProfile[];
+  actions: ShareActions;
+  revealed: boolean;
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean) => void;
+  onShowQr: (id: string) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative z-[1] flex items-center gap-0.5 border-l border-line pl-1.5 transition-[opacity,translate] duration-200 ease-out",
+        revealed
+          ? "translate-x-0 opacity-100"
+          : "translate-x-1 opacity-0 group-focus-within:translate-x-0 group-focus-within:opacity-100 group-hover:translate-x-0 group-hover:opacity-100",
+      )}
+    >
+      <CopyButton
+        iconOnly
+        variant="ghost"
+        label="Copy link"
+        copiedLabel="Link copied"
+        hotkey={appHotkeys["share.copyLink"].hotkey}
+        disabled={!share.link}
+        onCopy={() => actions.copyLink(share)}
+      />
+      <IconButton
+        icon={QrCode}
+        label="Show QR code"
+        hotkey={appHotkeys["share.showQr"].hotkey}
+        onClick={() => onShowQr(share.id)}
+      />
+      <MenuRoot modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
+        <Tooltip label="More actions">
+          <MenuTrigger asChild>
+            <Button aria-label="More actions" size="iconSm" variant="ghost">
+              <Ellipsis aria-hidden="true" size={16} strokeWidth={1.6} />
+            </Button>
+          </MenuTrigger>
+        </Tooltip>
+        <MenuContent>
+          <MenuItem
+            icon={Copy}
+            hotkey={appHotkeys["share.copyLink"].hotkey}
+            onSelect={() => actions.copyLink(share)}
+          >
+            Copy link
+          </MenuItem>
+          <MenuItem
+            icon={QrCode}
+            hotkey={appHotkeys["share.copyQr"].hotkey}
+            disabled={!share.link}
+            onSelect={() => actions.copyQr(share)}
+          >
+            Copy QR image
+          </MenuItem>
+          <MenuItem
+            icon={ImageDown}
+            hotkey={appHotkeys["share.savePng"].hotkey}
+            disabled={!share.link}
+            onSelect={() => actions.saveQr(share)}
+          >
+            Save QR as PNG…
+          </MenuItem>
+          <MenuSeparator />
+          <MenuSub>
+            <MenuSubTrigger icon={TimerReset}>Lifetime</MenuSubTrigger>
+            <MenuSubContent>
+              {EXTEND_OPTIONS.map((option) => (
+                <MenuItem
+                  key={option.minutes}
+                  {...(option.minutes === 10 ? { hotkey: appHotkeys["share.extend"].hotkey } : {})}
+                  onSelect={() => actions.extend(share, option.minutes)}
+                >
+                  {option.label}
+                </MenuItem>
+              ))}
+              <MenuSeparator />
+              <MenuItem onSelect={() => actions.extend(share, null)}>Keep until stopped</MenuItem>
+            </MenuSubContent>
+          </MenuSub>
+          <MenuSub>
+            <MenuSubTrigger icon={Hash}>Download limit</MenuSubTrigger>
+            <MenuSubContent>
+              <MenuRadioGroup
+                value={share.downloadLimit === null ? "none" : String(share.downloadLimit)}
+                onValueChange={(v) => actions.setLimit(share, v === "none" ? null : Number(v))}
+                options={limitOptions(share)}
+              />
+            </MenuSubContent>
+          </MenuSub>
+          {profiles.length > 1 && (
+            <MenuSub>
+              <MenuSubTrigger icon={Link2}>Link profile</MenuSubTrigger>
+              <MenuSubContent>
+                <MenuRadioGroup
+                  value={share.profileId}
+                  onValueChange={(id) => actions.setProfile(share, id)}
+                  options={profiles.map((p) => ({ value: p.id, label: p.name }))}
+                />
+              </MenuSubContent>
+            </MenuSub>
+          )}
+          <MenuSeparator />
+          <MenuItem
+            icon={Square}
+            danger
+            hotkey={appHotkeys["share.stop"].hotkey}
+            onSelect={() => actions.stop(share)}
+          >
+            Stop sharing
+          </MenuItem>
+        </MenuContent>
+      </MenuRoot>
+    </div>
+  );
+}
+
+interface RowProps {
+  share: Share;
+  now: number;
+  position: number;
+  selected: boolean;
+  fresh: boolean;
+  profiles: LinkProfile[];
+  actions: ShareActions;
+  onSelect: (id: string) => void;
+  onShowQr: (id: string) => void;
+}
+
+/** An active share: lifetime ring, timer pill, download meter, and hover actions. */
+export const ActiveShareRow = memo(function ActiveShareRow({
+  share,
+  now,
+  position,
+  selected,
+  fresh,
+  profiles,
+  actions,
+  onSelect,
+  onShowQr,
+}: RowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const status = displayStatus(share, now);
+  const warning = status === "expiring";
+  const left = remainingMs(share, now);
+  const lifetime = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
+  const progress = left === null || !lifetime ? null : left / lifetime;
+  const profile = profiles.find((p) => p.id === share.profileId);
+  const linkLabel =
+    !profile || profile.id === HTTP_PROFILE_ID ? "HTTP link" : `${profile.name} link`;
+  const timeText = left === null ? "until stopped" : `${formatRemaining(left)} left`;
 
   return (
-    <motion.li
-      layout="position"
-      initial={{ opacity: 0, y: -10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{
-        opacity: 0,
-        x: 28,
-        height: 0,
-        marginBottom: 0,
-        transition: { duration: 0.22, ease: [0.4, 0, 0.2, 1] },
-      }}
-      transition={{ type: "spring", stiffness: 420, damping: 34 }}
-      className="mb-1"
-    >
+    <motion.li {...rowMotion} className="mb-1.5">
       <div
         className={cn(
-          "group relative flex h-14 items-center gap-3 rounded-[10px] border px-3",
+          "group relative flex h-16 items-center gap-3.5 rounded-[12px] border pr-3 pl-3",
           "transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out",
           selected
-            ? "border-transparent bg-surface-muted shadow-[inset_0_0_0_1px_var(--border)]"
-            : ended
-              ? "border-transparent bg-transparent hover:bg-surface/70"
-              : "border-line bg-surface hover:-translate-y-px hover:border-line-strong hover:shadow-[0_4px_14px_-6px_hsl(var(--shadow-color)/0.18)]",
+            ? "border-transparent bg-surface shadow-[inset_0_0_0_1px_var(--accent),0_6px_18px_-10px_hsl(var(--shadow-color)/0.35)]"
+            : "border-line bg-surface hover:-translate-y-px hover:border-line-strong hover:shadow-[0_6px_18px_-10px_hsl(var(--shadow-color)/0.3)]",
           fresh && "row-arrive",
         )}
-        style={{ "--actions-w": `${actionsWidth + 8}px` } as CSSProperties}
       >
-        {selected && (
-          <motion.span
-            layoutId="row-selection"
-            aria-hidden="true"
-            className="absolute top-3 bottom-3 left-0 w-[3px] rounded-r-full bg-accent"
-            transition={{ type: "spring", stiffness: 500, damping: 40 }}
-          />
-        )}
-        <button
-          type="button"
-          data-share-row
-          data-share-id={share.id}
-          aria-current={selected ? "true" : undefined}
-          aria-label={`${share.fileName}, ${secondary}, ${STATUS_LABEL[status]}, ${formatDownloads(share)}`}
-          onClick={() => onSelect(share.id)}
-          onKeyDown={onKeyDown}
-          onContextMenu={(event) => {
-            event.preventDefault();
-            onSelect(share.id);
-            if (!ended) setMenuOpen(true);
-          }}
-          className="absolute inset-0 rounded-[10px] outline-offset-[-2px]"
+        <SelectionBar selected={selected} />
+        <RowButton
+          share={share}
+          label={`${share.fileName}, ${formatBytes(share.byteSize)}, ${timeText}, ${STATUS_LABEL[status]}, ${formatDownloads(share)}`}
+          selected={selected}
+          onSelect={onSelect}
+          onMenu={() => setMenuOpen(true)}
         />
         <span className="pointer-events-none relative">
-          <FileGlyph kind={share.kind} muted={ended} className={cn(selected && "bg-surface")} />
+          <LifetimeRing kind={share.kind} progress={progress} warning={warning} />
           {position <= 9 && (
             <span
               aria-hidden="true"
@@ -211,170 +386,112 @@ export const ShareRow = memo(function ShareRow({
           )}
         </span>
         <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5">
-          <FileName
-            name={share.fileName}
-            className={cn("text-[13px] font-medium", ended ? "text-muted" : "text-fg")}
-          />
-          <span className="text-[12px] leading-4 text-muted tnum">{secondary}</span>
-        </div>
-        <div
-          className={cn(
-            "flex shrink-0 items-center gap-2 transition-[margin] duration-300 ease-[var(--ease-out-soft)]",
-            revealed
-              ? "mr-[var(--actions-w)]"
-              : "group-focus-within:mr-[var(--actions-w)] group-hover:mr-[var(--actions-w)]",
-          )}
-        >
-          <Tooltip label="Downloads started. A download counts when it begins, not when the device saves it.">
-            <span className="relative z-[1] flex w-[84px] items-center justify-end gap-1 text-[12px] whitespace-nowrap text-muted tnum">
-              <Download aria-hidden="true" size={12} strokeWidth={1.8} className="opacity-70" />
-              {formatDownloads(share)}
-            </span>
-          </Tooltip>
-          <span className="pointer-events-none flex w-[108px] justify-end">
-            <StatusChip status={status} />
+          <FileName name={share.fileName} className="text-[14px] leading-5 font-semibold" />
+          <span className="truncate text-[12px] leading-4 text-muted tnum">
+            {formatBytes(share.byteSize)} · {describeType(share)} · {linkLabel}
           </span>
         </div>
-        {progress !== null && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3 bottom-[5px] left-[60px] h-[2px] overflow-hidden rounded-full bg-line/60"
-          >
-            <span
-              className={cn(
-                "block h-full rounded-full transition-[width,background-color] duration-1000 ease-linear",
-                status === "expiring" ? "bg-warning" : "bg-accent/70",
-              )}
-              style={{ width: `${progress * 100}%` }}
-            />
+        <TimerPill share={share} now={now} warning={warning} />
+        <Tooltip label="Downloads started. A download counts when it begins, not when the device saves it.">
+          <span className="relative z-[1]">
+            <DownloadMeter share={share} warning={warning} />
           </span>
+        </Tooltip>
+        <ActiveActions
+          share={share}
+          profiles={profiles}
+          actions={actions}
+          revealed={selected || menuOpen}
+          menuOpen={menuOpen}
+          setMenuOpen={setMenuOpen}
+          onShowQr={onShowQr}
+        />
+      </div>
+    </motion.li>
+  );
+});
+
+const DOT = { expired: "bg-faint", stopped: "bg-faint", limitReached: "bg-danger" } as const;
+
+/** A finished share: compact, muted, with Share again and Remove. */
+export const FinishedShareRow = memo(function FinishedShareRow({
+  share,
+  position,
+  selected,
+  actions,
+  onSelect,
+}: Pick<RowProps, "share" | "position" | "selected" | "actions" | "onSelect">) {
+  if (share.status === "active") return null;
+  const ended = ENDED_TEXT[share.status];
+  const detail = [
+    ended,
+    share.downloadLimit === null
+      ? formatDownloads(share)
+      : `${share.downloadCount} of ${share.downloadLimit}`,
+    share.endedAt ? formatClock(share.endedAt) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <motion.li {...rowMotion} className="border-b border-line/70 last:border-b-0">
+      <div
+        className={cn(
+          "group relative flex h-[42px] items-center gap-3 pr-2 pl-3.5 transition-colors duration-150",
+          selected ? "bg-surface-muted" : "hover:bg-surface/70",
         )}
-        <div
-          ref={actionsRef}
+      >
+        <SelectionBar selected={selected} />
+        <RowButton
+          share={share}
+          label={`${share.fileName}, ${detail}`}
+          selected={selected}
+          onSelect={onSelect}
+        />
+        <span
+          aria-hidden="true"
+          className={cn("relative size-2 shrink-0 rounded-full", DOT[share.status])}
+        >
+          {position <= 9 && (
+            <span className="absolute -top-2.5 -left-2.5 hidden size-4 items-center justify-center rounded-[5px] border border-line bg-surface text-[10px] font-semibold text-faint group-hover:flex">
+              {position}
+            </span>
+          )}
+        </span>
+        <span className="pointer-events-none flex min-w-0 flex-1 items-baseline gap-2">
+          <FileName name={share.fileName} className="text-[13px] text-muted" />
+          <span className="shrink-0 text-[12px] text-faint tnum">
+            {formatBytes(share.byteSize)}
+          </span>
+        </span>
+        <span
           className={cn(
-            "absolute top-1/2 right-3 z-[1] flex -translate-y-1/2 items-center gap-0.5 transition-[opacity,translate] duration-200 ease-out",
-            revealed
-              ? "translate-x-0 opacity-100"
-              : "pointer-events-none translate-x-2 opacity-0 group-focus-within:pointer-events-auto group-focus-within:translate-x-0 group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100",
+            "pointer-events-none shrink-0 text-[12px] tnum",
+            share.status === "limitReached" ? "text-danger" : "text-faint",
           )}
         >
-          {ended ? (
-            <>
-              <Tooltip label="Share again" hotkey={appHotkeys["share.again"].hotkey}>
-                <Button size="sm" variant="ghost" onClick={() => actions.shareAgain(share)}>
-                  <RotateCcw aria-hidden="true" size={13} strokeWidth={1.8} />
-                  Share again
-                </Button>
-              </Tooltip>
-              <IconButton icon={Trash2} label="Remove" onClick={() => actions.remove(share)} />
-            </>
-          ) : (
-            <>
-              <CopyButton
-                iconOnly
-                variant="ghost"
-                label="Copy link"
-                copiedLabel="Link copied"
-                hotkey={appHotkeys["share.copyLink"].hotkey}
-                disabled={!share.link}
-                onCopy={() => actions.copyLink(share)}
-              />
-              <IconButton
-                icon={QrCode}
-                label="Show QR code"
-                hotkey={appHotkeys["share.showQr"].hotkey}
-                onClick={() => onShowQr(share.id)}
-              />
-              <MenuRoot modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
-                <Tooltip label="More actions">
-                  <MenuTrigger asChild>
-                    <Button aria-label="More actions" size="iconSm" variant="ghost">
-                      <Ellipsis aria-hidden="true" size={16} strokeWidth={1.6} />
-                    </Button>
-                  </MenuTrigger>
-                </Tooltip>
-                <MenuContent>
-                  <MenuItem
-                    icon={Copy}
-                    hotkey={appHotkeys["share.copyLink"].hotkey}
-                    onSelect={() => actions.copyLink(share)}
-                  >
-                    Copy link
-                  </MenuItem>
-                  <MenuItem
-                    icon={QrCode}
-                    hotkey={appHotkeys["share.copyQr"].hotkey}
-                    disabled={!share.link}
-                    onSelect={() => actions.copyQr(share)}
-                  >
-                    Copy QR image
-                  </MenuItem>
-                  <MenuItem
-                    icon={ImageDown}
-                    hotkey={appHotkeys["share.savePng"].hotkey}
-                    disabled={!share.link}
-                    onSelect={() => actions.saveQr(share)}
-                  >
-                    Save QR as PNG…
-                  </MenuItem>
-                  <MenuSeparator />
-                  <MenuSub>
-                    <MenuSubTrigger icon={TimerReset}>Lifetime</MenuSubTrigger>
-                    <MenuSubContent>
-                      {EXTEND_OPTIONS.map((option) => (
-                        <MenuItem
-                          key={option.minutes}
-                          {...(option.minutes === 10
-                            ? { hotkey: appHotkeys["share.extend"].hotkey }
-                            : {})}
-                          onSelect={() => actions.extend(share, option.minutes)}
-                        >
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                      <MenuSeparator />
-                      <MenuItem onSelect={() => actions.extend(share, null)}>
-                        Keep until stopped
-                      </MenuItem>
-                    </MenuSubContent>
-                  </MenuSub>
-                  <MenuSub>
-                    <MenuSubTrigger icon={Hash}>Download limit</MenuSubTrigger>
-                    <MenuSubContent>
-                      <MenuRadioGroup
-                        value={share.downloadLimit === null ? "none" : String(share.downloadLimit)}
-                        onValueChange={(v) =>
-                          actions.setLimit(share, v === "none" ? null : Number(v))
-                        }
-                        options={limitOptions(share)}
-                      />
-                    </MenuSubContent>
-                  </MenuSub>
-                  {profiles.length > 1 && (
-                    <MenuSub>
-                      <MenuSubTrigger icon={Link2}>Link profile</MenuSubTrigger>
-                      <MenuSubContent>
-                        <MenuRadioGroup
-                          value={share.profileId}
-                          onValueChange={(id) => actions.setProfile(share, id)}
-                          options={profiles.map((p) => ({ value: p.id, label: p.name }))}
-                        />
-                      </MenuSubContent>
-                    </MenuSub>
-                  )}
-                  <MenuSeparator />
-                  <MenuItem
-                    icon={Square}
-                    danger
-                    hotkey={appHotkeys["share.stop"].hotkey}
-                    onSelect={() => actions.stop(share)}
-                  >
-                    Stop sharing
-                  </MenuItem>
-                </MenuContent>
-              </MenuRoot>
-            </>
+          {detail}
+        </span>
+        <div
+          className={cn(
+            "relative z-[1] flex items-center gap-0.5 transition-opacity duration-200",
+            selected
+              ? "opacity-100"
+              : "opacity-60 group-focus-within:opacity-100 group-hover:opacity-100",
           )}
+        >
+          <Tooltip label="Share again" hotkey={appHotkeys["share.again"].hotkey}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-fg"
+              onClick={() => actions.shareAgain(share)}
+            >
+              <RotateCcw aria-hidden="true" size={13} strokeWidth={1.8} />
+              Share again
+            </Button>
+          </Tooltip>
+          <IconButton icon={Trash2} label="Remove" onClick={() => actions.remove(share)} />
         </div>
       </div>
     </motion.li>

@@ -29,6 +29,7 @@ import {
   displayStatus,
   formatBytes,
   formatClock,
+  formatCountdown,
   remainingMs,
 } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
@@ -45,15 +46,6 @@ import { EXTEND_OPTIONS, limitOptions } from "./share-row";
 import { StatusChip } from "./status-chip";
 import { StopButton } from "./stop-button";
 import type { ShareActions } from "./use-share-actions";
-
-function countdown(ms: number): string {
-  const total = Math.ceil(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
-}
 
 /** Opens when `signal` increments, so a shortcut can pop the menu open. */
 function useSignalledOpen(signal: number) {
@@ -282,7 +274,7 @@ export function InspectorBody({
               ) : (
                 <>
                   <RollingText
-                    text={countdown(left)}
+                    text={formatCountdown(left)}
                     className={cn(
                       "text-[15px] leading-5 font-semibold tnum",
                       status === "expiring" && "text-warning",

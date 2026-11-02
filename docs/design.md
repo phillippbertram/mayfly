@@ -151,33 +151,38 @@ Once a share exists, the drop zone collapses into a compact 64-point strip at th
 top of the list ("Drop files to share" plus a "Choose files" button). The whole
 window remains a drop target, so the strip is a hint rather than the only target.
 
-Each row shows, from left to right:
+The list has two groups. "Sharing now" holds active shares, newest first, with a
+summary such as "2 files · next ends in 7 min" and a Stop all action. "Finished"
+collects expired, stopped, and limit-reached shares below it, most recent first.
+Arrow keys, number keys, and the command palette follow this display order.
 
-- A file-type glyph in a soft rounded square, derived from the media type (image,
-  document, archive, audio, video, other). No thumbnails: generating them would
-  read file contents in the frontend, which the architecture forbids.
-- Filename with middle truncation so the extension stays visible, and a secondary
-  line with formatted size and remaining lifetime ("2.4 MB · 7 min left").
-- A status chip: Active, Expiring (under two minutes), Expired, Stopped, or Limit
-  reached. Color is always paired with a label.
-- A download indicator: "0 downloads", "1 of 3", or "3 of 3". The counter's meaning
-  (reserved downloads, not confirmed saves) is explained in a tooltip and in the
-  inspector, matching the semantics the core-sharing issue defines.
-- Hover and focus reveal three actions: Copy link, Show QR, and an overflow menu
-  with Save QR as PNG, lifetime, download limit, link profile, and Stop sharing.
-  The keyboard reaches the same actions through the row's context menu.
+Each active row (64 points) shows, from left to right:
 
-The download count and status chip sit in fixed-width columns at the right edge,
-so they line up across rows and no row leaves the right side empty. The actions do
-not reserve space while hidden: they fade in over the right edge and the metadata
-column slides aside by exactly their width. Active shares with an expiry show a
-two-point remaining-lifetime bar along the bottom of the row, accent while active
-and warning once expiring.
+- A lifetime ring around the file-type icon. The ring empties as the lifetime runs
+  out and turns amber under two minutes; shares kept until stopped show a calm full
+  ring. No thumbnails: generating them would read file contents in the frontend,
+  which the architecture forbids.
+- Filename with middle truncation so the extension stays visible, and a meta line
+  with size, type, and link profile ("2.4 MB · PDF document · HTTP link").
+- A timer pill with the countdown ("7:42", or "Until stopped"), accent while active
+  and amber when expiring. It replaces the status chip for active shares; the ring
+  and pill carry the state together, and the row's accessible name states it.
+- A download meter: the count, plus one segment per allowed download for limits up
+  to ten, a bar for larger limits, or just the count without a limit. The counter's
+  meaning (started downloads, not confirmed saves) is explained in a tooltip and in
+  the inspector, matching the semantics the core-sharing issue defines.
+- Actions behind a divider: Copy link, Show QR, and an overflow menu with Save QR as
+  PNG, lifetime, download limit, link profile, and Stop sharing. They fade in on
+  hover, focus, or selection in a reserved slot, so nothing shifts. The keyboard
+  reaches the same actions through the row's context menu.
 
-Selecting a row opens it in the inspector. Expired and stopped shares stay in the
-list, muted, with "Share again" (creates a new share for the same file) and "Remove"
-until the user clears them. A "Clear finished" action appears in the list header
-when any finished shares exist, next to "Stop all".
+Finished rows are compact (42 points) inside one bordered group: a status dot (red
+for limit reached, grey otherwise), the muted filename and size, the outcome with
+its time ("Limit reached · 2 of 2 · 9:02 PM"), and "Share again" plus Remove. The
+group header shows the count and a Clear action. When nothing is active, the active
+group shows a dashed hint to drop files or press Cmd/Ctrl+O.
+
+Selecting any row opens it in the inspector.
 
 ### Share inspector
 

@@ -69,3 +69,22 @@ export function describeType(share: Share): string {
   const label = KIND_LABEL[share.kind];
   return ext ? `${ext.slice(1).toUpperCase()} ${label.toLowerCase()}` : label;
 }
+
+/** Countdown text: "7:42" under an hour, "1:05:09" above. */
+export function formatCountdown(ms: number): string {
+  const total = Math.ceil(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+}
+
+/** Display order: active shares first (newest first), then finished ones, most recent first. */
+export function displayOrder(shares: Share[]): Share[] {
+  const active = shares.filter((s) => s.status === "active");
+  const finished = shares
+    .filter((s) => s.status !== "active")
+    .sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0));
+  return [...active, ...finished];
+}

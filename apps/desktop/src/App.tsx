@@ -1,7 +1,7 @@
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
 import { Modal } from "./components/ui/modal";
@@ -25,6 +25,7 @@ import { useFileDrop } from "./hooks/use-file-drop";
 import { useMediaQuery } from "./hooks/use-media-query";
 import { useTheme } from "./hooks/use-theme";
 import { type Backend, createBackend } from "./lib/backend";
+import { displayOrder } from "./lib/format";
 import { useBackendSync, useServer, useSettings, useShares } from "./lib/queries";
 import { useUi } from "./store/ui";
 
@@ -82,7 +83,8 @@ function Shell({ client }: { client: QueryClient }) {
 
   const server = useServer().data;
   const sharesQuery = useShares();
-  const shares = sharesQuery.data ?? [];
+  // One display order everywhere: list, arrow keys, number keys, and the palette.
+  const shares = useMemo(() => displayOrder(sharesQuery.data ?? []), [sharesQuery.data]);
   const online = server?.kind === "online";
   const wide = useMediaQuery("(min-width: 900px)");
 
