@@ -45,7 +45,7 @@ export function ShareFiles({
       {share.files.length === 0 ? (
         <div className="flex h-16 flex-col items-center justify-center rounded-xl border border-dashed border-line-strong text-[12px] text-muted">
           <span className="font-medium text-fg">No files yet</span>
-          {active && <span>Add files, or drag them onto the right half of the window.</span>}
+          {active && <span>Add files, or drag them onto these details.</span>}
         </div>
       ) : (
         <ul className="flex max-h-[200px] flex-col gap-0.5 overflow-y-auto rounded-xl border border-line bg-bg/60 p-1">
@@ -121,8 +121,8 @@ export function ShareFiles({
       )}
       {active && share.files.length > 0 && (
         <span className="text-[11px] text-faint">
-          Drag files onto the right half of the window to add them. Everyone with the link sees
-          them.
+          Drag files onto these details or onto the link in the list to add them. Everyone with the
+          link sees them.
         </span>
       )}
     </section>

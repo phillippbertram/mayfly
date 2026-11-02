@@ -156,19 +156,18 @@ Once a share exists, the drop zone collapses into a compact 64-point strip at th
 top of the list ("Drop files to share" plus a "Choose files" button). The whole
 window remains a drop target, so the strip is a hint rather than the only target.
 
-Dragging files over the window shows an overlay with large zones instead of
-per-element targets, decided only by the pointer's horizontal position:
+Dragging files over the window outlines what a drop will do, in place and
+without blurring the app:
 
-- Left half: "New link" — all files go behind one new link with the default
-  lifetime (the options sheet opens first when "Ask before sharing" is on).
-- Right half: "Add to “<name>”" — only when the selected share is active; the
-  files join it and everyone with its link sees them.
-- Without an active selected share, one full-width "Drop to share" zone.
+- Over an active share's row, or over the inspector of an active share: that
+  row (or panel) is outlined with a pill "Add to “<name>”", and the files join it.
+- Anywhere else (the strip, the header, empty space, finished shares): the whole
+  window is outlined with "New link for 10 minutes", and the strip reads "Release
+  to share". A hint says that dropping on an active link adds files to it.
 
-The zone under the pointer is outlined with marching dashes and a raised card; the
-other stays visible but muted, so the result is clear before releasing. Rows and
-the inspector are not drop targets themselves: precise hit areas between 64-point
-rows made it too easy to add to the wrong share.
+Rows are resolved by vertical band, not by the element under the pointer: the gap
+between two rows is split between them, so moving down the list never flickers to
+"new link" in between. The outline glides between targets with a short spring.
 
 The list has two groups. "Sharing now" holds active shares, newest first, with a
 summary such as "2 files · next ends in 7 min" and a Stop all action. "Finished"

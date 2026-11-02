@@ -110,7 +110,11 @@ export function InspectorBody({
   const total = share.expiresAt === null ? null : share.expiresAt - share.createdAt;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div
+      className="flex flex-col gap-4"
+      // Files dragged onto the details of an active share join it.
+      {...(ended ? {} : { "data-drop-inspector": "", "data-drop-share": share.id })}
+    >
       <div className="flex items-start gap-3">
         <FileGlyph kind={share.kind} size="lg" muted={ended} />
         <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
@@ -419,6 +423,9 @@ export function InspectorPanel(props: Parameters<typeof InspectorBody>[0]) {
       exit={{ width: 0, opacity: 0 }}
       transition={{ type: "spring", stiffness: 380, damping: 38 }}
       className="relative shrink-0 overflow-hidden border-l border-line bg-surface"
+      {...(props.share.status === "active"
+        ? { "data-drop-inspector": "", "data-drop-share": props.share.id }
+        : {})}
     >
       <div className="h-full w-[360px] overflow-y-auto px-5 py-4">
         <AnimatePresence mode="wait" initial={false}>

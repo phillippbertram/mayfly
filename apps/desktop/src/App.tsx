@@ -99,16 +99,16 @@ function Shell({ client }: { client: QueryClient }) {
   const actions = useShareActions();
   const commands = useCommands(shares, actions);
   const selected = shares.find((s) => s.id === selectedId) ?? null;
-  // Dragging splits the window: the left half always creates a new share, the
-  // right half adds to the selected share when it is active.
-  const addTarget = online && selected?.status === "active" ? selected : null;
-  const { dragging, zone } = useFileDrop(
-    (files, at) => {
-      if (at === "add" && addTarget) actions.dropInto(addTarget, files);
-      else actions.drop(files);
-    },
-    (x) => (addTarget && x >= window.innerWidth / 2 ? "add" : "new"),
-  );
+  // Dropping on an active share's row or details adds to it; anywhere else
+  // creates a new share.
+  const activeShare = (id: string) =>
+    shares.find((s) => s.id === id && s.status === "active") ?? null;
+  const { dragging, target: dropTarget } = useFileDrop((files, target) => {
+    const share = target.kind === "add" ? activeShare(target.shareId) : null;
+    if (share) actions.dropInto(share, files);
+    else actions.drop(files);
+  });
+  const dropShare = dropTarget.kind === "add" ? activeShare(dropTarget.shareId) : null;
 
   // Keep a sensible selection: the first share at launch, a neighbour after removal.
   useEffect(() => {
@@ -161,7 +161,7 @@ function Shell({ client }: { client: QueryClient }) {
                 className="flex min-h-0 flex-1 flex-col gap-3 pt-4 pr-5 pl-6"
               >
                 <DropStrip
-                  dragging={dragging && zone === "new"}
+                  dragging={dragging && !dropShare}
                   disabled={!online}
                   onChoose={actions.chooseFiles}
                 />
@@ -193,8 +193,8 @@ function Shell({ client }: { client: QueryClient }) {
       <DragOverlay
         visible={dragging && shares.length > 0}
         enabled={online}
-        addTarget={addTarget}
-        zone={zone}
+        target={dropTarget}
+        targetShare={dropShare}
         lifetimeMinutes={settings.defaultLifetimeMinutes}
       />
       <Composer actions={actions} />
