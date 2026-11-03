@@ -48,6 +48,7 @@ Milestone: [First public release](https://github.com/phillippbertram/filehop/mil
 | Distribution decisions | [#13: License, third-party notices, and public download hosting](https://github.com/phillippbertram/filehop/issues/13) |
 | Release trust          | [#14: Platform signing and macOS notarization](https://github.com/phillippbertram/filehop/issues/14)                   |
 | Release pipeline       | [#15: Versioned Windows, macOS, and Linux release builds](https://github.com/phillippbertram/filehop/issues/15)        |
+| ARM release targets    | [#30: Linux arm64 and Windows arm64 release builds](https://github.com/phillippbertram/filehop/issues/30)              |
 | Native acceptance      | [#16: Packaged installer and real LAN workflow validation](https://github.com/phillippbertram/filehop/issues/16)       |
 | Public website         | [#17: GitHub Pages product site, downloads, and user guides](https://github.com/phillippbertram/filehop/issues/17)     |
 

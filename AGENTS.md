@@ -6,6 +6,7 @@ rules here; tool-specific entry points should only reference this file.
 ## Scope and language
 
 - Write all code, comments, documentation, issues, commit messages, and PR text in English.
+- Never add `Co-Authored-By:` trailers or other agent attribution lines to commit messages.
 - The current app is a minimal, runnable Tauri/React starter. Implement only the
   functionality authorized by the current task; sharing, HTTP, tray, and profiles
   remain separate implementation issues.
