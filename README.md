@@ -6,7 +6,8 @@
 
 <p align="center">
   <strong>Files that live for a moment.</strong><br>
-  From your computer to your phone. One file or a few. One link. One quick QR scan.
+  From your computer to any browser on your network.<br>
+  One file or a few. One link. One quick QR scan.
 </p>
 
 Mayfly is a small desktop utility for macOS, Windows, and Linux. Drop in a few

@@ -41,7 +41,7 @@ export default function Home() {
             </h1>
             <div className="hero-bottom">
               <p>
-                From your computer to your phone.
+                From your computer to any browser on your network.
                 <br />
                 One file or a few. One link. One quick QR scan.
               </p>
@@ -378,7 +378,7 @@ export default function Home() {
         </nav>
         <span>
           Built with a little care.
-          <br />© {new Date().getUTCFullYear()} Mayfly
+          <br />© {new Date().getUTCFullYear()} Phillipp Bertram
         </span>
       </footer>
     </div>
