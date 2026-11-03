@@ -45,7 +45,7 @@ export function Downloads({ release }: { release: Release | null }) {
         </fieldset>
         {release && assets.length ? (
           <div className="download-options">
-            <span className="release-label">FileHop {release.version} · stable</span>
+            <span className="release-label">Mayfly {release.version} · stable</span>
             {assets.map((item) => (
               <div className="download-asset" key={`${item.target}-${item.format}`}>
                 <a className="button button-primary" href={item.url}>

@@ -32,7 +32,7 @@ trusted network.
   sites are refused by Fetch Metadata (`Sec-Fetch-Site` must be `same-origin` or
   `none`) and `Origin` (absent, `null`, or this host); pages send no referrer, so
   browsers report `Origin: null`. A correct password answers `303` to the page and
-  sets a random 256-bit credential as `filehop_unlock` three times, with
+  sets a random 256-bit credential as `mayfly_unlock` three times, with
   `Path=/s/{token}`, `/d/{token}`, and `/z/{token}`, `HttpOnly`,
   `SameSite=Strict`, and `Max-Age` up to one hour or the share's remaining
   lifetime. No `Secure` flag: the listener is plain HTTP. The registry keeps the

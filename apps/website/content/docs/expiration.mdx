@@ -21,7 +21,7 @@ recipient saved the file successfully.
 - Opening the share page and `HEAD` requests never count.
 - A download that is interrupted or canceled still counts; retrying is a new download.
 - Resuming a partial download isn't supported; the browser receives the whole file again.
-- If FileHop can't read the file, the attempt doesn't count.
+- If Mayfly can't read the file, the attempt doesn't count.
 - With one link for several files, the limit applies to each file. **Download all**
   uses one download of every file and is offered only while each file has one left.
 
@@ -34,10 +34,16 @@ Use **Stop sharing** in share details or the share's action menu. New page and
 download requests are refused immediately, and downloads already running are cut
 off. When a share expires instead, downloads that already started may finish.
 
-Expired and stopped shares may remain in the list for clarity. Sharing again
+## How a share’s life shows
+
+In the list, a share is **Live** while it can be downloaded and **Fading** in its
+last two minutes. Once its time runs out it is **Gone**. **Stopped** and **Limit
+reached** keep their plain names, because they describe a decision, not the clock.
+
+Gone and stopped shares may remain in the list for clarity. Sharing again
 creates a fresh share and token; it does not reactivate the old URL.
 
-<Screenshot name="settings" alt="FileHop's General settings preview with default lifetime and download-limit controls" />
+<Screenshot name="settings" alt="Mayfly's General settings preview with default lifetime and download-limit controls" />
 
 ## Start over safely
 

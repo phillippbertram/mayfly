@@ -1,5 +1,5 @@
 [package]
-name = "filehop"
+name = "mayfly"
 version = "0.8.0"
 description = "Temporary local file sharing for your desktop"
 authors = ["Phillipp Bertram"]
@@ -7,7 +7,7 @@ edition = "2021"
 publish = false
 
 [lib]
-name = "filehop_lib"
+name = "mayfly_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]

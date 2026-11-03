@@ -2,13 +2,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { validateRelease } from "./release.mjs";
 
 let manifest = JSON.parse(await readFile("data/release.json", "utf8"));
-const file = process.env.FILEHOP_RELEASE_MANIFEST;
-const repository = process.env.FILEHOP_RELEASE_REPOSITORY;
+const file = process.env.MAYFLY_RELEASE_MANIFEST;
+const repository = process.env.MAYFLY_RELEASE_REPOSITORY;
 
 async function publicJson(url) {
   const response = await fetch(url, {
     signal: AbortSignal.timeout(15000),
-    headers: { Accept: "application/json", "User-Agent": "FileHop-website-build" },
+    headers: { Accept: "application/json", "User-Agent": "Mayfly-website-build" },
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Public release request failed: ${response.status}`);
@@ -27,9 +27,9 @@ if (file) {
   if (!release) {
     manifest = { schemaVersion: 1, release: null };
   } else {
-    const asset = release.assets.find((item) => item.name === "filehop-release.json");
-    if (!asset) throw new Error("Latest stable release is missing filehop-release.json.");
-    const expected = `https://github.com/${repository}/releases/download/${encodeURIComponent(release.tag_name)}/filehop-release.json`;
+    const asset = release.assets.find((item) => item.name === "mayfly-release.json");
+    if (!asset) throw new Error("Latest stable release is missing mayfly-release.json.");
+    const expected = `https://github.com/${repository}/releases/download/${encodeURIComponent(release.tag_name)}/mayfly-release.json`;
     if (asset.browser_download_url !== expected)
       throw new Error("Unexpected release manifest URL.");
     manifest = await publicJson(expected);

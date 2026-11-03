@@ -8,7 +8,7 @@ import { appHotkeys } from "../../lib/hotkeys";
 import { QrCode } from "./qr-code";
 
 const ENDED = {
-  expired: { icon: TimerOff, label: "This link expired" },
+  expired: { icon: TimerOff, label: "This link is gone" },
   stopped: { icon: CircleStop, label: "Sharing stopped" },
   limitReached: { icon: Ban, label: "Download limit reached" },
 } as const;
@@ -84,7 +84,7 @@ export function QrCard({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex flex-col items-center gap-2 px-6 text-center text-[12px] text-[#6b7280]"
+                    className="flex flex-col items-center gap-2 px-6 text-center text-[12px] text-[#4b5957]"
                   >
                     <LoaderCircle aria-hidden="true" size={18} className="spin" />
                     Waiting for a network address
@@ -99,7 +99,7 @@ export function QrCard({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 380, damping: 26 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#17191d]"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#142326]"
                 >
                   <span className="flex size-11 items-center justify-center rounded-full bg-white shadow-[0_4px_14px_rgb(0_0_0/0.12)]">
                     <EyeOff aria-hidden="true" size={20} strokeWidth={1.7} />
@@ -114,13 +114,13 @@ export function QrCard({
                   animate={{ opacity: 1, backdropFilter: "blur(5px)" }}
                   exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
                   transition={{ duration: 0.35 }}
-                  className="absolute -inset-1 flex flex-col items-center justify-center gap-2 rounded-xl bg-white/75 text-[#17191d]"
+                  className="absolute -inset-1 flex flex-col items-center justify-center gap-2 rounded-xl bg-white/75 text-[#142326]"
                 >
                   <motion.span
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 20 }}
-                    className="flex size-10 items-center justify-center rounded-full bg-[#f0f1f3]"
+                    className="flex size-10 items-center justify-center rounded-full bg-[#eef3f1]"
                   >
                     <ended.icon aria-hidden="true" size={20} strokeWidth={1.7} />
                   </motion.span>

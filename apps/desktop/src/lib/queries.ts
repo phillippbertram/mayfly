@@ -40,7 +40,7 @@ export function useProfiles() {
   );
 }
 
-/** Name and version of the running build; it never changes while FileHop runs. */
+/** Name and version of the running build; it never changes while Mayfly runs. */
 export function useAppInfo() {
   const backend = useBackend();
   return useQuery({ queryKey: ["appInfo"], queryFn: () => backend.getAppInfo() }).data ?? null;

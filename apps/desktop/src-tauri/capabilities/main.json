@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The local FileHop window: native file-drop events and title-bar dragging only; no filesystem, network, shell, or plugin permissions.",
+  "description": "The local Mayfly window: native file-drop events and title-bar dragging only; no filesystem, network, shell, or plugin permissions.",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",

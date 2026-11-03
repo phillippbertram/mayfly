@@ -72,8 +72,8 @@ fn bind_error_message(port: u16, error: &io::Error) -> String {
     match error.kind() {
         io::ErrorKind::AddrInUse => format!("Port {port} is already in use by another app."),
         io::ErrorKind::PermissionDenied => {
-            format!("FileHop isn't allowed to use port {port}. Choose a port above 1023.")
+            format!("Mayfly isn't allowed to use port {port}. Choose a port above 1023.")
         }
-        _ => format!("FileHop couldn't start its server on port {port}."),
+        _ => format!("Mayfly couldn't start its server on port {port}."),
     }
 }

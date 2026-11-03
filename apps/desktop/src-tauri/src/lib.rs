@@ -19,7 +19,7 @@ use app::{App, BackendEvent, Topic};
 use lifecycle::Lifecycle;
 
 /// The single event channel the frontend listens to.
-const EVENT: &str = "filehop://event";
+const EVENT: &str = "mayfly://event";
 
 pub fn run() -> tauri::Result<()> {
     let app = tauri::Builder::default()
@@ -27,7 +27,7 @@ pub fn run() -> tauri::Result<()> {
         .manage(Lifecycle::default())
         .setup(|app| {
             let handle = app.handle().clone();
-            // Without a config directory, settings apply until FileHop quits.
+            // Without a config directory, settings apply until Mayfly quits.
             let config_dir = app.path().app_config_dir().ok();
             let state = App::new(
                 Arc::new(move |event: BackendEvent| {

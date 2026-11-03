@@ -22,7 +22,7 @@ export const files = [
   },
   {
     path: "apps/desktop/src-tauri/Cargo.lock",
-    pattern: /^(name = "filehop"\nversion = ")([^"]+)(")/m,
+    pattern: /^(name = "mayfly"\nversion = ")([^"]+)(")/m,
   },
 ];
 
@@ -103,7 +103,7 @@ function release(version) {
   }
   git("add", ...files.map(({ path }) => path));
   git("commit", "--quiet", "-m", `chore(release): v${version}`);
-  git("tag", "--annotate", `v${version}`, "-m", `FileHop ${version}`);
+  git("tag", "--annotate", `v${version}`, "-m", `Mayfly ${version}`);
   console.log(
     `Created the commit and tag v${version}. Start the release build with:\n` +
       "  git push --follow-tags origin main",

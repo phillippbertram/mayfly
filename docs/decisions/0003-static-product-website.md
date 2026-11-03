@@ -6,7 +6,7 @@
 
 ## Context
 
-FileHop needs an appealing user-facing product page, platform downloads, and an
+Mayfly needs an appealing user-facing product page, platform downloads, and an
 English user manual. The requested direction uses Next.js, Fumadocs, and Motion,
 with GitHub Pages as the publication target. The desktop backend and public release
 installers are still in development, so the website must distinguish previews

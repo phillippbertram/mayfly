@@ -1,8 +1,10 @@
-# FileHop
+# Mayfly
 
-Temporary file sharing from your desktop to any browser on the same local network.
+Files that live for a moment: temporary file sharing from your desktop to any
+browser on the same local network. Formerly FileHop
+([ADR 0014](docs/decisions/0014-rename-to-mayfly.md)).
 
-FileHop is planned as a small desktop application for macOS, Windows, and Linux.
+Mayfly is planned as a small desktop application for macOS, Windows, and Linux.
 Select files, scan a QR code on your phone, and download directly from your computer.
 No cloud service, account, or companion mobile app is required.
 
@@ -40,8 +42,8 @@ For frontend development and repository tooling:
 - GitHub CLI (`gh`) for issue management, or the GitHub web interface.
 
 ```sh
-git clone git@github.com:phillippbertram/filehop.git
-cd filehop
+git clone git@github.com:phillippbertram/mayfly.git
+cd mayfly
 npm install --global pnpm@11.15.1
 pnpm install --frozen-lockfile
 pnpm check
@@ -55,7 +57,7 @@ current terminal with `. "$HOME/.cargo/env"`. See
 [Native development](docs/development.md#native-development) for persistent shell
 setup and prerequisite checks.
 
-## Start FileHop
+## Start Mayfly
 
 From the repository root:
 
@@ -63,7 +65,7 @@ From the repository root:
 pnpm dev
 ```
 
-This starts Vite and opens the native FileHop desktop window. On the first run,
+This starts Vite and opens the native Mayfly desktop window. On the first run,
 Cargo downloads and compiles Tauri's native dependencies, which can take a few minutes.
 The start screen confirms the real Rust connection when the native app is ready.
 Closing the window currently exits the app; background tray behavior is a later issue.
@@ -155,7 +157,7 @@ Both devices must be able to reach each other on the same network. Guest Wi-Fi,
 client isolation, VPNs, or a firewall may prevent access. No router port forwarding
 or public network exposure is required.
 
-**HTTP is unencrypted. Use FileHop only on trusted networks.** Anyone who obtains a
+**HTTP is unencrypted. Use Mayfly only on trusted networks.** Anyone who obtains a
 valid share URL can access that share until it expires or is revoked. Do not treat
 tokens as permanent credentials. No telemetry, cloud relay, or file upload service
 is part of the product. See the [security model](docs/security.md).
@@ -177,7 +179,7 @@ myapp://import?url={encodedUrl}
 
 Supported placeholders are `{url}`, `{encodedUrl}`, `{filename}`,
 `{encodedFilename}`, and `{token}`. Custom schemes require an installed application
-that supports that scheme. FileHop will generate links without registering schemes
+that supports that scheme. Mayfly will generate links without registering schemes
 or installing external applications. See the [product specification](docs/product.md#link-profiles).
 
 ## Project documents

@@ -30,7 +30,7 @@ pub fn get_app_info(app: AppHandle) -> AppInfo {
     AppInfo {
         name: app.package_info().name.clone(),
         version: app.package_info().version.to_string(),
-        build: Some(env!("FILEHOP_BUILD_COMMIT")).filter(|commit| !commit.is_empty()),
+        build: Some(env!("MAYFLY_BUILD_COMMIT")).filter(|commit| !commit.is_empty()),
     }
 }
 
@@ -119,7 +119,7 @@ pub async fn pick_files(
     let registry = state.registry.clone();
     let staged = tokio::task::spawn_blocking(move || registry.stage(paths))
         .await
-        .map_err(|_| "FileHop couldn't read the selected files.".to_owned())?;
+        .map_err(|_| "Mayfly couldn't read the selected files.".to_owned())?;
     Ok(Some(staged))
 }
 
@@ -242,11 +242,11 @@ pub async fn save_png(
     };
     let path = path
         .into_path()
-        .map_err(|_| "FileHop can't save to that location.".to_owned())?;
+        .map_err(|_| "Mayfly can't save to that location.".to_owned())?;
     tokio::task::spawn_blocking(move || std::fs::write(path, data))
         .await
-        .map_err(|_| "FileHop couldn't save the image.".to_owned())?
-        .map_err(|_| "FileHop couldn't save the image there. Choose another folder.".to_owned())?;
+        .map_err(|_| "Mayfly couldn't save the image.".to_owned())?
+        .map_err(|_| "Mayfly couldn't save the image there. Choose another folder.".to_owned())?;
     Ok(true)
 }
 
@@ -262,18 +262,18 @@ pub fn quit_app(app: AppHandle) {
     crate::lifecycle::quit_now(&app);
 }
 
-/// Opens one of FileHop's fixed web pages in the default browser.
+/// Opens one of Mayfly's fixed web pages in the default browser.
 #[tauri::command]
 pub fn open_link(link: ExternalLink) -> Result<(), String> {
     tauri_plugin_opener::open_url(link.url(), None::<&str>)
-        .map_err(|_| "FileHop couldn't open your browser.".to_string())
+        .map_err(|_| "Mayfly couldn't open your browser.".to_string())
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn build_commit_is_a_short_hash_or_empty() {
-        let commit = env!("FILEHOP_BUILD_COMMIT");
+        let commit = env!("MAYFLY_BUILD_COMMIT");
         assert!(
             commit.is_empty()
                 || (commit.len() == 7

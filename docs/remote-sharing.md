@@ -2,7 +2,7 @@
 
 ## Availability
 
-FileHop's planned default is direct sharing over a trusted local network, without
+Mayfly's planned default is direct sharing over a trusted local network, without
 an account or cloud service. The current desktop starter does not implement file
 sharing yet. Remote access, external URL configuration, and tunnel-aware QR codes
 are not implemented or tested. This guide explains optional approaches to evaluate
@@ -21,13 +21,13 @@ to the external services below.
 
 | Approach                          | Who can reach the service?                                           | Recipient setup                            | Best fit                                          |
 | --------------------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------- |
-| Local Wi-Fi                       | Devices that can reach your local server                             | Browser only                               | The normal FileHop workflow                       |
+| Local Wi-Fi                       | Devices that can reach your local server                             | Browser only                               | The normal Mayfly workflow                        |
 | Tailscale private network / Serve | Authorized devices within your tailnet, subject to access policy     | Tailscale connection and authorized access | Your own devices away from home                   |
 | Cloudflare Tunnel                 | Public visitors unless an additional access policy restricts them    | Browser; authentication if configured      | Temporary browser access outside your network     |
 | ngrok                             | Public visitors unless endpoint authentication/policy restricts them | Browser; authentication if configured      | Temporary browser access outside your network     |
 | Tailscale Funnel                  | Public internet visitors                                             | Browser; no tailnet membership required    | A public link from a Tailscale-connected computer |
 
-An internet-reachable service does not make every file public: FileHop must still
+An internet-reachable service does not make every file public: Mayfly must still
 authorize each selected file through its share token. However, anyone who obtains
 a valid public share URL can use it unless an additional access policy intervenes.
 
@@ -45,7 +45,7 @@ containing a home Wi-Fi address work remotely.
 
 [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)
 can expose a local service inside the tailnet. Access policy and device authorization
-still apply. Transport through the private network does not replace FileHop's
+still apply. Transport through the private network does not replace Mayfly's
 expiration, revocation, or download limits.
 
 ## Cloudflare Tunnel
@@ -86,7 +86,7 @@ Funnel requires the documented DNS, HTTPS, and policy configuration and has
 bandwidth/platform limitations. Its relay forwards encrypted traffic; TLS terminates
 on your Tailscale device, rather than on the Funnel relay. The local HTTP hop still
 needs appropriate isolation. These transport properties do not authenticate the
-person holding a FileHop share URL.
+person holding a Mayfly share URL.
 
 ## URLs, QR codes, and deep-link profiles
 
@@ -110,7 +110,7 @@ templates alone do not configure routing or make a LAN address reachable.
 URL so deep links and QR codes agree. Rotating a tunnel hostname invalidates old
 links and QR codes even if the share token has not expired.
 
-## Before exposing a future FileHop server
+## Before exposing a future Mayfly server
 
 1. Complete and verify local sharing first. Keep public exposure an explicit opt-in.
 2. Forward only the download listener and its share/page routes. Never expose the
@@ -125,7 +125,7 @@ links and QR codes even if the share token has not expired.
 6. Revoke shares and stop the tunnel/proxy when finished. Stopping a tunnel does
    not itself revoke a token or remove the original LAN access path.
 
-The computer, FileHop, and any required agent must remain running and online.
+The computer, Mayfly, and any required agent must remain running and online.
 Sleep, disconnection, proxy timeouts, or account limits can interrupt a transfer.
 Do not enable router port forwarding as a workaround for an unverified setup.
 

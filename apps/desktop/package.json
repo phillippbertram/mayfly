@@ -1,8 +1,8 @@
 {
-  "name": "@filehop/desktop",
+  "name": "@mayfly/desktop",
   "version": "0.8.0",
   "private": true,
-  "description": "FileHop Tauri desktop application",
+  "description": "Mayfly Tauri desktop application",
   "type": "module",
   "scripts": {
     "dev": "tauri dev",

@@ -7,7 +7,7 @@ import "./styles.css";
 const root = document.getElementById("root");
 
 if (!root) {
-  throw new Error("FileHop could not find its application root.");
+  throw new Error("Mayfly could not find its application root.");
 }
 
 // Match the system theme before the first paint; settings refine it afterwards.

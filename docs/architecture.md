@@ -14,7 +14,7 @@ download counting, [ADR 0008](decisions/0008-file-drop.md) for the share model, 
 (`shares/password.rs`), and [ADR 0013](decisions/0013-live-interface-demo.md) for
 the website's live interface demo.
 
-FileHop uses a lightweight pnpm workspace with one desktop package at `apps/desktop`
+Mayfly uses a lightweight pnpm workspace with one desktop package at `apps/desktop`
 and root development tooling. React/TypeScript and its Tauri Rust crate stay together
 inside that package. Add shared packages only when there is a concrete consumer;
 no task orchestrator, microservices, or separate daemon is required. Core Rust
@@ -47,7 +47,7 @@ participate in desktop-to-phone sharing. See [ADR 0003](decisions/0003-static-pr
 ├── tsconfig.base.json        # Strict TypeScript defaults for future app configs
 ├── pnpm-workspace.yaml       # Workspace package discovery
 └── apps/
-    └── desktop/              # @filehop/desktop
+    └── desktop/              # @mayfly/desktop
         ├── src/              # React start screen, styles, typed IPC adapter
         └── src-tauri/        # Native window, app-info command, configuration/icons
 ```
@@ -118,12 +118,12 @@ the user's profiles. Do not store share history, tokens, active shares, or conte
 
 Implemented (`config.rs`): `settings.json` holds
 `{ "version": 1, "settings": {…}, "profiles": […] }`
-in the app config directory (macOS `~/Library/Application Support/de.phillippbertram.filehop`,
-Windows `%APPDATA%\de.phillippbertram.filehop`, Linux `~/.config/de.phillippbertram.filehop`).
+in the app config directory (macOS `~/Library/Application Support/de.phillippbertram.mayfly`,
+Windows `%APPDATA%\de.phillippbertram.mayfly`, Linux `~/.config/de.phillippbertram.mayfly`).
 Saves write a synced temporary file and rename it over the old one. On load, unknown
 fields are ignored and an invalid value falls back to its default while the others
 are kept; an unreadable file, or one from a newer version, is renamed to
-`settings.unreadable-<time>.json` and FileHop starts with defaults. Invalid profiles
+`settings.unreadable-<time>.json` and Mayfly starts with defaults. Invalid profiles
 are left out, keeping the original as `settings.repaired-<time>.json`. Each case
 shows a one-time notice in the window. Settings that bind the listener are saved only
 after the bind succeeded.

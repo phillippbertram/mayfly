@@ -23,10 +23,10 @@ const LINKS: { link: ExternalLink; label: string; detail: string; icon: LucideIc
   {
     link: "repository",
     label: "Source code",
-    detail: "github.com/phillippbertram/filehop",
+    detail: "github.com/phillippbertram/mayfly",
     icon: null,
   },
-  { link: "website", label: "Website & user manual", detail: "How FileHop works", icon: BookOpen },
+  { link: "website", label: "Website & user manual", detail: "How Mayfly works", icon: BookOpen },
   { link: "issues", label: "Report an issue", detail: "Bugs, ideas, and questions", icon: Bug },
 ];
 
@@ -46,7 +46,7 @@ export function AboutDialog() {
     if (!info) return;
     try {
       await navigator.clipboard.writeText(
-        `FileHop ${info.version}${info.build ? ` (build ${info.build})` : ""}`,
+        `Mayfly ${info.version}${info.build ? ` (build ${info.build})` : ""}`,
       );
       toast("Version copied.", "success");
     } catch {
@@ -65,7 +65,7 @@ export function AboutDialog() {
           id="about-title"
           className="mt-4 text-[20px] leading-7 font-semibold tracking-[-0.01em]"
         >
-          FileHop
+          mayfly
         </h2>
         <Tooltip label="Copy version and build">
           <button
@@ -94,7 +94,7 @@ export function AboutDialog() {
             />
           </button>
         </Tooltip>
-        <p className="mt-4 text-[14px] font-medium">Your files. Just a hop away.</p>
+        <p className="mt-4 text-[14px] font-medium">Files that live for a moment.</p>
         <p className="mt-1.5 max-w-[300px] text-[12.5px] leading-5 text-muted">
           Temporary file sharing from your desktop to any browser on the same network. No cloud, no
           account, no app on the other side.

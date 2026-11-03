@@ -70,7 +70,7 @@ pub fn generate() -> Result<Password, ShareError> {
     while picked < GROUPS * GROUP_LEN {
         let mut bytes = Zeroizing::new([0u8; 32]);
         getrandom::fill(bytes.as_mut())
-            .map_err(|_| ShareError("FileHop couldn't create a password.".into()))?;
+            .map_err(|_| ShareError("Mayfly couldn't create a password.".into()))?;
         for &b in bytes.iter().filter(|&&b| b < limit) {
             if picked == GROUPS * GROUP_LEN {
                 break;
@@ -103,7 +103,7 @@ impl Verifier {
     /// async runtime and outside any lock.
     pub fn new(password: &Password) -> Result<Self, ShareError> {
         password.validate()?;
-        let failed = || ShareError("FileHop couldn't protect this share.".into());
+        let failed = || ShareError("Mayfly couldn't protect this share.".into());
         let mut salt = [0u8; SALT_LEN];
         getrandom::fill(&mut salt).map_err(|_| failed())?;
         let mut hash = Zeroizing::new([0u8; HASH_LEN]);

@@ -1,7 +1,7 @@
 import { defineAppHotkeys, formatForDisplay, type Hotkey } from "@tanstack/react-hotkeys";
 
 /**
- * Every keyboard shortcut in FileHop. The shortcut overview and the command
+ * Every keyboard shortcut in Mayfly. The shortcut overview and the command
  * palette are generated from this list, so a shortcut exists in one place.
  */
 export const appHotkeys = defineAppHotkeys({

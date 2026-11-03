@@ -1,7 +1,7 @@
 //! Desktop lifecycle: the tray, hiding the window instead of closing it, and
 //! quitting with confirmation while shares are active.
 //!
-//! Quit policy: FileHop asks for confirmation when active shares would stop.
+//! Quit policy: Mayfly asks for confirmation when active shares would stop.
 //! Once confirmed, `App::shutdown` (run on `RunEvent::Exit`) revokes every share
 //! so new requests are refused, cancels running transfers within one chunk,
 //! stops the listener with a short grace period, and the process exits.
@@ -54,10 +54,10 @@ pub fn setup_tray(app: &AppHandle) -> bool {
 }
 
 fn build_tray(app: &AppHandle) -> tauri::Result<MenuItem<Wry>> {
-    let open = MenuItem::with_id(app, "open", "Open FileHop", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open Mayfly", true, None::<&str>)?;
     let summary = MenuItem::with_id(app, "summary", "No active shares", false, None::<&str>)?;
     let settings = MenuItem::with_id(app, menu::SETTINGS, "Settings…", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit FileHop", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Mayfly", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
@@ -70,7 +70,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<MenuItem<Wry>> {
         ],
     )?;
     let mut tray = TrayIconBuilder::with_id("main")
-        .tooltip("FileHop")
+        .tooltip("Mayfly")
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {

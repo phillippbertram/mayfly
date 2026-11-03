@@ -31,13 +31,13 @@ export default function Home() {
           <Reveal>
             <div className="hero-announcement">
               <span />
-              Small utility. Big little convenience.
+              Small utility. Short-lived by design.
               <ArrowUpRight size={13} />
             </div>
             <h1>
-              Your files.
+              Files that live
               <br />
-              <span>Just a hop away.</span>
+              <span>for a moment.</span>
             </h1>
             <div className="hero-bottom">
               <p>
@@ -47,7 +47,7 @@ export default function Home() {
               </p>
               <div className="hero-actions">
                 <Link href="#download" className="button button-primary">
-                  Get FileHop <ArrowDown size={16} />
+                  Get Mayfly <ArrowDown size={16} />
                 </Link>
                 <Link href="/docs/" className="button button-quiet">
                   Meet the manual <ArrowRight size={16} />
@@ -61,8 +61,8 @@ export default function Home() {
               name="dashboard"
               demo="share"
               priority
-              alt="The current FileHop dashboard preview showing sample shares and a three-file link with a QR code and ZIP download action"
-              caption="The actual FileHop interface, running in your browser with sample data. No files are transferred."
+              alt="The current Mayfly dashboard preview showing sample shares and a three-file link with a QR code and ZIP download action"
+              caption="The actual Mayfly interface, running in your browser with sample data. No files are transferred."
             />
           </Reveal>
           <div className="hero-footnote">
@@ -70,7 +70,7 @@ export default function Home() {
               <span className="tiny-dot" />
               Local sharing works in the development build. Public release ahead.
             </span>
-            <a href="https://github.com/phillippbertram/filehop/issues/10">
+            <a href="https://github.com/phillippbertram/mayfly/issues/10">
               Follow the build <ArrowUpRight size={13} />
             </a>
           </div>
@@ -109,7 +109,7 @@ export default function Home() {
               </div>
               <p>
                 Choose your files, scan the code, and download in a browser. Keep both devices on
-                the same trusted network, with your computer awake and FileHop running.
+                the same trusted network, with your computer awake and Mayfly running.
               </p>
             </div>
             <TransferStory />
@@ -205,7 +205,7 @@ export default function Home() {
                 Your little corner.
               </h3>
               <p>
-                FileHop’s default transfers stay on your local network. Files stream from their
+                Mayfly’s default transfers stay on your local network. Files stream from their
                 original location, with no cloud upload and no account in between.
               </p>
               <div className="network-visual" aria-hidden="true">
@@ -234,7 +234,7 @@ export default function Home() {
               </span>
               <Link2 size={28} strokeWidth={1.2} className="profile-glyph" />
               <h2>
-                A small hop.
+                A short flight.
                 <br />
                 <span>Into your workflow.</span>
               </h2>
@@ -256,7 +256,7 @@ export default function Home() {
             <div className="profile-screen">
               <Screenshot
                 name="profiles"
-                alt="FileHop’s current profile editor preview showing a Documents app template, placeholders, and a resolved example link"
+                alt="Mayfly’s current profile editor preview showing a Documents app template, placeholders, and a resolved example link"
               />
             </div>
           </Reveal>
@@ -285,7 +285,7 @@ export default function Home() {
               <Link href="/docs/sharing/">
                 <span className="manual-number">02</span>
                 <div>
-                  <h3>Make your first hop</h3>
+                  <h3>Send your first file off</h3>
                   <p>Files, shared links, QR codes, and ZIP downloads.</p>
                 </div>
                 <ArrowUpRight size={20} />
@@ -321,7 +321,7 @@ export default function Home() {
           </div>
           <div className="faq-list">
             <details>
-              <summary>Can I download FileHop today?</summary>
+              <summary>Can I download Mayfly today?</summary>
               <p>
                 Public installers are not available yet. With source access, you can run the desktop
                 development build, including real local sharing. Phone, second-device, and
@@ -339,7 +339,7 @@ export default function Home() {
               <summary>Do my files leave my network?</summary>
               <p>
                 The default workflow transfers files directly over your local network. Remote access
-                is a separate, unverified setup with a different trust model. The FileHop website
+                is a separate, unverified setup with a different trust model. The Mayfly website
                 hosts product information and installers, not shared user files.
               </p>
             </details>
@@ -364,7 +364,7 @@ export default function Home() {
       </main>
       <footer className="site-footer section-wrap">
         <div>
-          <Link href="/" aria-label="FileHop home">
+          <Link href="/" aria-label="Mayfly home">
             <Brand />
           </Link>
           <p>A little less between your devices.</p>
@@ -372,13 +372,13 @@ export default function Home() {
         <nav aria-label="Footer">
           <Link href="/docs/">User manual</Link>
           <Link href="/docs/security/">Privacy & security</Link>
-          <a href="https://github.com/phillippbertram/filehop">
+          <a href="https://github.com/phillippbertram/mayfly">
             GitHub <ArrowUpRight size={12} />
           </a>
         </nav>
         <span>
           Built with a little care.
-          <br />© {new Date().getUTCFullYear()} FileHop
+          <br />© {new Date().getUTCFullYear()} Mayfly
         </span>
       </footer>
     </div>

@@ -10,7 +10,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: FileHop version/commit, OS and architecture, and phone/browser where relevant.
+      description: Mayfly version/commit, OS and architecture, and phone/browser where relevant.
     validations:
       required: true
   - type: textarea

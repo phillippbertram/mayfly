@@ -65,7 +65,7 @@ impl ConfigStore {
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Loaded::defaults(None),
             Err(_) => {
                 return Loaded::defaults(Some(
-                    "FileHop couldn't read its settings file and is using defaults for now.".into(),
+                    "Mayfly couldn't read its settings file and is using defaults for now.".into(),
                 ))
             }
         };
@@ -81,7 +81,7 @@ impl ConfigStore {
         match root.get("version").and_then(Value::as_u64) {
             Some(SETTINGS_VERSION) => {}
             Some(version) if version > SETTINGS_VERSION => {
-                return self.recover("from a newer version of FileHop")
+                return self.recover("from a newer version of Mayfly")
             }
             _ => return self.recover("damaged"),
         }
@@ -181,9 +181,9 @@ impl ConfigStore {
         let backup = self.backup_name("unreadable");
         let kept = fs::rename(self.path(), self.dir.join(&backup)).is_ok();
         let notice = if kept {
-            format!("Your settings file was {reason}. FileHop kept it as {backup} and started with defaults.")
+            format!("Your settings file was {reason}. Mayfly kept it as {backup} and started with defaults.")
         } else {
-            format!("Your settings file was {reason}. FileHop started with defaults.")
+            format!("Your settings file was {reason}. Mayfly started with defaults.")
         };
         Loaded::defaults(Some(notice))
     }

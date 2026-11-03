@@ -8,7 +8,7 @@ const steps = [
   {
     number: "01",
     title: "Choose your files.",
-    text: "A photo. A PDF. A few things for later. Drop them into FileHop and set a lifetime.",
+    text: "A photo. A PDF. A few things for later. Drop them into Mayfly and set a lifetime.",
   },
   {
     number: "02",
@@ -74,7 +74,7 @@ export function TransferStory() {
           <Smartphone size={38} strokeWidth={1} />
           <span>Your phone</span>
         </div>
-        <span className="story-network">SAME WI-FI. ONE SHORT HOP.</span>
+        <span className="story-network">SAME WI-FI. ONE SHORT FLIGHT.</span>
       </div>
       <fieldset className="story-steps" aria-label="Illustrated sharing steps">
         {steps.map((item, index) => (

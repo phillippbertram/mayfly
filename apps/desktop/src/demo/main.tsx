@@ -4,9 +4,9 @@
  * the desktop bundle.
  *
  * Messages from the embedding page (same origin only):
- *   { source: "filehop-site", scene }  plays a scene from fresh sample data
+ *   { source: "mayfly-site", scene }  plays a scene from fresh sample data
  * Messages to it:
- *   { source: "filehop-demo", event: "ready" | "done", scene }
+ *   { source: "mayfly-demo", event: "ready" | "done", scene }
  */
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -34,7 +34,7 @@ let sessions = 0;
 
 function notify(event: "ready" | "done", scene: SceneId) {
   if (window.parent !== window)
-    window.parent.postMessage({ source: "filehop-demo", event, scene }, location.origin);
+    window.parent.postMessage({ source: "mayfly-demo", event, scene }, location.origin);
 }
 
 function Demo() {
@@ -46,7 +46,7 @@ function Demo() {
     const onMessage = (event: MessageEvent) => {
       if (event.source !== window.parent || event.origin !== location.origin) return;
       const { source, scene } = (event.data ?? {}) as { source?: unknown; scene?: unknown };
-      if (source === "filehop-site" && isScene(scene))
+      if (source === "mayfly-site" && isScene(scene))
         setRun((r) => ({ scene, id: (r?.id ?? 0) + 1 }));
     };
     window.addEventListener("message", onMessage);
@@ -85,7 +85,7 @@ function Demo() {
 }
 
 const root = document.getElementById("root");
-if (!root) throw new Error("FileHop could not find its application root.");
+if (!root) throw new Error("Mayfly could not find its application root.");
 applyTheme("dark");
 createRoot(root).render(
   <StrictMode>

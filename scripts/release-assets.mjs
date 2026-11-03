@@ -1,5 +1,5 @@
 // Release workflow helper: names bundles deterministically, then writes SHA256SUMS
-// and the website manifest (filehop-release.json) for a directory of release assets.
+// and the website manifest (mayfly-release.json) for a directory of release assets.
 //   node scripts/release-assets.mjs collect <bundle-dir> <target> <version> <out-dir>
 //   node scripts/release-assets.mjs finalize <asset-dir> <version> <owner/repo>
 import { createHash } from "node:crypto";
@@ -30,7 +30,7 @@ export const assets = [
 ];
 
 export function assetName(version, target, format) {
-  return `FileHop-${version}-${target}.${format}`;
+  return `Mayfly-${version}-${target}.${format}`;
 }
 
 export function isStable(version) {
@@ -53,7 +53,7 @@ async function collect(bundleDir, target, version, outDir) {
   await mkdir(outDir, { recursive: true });
   for (const { bundle, format } of expected) {
     const dir = join(bundleDir, bundle);
-    // Tauri names bundles FileHop_<version>_<arch>…; other versions are stale outputs.
+    // Tauri names bundles Mayfly_<version>_<arch>…; other versions are stale outputs.
     const matches = (await readdir(dir)).filter(
       (name) => name.includes(`_${version}_`) && name.endsWith(`.${format}`),
     );
@@ -96,7 +96,7 @@ async function finalize(assetDir, version, repository) {
       })),
     },
   });
-  await writeFile(join(assetDir, "filehop-release.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile(join(assetDir, "mayfly-release.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

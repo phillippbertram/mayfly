@@ -40,7 +40,7 @@ never change meaning.
 
 - Shares stay simple: their links never depend on a template, and switching the QR
   source changes no server state.
-- FileHop only builds and copies links. It never opens a resolved link, installs
+- Mayfly only builds and copies links. It never opens a resolved link, installs
   an app, or registers a scheme; a custom-scheme QR code needs a compatible app on
   the scanning device, which the inspector says.
 - Opening custom-scheme links on real devices is not verified by the test suite.

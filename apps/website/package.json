@@ -1,5 +1,5 @@
 {
-  "name": "@filehop/website",
+  "name": "@mayfly/website",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,6 +14,7 @@
     "preview": "python3 scripts/serve-export.py"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
     "@tailwindcss/postcss": "4.3.3",
     "fumadocs-core": "16.17.9",
     "fumadocs-mdx": "15.4.10",

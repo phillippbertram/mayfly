@@ -40,7 +40,7 @@ export function qrPng(text: string, pixels = 1024): Promise<Blob> {
   if (!ctx) return Promise.reject(new Error("Canvas is unavailable."));
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, pixels, pixels);
-  ctx.fillStyle = "#17191d";
+  ctx.fillStyle = "#142326";
   for (const [x, y] of modules) {
     ctx.fillRect((x + quiet) * scale, (y + quiet) * scale, Math.ceil(scale), Math.ceil(scale));
   }

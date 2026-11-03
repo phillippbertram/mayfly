@@ -5,7 +5,7 @@ import { type DemoScene, LiveScreen } from "./live-screen";
 export function Screenshot({
   name,
   alt,
-  caption = "Actual FileHop interface · browser preview with sample data. No files are transferred.",
+  caption = "Actual Mayfly interface · browser preview with sample data. No files are transferred.",
   priority = false,
   demo,
 }: {
@@ -23,7 +23,7 @@ export function Screenshot({
           <span />
           <span />
           <span />
-          <p>FileHop</p>
+          <p>Mayfly</p>
           <span className="toolbar-preview">INTERFACE PREVIEW</span>
         </div>
         {demo ? (

@@ -3,7 +3,7 @@
 //!
 //! Templates are data. They are validated when saved and loaded, resolved in a
 //! single pass so inserted values are never interpreted again, and never opened
-//! or executed by FileHop.
+//! or executed by Mayfly.
 
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};

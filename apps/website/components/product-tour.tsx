@@ -13,28 +13,28 @@ const scenes = [
     demo: "bundle",
     title: "One link. Room to grow.",
     text: "Share several files together, give the link a title, and add or remove files later. The same link and QR code keep working.",
-    alt: "FileHop sample-data preview with a link titled Weekend away, three files, Add files, and Copy ZIP link",
+    alt: "Mayfly sample-data preview with a link titled Weekend away, three files, Add files, and Copy ZIP link",
   },
   {
     image: "file-qr",
     demo: "qr",
     title: "A shortcut for every file.",
     text: "Open the share page, download everything as a ZIP, or scan a QR code for just one file. No companion app needed.",
-    alt: "FileHop sample-data preview with the direct-download QR code for Itinerary.pdf selected",
+    alt: "Mayfly sample-data preview with the direct-download QR code for Itinerary.pdf selected",
   },
   {
     image: "share-options",
     demo: "share",
     title: "A little control, up front.",
     text: "Choose a lifetime and a download limit per file. Need a link first? Create an empty one and add the files when you’re ready.",
-    alt: "FileHop sample-data preview showing a file ready to share with lifetime and download-limit options",
+    alt: "Mayfly sample-data preview showing a file ready to share with lifetime and download-limit options",
   },
   {
     image: "settings",
     demo: "settings",
     title: "Set it once. Keep your flow.",
     text: "Save your defaults, choose your appearance, and keep sharing from the menu bar or tray when the window closes. Quit ends every share.",
-    alt: "FileHop General settings preview with saved defaults, a close-window reminder, and hidden-code options",
+    alt: "Mayfly General settings preview with saved defaults, a close-window reminder, and hidden-code options",
   },
 ] as const;
 
@@ -69,7 +69,7 @@ export function ProductTour() {
             <span />
             <span />
             <span />
-            <p>FileHop</p>
+            <p>Mayfly</p>
             <span className="toolbar-preview">INTERFACE PREVIEW</span>
           </div>
           <div className="tour-frames" id="tour-screenshot">
@@ -116,12 +116,12 @@ export function ProductTour() {
         </div>
         <p className="tour-caption">
           {live
-            ? "The actual FileHop interface, running in your browser with sample data. No files are transferred."
-            : "Actual FileHop interface · sample-data browser preview. No files are transferred."}
+            ? "The actual Mayfly interface, running in your browser with sample data. No files are transferred."
+            : "Actual Mayfly interface · sample-data browser preview. No files are transferred."}
         </p>
       </div>
       <div className="tour-sidebar">
-        <fieldset className="tour-scenes" aria-label="Explore current FileHop features">
+        <fieldset className="tour-scenes" aria-label="Explore current Mayfly features">
           {scenes.map((item, index) => (
             <button
               type="button"

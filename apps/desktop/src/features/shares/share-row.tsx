@@ -69,7 +69,7 @@ export const EXTEND_OPTIONS = [
 ] as const;
 
 const ENDED_TEXT = {
-  expired: "Expired",
+  expired: "Gone",
   stopped: "Stopped",
   limitReached: "Limit reached",
 } as const;
@@ -175,7 +175,7 @@ function TimerPill({ share, now, warning }: { share: Share; now: number; warning
       label={
         share.expiresAt === null
           ? "Shared until you stop it"
-          : `Ends at ${formatClock(share.expiresAt)}`
+          : `Lives until ${formatClock(share.expiresAt)}`
       }
       hotkey={appHotkeys["share.extend"].hotkey}
     >

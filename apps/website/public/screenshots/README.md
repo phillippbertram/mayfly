@@ -1,7 +1,8 @@
 # Screenshot provenance
 
-These JPEG images were refreshed from the actual FileHop browser-preview interface
-on 2026-11-02 at a 1440 × 960 desktop viewport. They are screenshots, not generated
+These JPEG images were refreshed from the actual Mayfly browser-preview interface
+on 2026-11-03, after the rename from FileHop, at a 1440 × 960 desktop viewport in
+dark mode. They are screenshots, not generated
 mockups or evidence of a completed transfer.
 
 - `dashboard.jpg`: multiple-file share, QR inspector, and ZIP link action.

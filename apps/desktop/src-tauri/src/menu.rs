@@ -1,6 +1,6 @@
-//! The macOS app menu and the few fixed web pages FileHop links to.
+//! The macOS app menu and the few fixed web pages Mayfly links to.
 //!
-//! "About FileHop" and "Settings…" open FileHop's own dialogs in the window. The
+//! "About Mayfly" and "Settings…" open Mayfly's own dialogs in the window. The
 //! frontend can only name a link; the URLs live here, so no arbitrary address
 //! ever reaches the system browser.
 
@@ -27,15 +27,15 @@ pub enum ExternalLink {
 impl ExternalLink {
     pub fn url(self) -> &'static str {
         match self {
-            Self::Repository => "https://github.com/phillippbertram/filehop",
-            Self::Issues => "https://github.com/phillippbertram/filehop/issues",
-            Self::Website => "https://phillippbertram.github.io/filehop/",
+            Self::Repository => "https://github.com/phillippbertram/mayfly",
+            Self::Issues => "https://github.com/phillippbertram/mayfly/issues",
+            Self::Website => "https://phillippbertram.github.io/mayfly/",
             Self::Author => "https://github.com/phillippbertram",
         }
     }
 }
 
-/// The standard macOS menu with FileHop's own About and a Settings… item:
+/// The standard macOS menu with Mayfly's own About and a Settings… item:
 /// About, Settings…, Services, Hide, Quit.
 #[cfg(target_os = "macos")]
 pub fn app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
@@ -45,7 +45,7 @@ pub fn app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>>
     if let Some(MenuItemKind::Submenu(first)) = menu.items()?.into_iter().next() {
         // Replace the native About panel, which can't show links.
         first.remove_at(0)?;
-        let about = MenuItem::with_id(app, ABOUT, "About FileHop", true, None::<&str>)?;
+        let about = MenuItem::with_id(app, ABOUT, "About Mayfly", true, None::<&str>)?;
         let settings = MenuItem::with_id(app, SETTINGS, "Settings…", true, Some("CmdOrCtrl+,"))?;
         first.insert_items(
             &[&about, &PredefinedMenuItem::separator(app)?, &settings],

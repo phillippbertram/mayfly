@@ -31,7 +31,7 @@ export function Header({
       <div data-tauri-drag-region className="flex items-center gap-2">
         <BrandMark />
         <span data-tauri-drag-region className="text-[15px] font-semibold tracking-[-0.01em]">
-          FileHop
+          mayfly
         </span>
       </div>
       <div

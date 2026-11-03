@@ -30,9 +30,9 @@ The tag starts `.github/workflows/release.yml`:
 2. **build** runs the platform scripts from [Local platform builds](development.md#local-platform-builds)
    for macOS arm64 and x64 (both on an Apple Silicon runner), Windows x64 (NSIS),
    and Linux x64 (AppImage and `.deb` on Ubuntu 22.04). Bundles are renamed to
-   `FileHop-<version>-<target>.<ext>` and stored as workflow artifacts.
+   `Mayfly-<version>-<target>.<ext>` and stored as workflow artifacts.
 3. **draft** runs only after every build succeeds. It writes `SHA256SUMS` and,
-   for stable versions, the website manifest `filehop-release.json`, then creates
+   for stable versions, the website manifest `mayfly-release.json`, then creates
    a **draft** release with generated notes. Versions with a pre-release suffix
    (`-beta.1`) become GitHub pre-releases without a website manifest.
 
@@ -55,7 +55,7 @@ sealed signature; without it, Apple Silicon reports a downloaded app as
 "damaged" and offers no way to open it. An ad-hoc signed download is still
 blocked on first launch: users allow it under **System Settings → Privacy &
 Security → Open Anyway** (macOS 15 removed the Control-click shortcut), or remove
-the quarantine attribute with `xattr -dr com.apple.quarantine /Applications/FileHop.app`.
+the quarantine attribute with `xattr -dr com.apple.quarantine /Applications/Mayfly.app`.
 
 Declared minimum systems: macOS 11 (`bundle.macOS.minimumSystemVersion`),
 Windows 10, and Ubuntu 22.04/Debian 12 or equivalent for Linux. They are build
@@ -63,7 +63,7 @@ settings, not yet platform-verified (#16).
 
 ## Website downloads
 
-The website reads `filehop-release.json` from the latest stable release at build
+The website reads `mayfly-release.json` from the latest stable release at build
 time (see the [website guide](../apps/website/README.md#release-data-and-real-download-links)).
 
 While the repository is private, preview the download section locally with your
@@ -71,13 +71,13 @@ own GitHub CLI session. The links work in a browser signed in to GitHub with
 access to the repository:
 
 ```sh
-pnpm --filter @filehop/website release:pull        # or: release:pull v0.9.0
-FILEHOP_RELEASE_MANIFEST=.release/pulled-manifest.json pnpm dev:website
+pnpm --filter @mayfly/website release:pull        # or: release:pull v0.9.0
+MAYFLY_RELEASE_MANIFEST=.release/pulled-manifest.json pnpm dev:website
 ```
 
 GitHub Pages deployment stays disabled until the repository variable
-`FILEHOP_PAGES_ENABLED` is `true`. After the repository becomes public, set it,
-configure Pages to use GitHub Actions, and set `FILEHOP_RELEASE_REPOSITORY` to
+`MAYFLY_PAGES_ENABLED` is `true`. After the repository becomes public, set it,
+configure Pages to use GitHub Actions, and set `MAYFLY_RELEASE_REPOSITORY` to
 this repository. Every published release then triggers a publishing run of the
 website workflow on `main`.
 

@@ -39,7 +39,7 @@ polished page with download options, not only a phone-sized button.
 - **Lifecycle.** Expiry blocks new requests immediately and lets running
   transfers finish. Stopping a share, removing it, or quitting cancels its
   running transfers within one chunk.
-- **File identity.** A selected path is resolved once; FileHop keeps the opened
+- **File identity.** A selected path is resolved once; Mayfly keeps the opened
   handle and serves positional reads from it, so replacing or re-linking the path
   can't redirect a share. A size change makes the file unavailable (503).
 - **Native input only.** The picker runs from Rust. Dropped paths are accepted

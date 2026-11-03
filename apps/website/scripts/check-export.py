@@ -38,8 +38,8 @@ for path, parser in pages.items():
     for value in parser.links:
         if value.startswith(("http:", "https:", "mailto:", "tel:", "data:", "javascript:")):
             continue
-        url = urlsplit(urljoin("https://filehop.invalid" + current, value))
-        if url.hostname != "filehop.invalid":
+        url = urlsplit(urljoin("https://mayfly.invalid" + current, value))
+        if url.hostname != "mayfly.invalid":
             continue
         target_path = unquote(url.path)
         if base:

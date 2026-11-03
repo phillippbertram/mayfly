@@ -9,7 +9,7 @@
 
 ## Summary
 
-Everything FileHop shares is a **drop**: one link, any number of files, a
+Everything Mayfly shares is a **drop**: one link, any number of files, a
 lifetime, and a download limit. One file or twenty, fixed or changing, it is the
 same thing. A drop has one page link; every file in it has its own direct link;
 the whole drop has a ZIP link. Nothing is chosen up front except how long the
@@ -196,7 +196,7 @@ the model is designed so it fits without a second concept:
 
 - A drop has a **direction**: give (today), receive, or both. Receiving is
   enabled per drop in the inspector ("Allow receiving files"), never globally,
-  and asks for a target folder (default `~/Downloads/FileHop/<drop title>`).
+  and asks for a target folder (default `~/Downloads/Mayfly/<drop title>`).
 - The page gains a "Send files to this computer" section with a plain form; it
   works without JavaScript, and progress display can be added as enhancement. A
   receive-only drop is a letterbox: no files listed, only the form.

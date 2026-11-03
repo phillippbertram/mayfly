@@ -1,4 +1,4 @@
-// Local-only helper: downloads filehop-release.json with the developer's own GitHub
+// Local-only helper: downloads mayfly-release.json with the developer's own GitHub
 // CLI session, e.g. while the source repository is still private. Never use it in
 // CI; public builds read releases without authentication (prepare-release.mjs).
 import { execFileSync } from "node:child_process";
@@ -16,7 +16,7 @@ execFileSync(
     "download",
     ...(tag ? [tag] : []),
     "--pattern",
-    "filehop-release.json",
+    "mayfly-release.json",
     "--output",
     output,
     "--clobber",
@@ -26,6 +26,6 @@ execFileSync(
 
 const manifest = validateRelease(JSON.parse(await readFile(output, "utf8")));
 console.log(
-  `Pulled FileHop ${manifest.release?.version ?? "(no release)"}. Preview it with:\n` +
-    `  FILEHOP_RELEASE_MANIFEST=${output} pnpm dev:website`,
+  `Pulled Mayfly ${manifest.release?.version ?? "(no release)"}. Preview it with:\n` +
+    `  MAYFLY_RELEASE_MANIFEST=${output} pnpm dev:website`,
 );

@@ -33,9 +33,9 @@ const INTERFACES: NetworkInterface[] = [
 
 /** Mirrors the fixed URLs in Rust's `menu.rs`. */
 const LINKS: Record<ExternalLink, string> = {
-  repository: "https://github.com/phillippbertram/filehop",
-  issues: "https://github.com/phillippbertram/filehop/issues",
-  website: "https://phillippbertram.github.io/filehop/",
+  repository: "https://github.com/phillippbertram/mayfly",
+  issues: "https://github.com/phillippbertram/mayfly/issues",
+  website: "https://phillippbertram.github.io/mayfly/",
   author: "https://github.com/phillippbertram",
 };
 
@@ -626,7 +626,7 @@ export function createPreviewBackend({ scripted = false } = {}): Backend & Previ
     takeNotice: async () => null,
     hideWindow: async () => {},
     quit: async () => {},
-    getAppInfo: async () => ({ name: "FileHop", version: tauriConfig.version, build: "preview" }),
+    getAppInfo: async () => ({ name: "Mayfly", version: tauriConfig.version, build: "preview" }),
     async openLink(link) {
       window.open(LINKS[link], "_blank", "noopener");
     },

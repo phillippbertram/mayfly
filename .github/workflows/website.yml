@@ -37,11 +37,11 @@ on:
   release:
     types: [published]
   repository_dispatch:
-    types: [filehop-release-published]
+    types: [mayfly-release-published]
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish to GitHub Pages (requires the FILEHOP_PAGES_ENABLED repository variable)
+        description: Publish to GitHub Pages (requires the MAYFLY_PAGES_ENABLED repository variable)
         type: boolean
         default: false
 
@@ -56,7 +56,7 @@ jobs:
   # A published release refreshes the site through a manual-style run on the default
   # branch, so deployment always happens from main and stays behind the same gate.
   refresh-after-release:
-    if: github.event_name == 'release' && vars.FILEHOP_PAGES_ENABLED == 'true'
+    if: github.event_name == 'release' && vars.MAYFLY_PAGES_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -76,7 +76,7 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
       NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io
-      FILEHOP_RELEASE_REPOSITORY: ${{ vars.FILEHOP_RELEASE_REPOSITORY }}
+      MAYFLY_RELEASE_REPOSITORY: ${{ vars.MAYFLY_RELEASE_REPOSITORY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -87,11 +87,11 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @filehop/website typecheck
+      - run: pnpm --filter @mayfly/website typecheck
       - run: pnpm exec biome ci --error-on-warnings apps/website
       - run: pnpm test:website
       - run: pnpm build:website
-      - run: pnpm --filter @filehop/website check:export
+      - run: pnpm --filter @mayfly/website check:export
       - name: Disable Jekyll processing
         run: touch apps/website/out/.nojekyll
       - name: Upload static Pages artifact
@@ -101,8 +101,8 @@ jobs:
 
   deploy:
     # GitHub Pages stays disabled until the repository is public and
-    # FILEHOP_PAGES_ENABLED is set to "true".
-    if: vars.FILEHOP_PAGES_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    # MAYFLY_PAGES_ENABLED is set to "true".
+    if: vars.MAYFLY_PAGES_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

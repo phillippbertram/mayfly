@@ -8,8 +8,9 @@ import {
   useTransform,
 } from "motion/react";
 import { useRef } from "react";
+import { MARK } from "../../components/brand-mark";
 
-/** Receiving devices, cycled once per hop. `cx`/`cy` is the screen centre. */
+/** Receiving devices, cycled once per flight. `cx`/`cy` is the screen centre. */
 export const DEVICES = [
   { id: "phone", label: "phone", cx: 266, cy: 86 },
   { id: "tablet", label: "tablet", cx: 265, cy: 89 },
@@ -32,8 +33,8 @@ function bezier(t: number) {
   };
 }
 
-/** Keyframes for one hop over a 0–1 cycle: lift off, fly the arc, land. */
-function hopFrames(lag: number) {
+/** Keyframes for one flight over a 0–1 cycle: lift off, fly the arc, land. */
+function flightFrames(lag: number) {
   const start = 0.12 + lag;
   const end = 0.6 + lag;
   const frames = {
@@ -65,10 +66,10 @@ function hopFrames(lag: number) {
   return frames;
 }
 
-const HOP = hopFrames(0);
-const TRAILS = [hopFrames(0.05), hopFrames(0.025)];
+const FLIGHT = flightFrames(0);
+const TRAILS = [flightFrames(0.05), flightFrames(0.025)];
 
-function useHop(t: MotionValue<number>, frames: ReturnType<typeof hopFrames>) {
+function useFlight(t: MotionValue<number>, frames: ReturnType<typeof flightFrames>) {
   return {
     x: useTransform(t, frames.t, frames.x),
     y: useTransform(t, frames.t, frames.y),
@@ -121,7 +122,7 @@ function Device({ id }: { id: DeviceId }) {
   }
 }
 
-export function HopIllustration({
+export function FlightIllustration({
   active,
   dimmed,
   device,
@@ -131,7 +132,7 @@ export function HopIllustration({
   dimmed?: boolean;
   /** Index into DEVICES of the current receiver. */
   device: number;
-  /** Called when a hop completes, so the parent can move to the next device. */
+  /** Called when a flight completes, so the parent can move to the next device. */
   onCycle: () => void;
 }) {
   const reduce = useReducedMotion();
@@ -156,9 +157,9 @@ export function HopIllustration({
     breath.set(breath.get() + step / (active ? 2400 : 5000));
   });
 
-  const hop = useHop(t, HOP);
-  const trailA = useHop(t, TRAILS[0] ?? HOP);
-  const trailB = useHop(t, TRAILS[1] ?? HOP);
+  const flight = useFlight(t, FLIGHT);
+  const trailA = useFlight(t, TRAILS[0] ?? FLIGHT);
+  const trailB = useFlight(t, TRAILS[1] ?? FLIGHT);
   const lift = useTransform(t, [0, 0.03, 0.1, 0.16, 1], [0, 0, -5, 0, 0]);
   const receive = useTransform(t, [0, 0.6, 0.68, 0.9, 1], [0, 0, 1, 1, 0]);
   const check = useTransform(t, [0, 0.62, 0.76, 1], [0, 0, 1, 1]);
@@ -171,8 +172,8 @@ export function HopIllustration({
   );
   const trailOpacityA = useTransform(trailA.opacity, (o) => o * 0.25);
   const trailOpacityB = useTransform(trailB.opacity, (o) => o * 0.45);
-  const fileX = useTransform(hop.x, (v) => v - 12);
-  const fileY = useTransform(hop.y, (v) => v - 15);
+  const markX = useTransform(flight.x, (v) => v - 18);
+  const markY = useTransform(flight.y, (v) => v - 12);
   const receiver = DEVICES[device % DEVICES.length] ?? DEVICES[0];
 
   return (
@@ -221,7 +222,7 @@ export function HopIllustration({
         <rect x="74" y="108" width="66" height="4" rx="2" className="fill-line" />
         <path d="M44 134h136" className="stroke-faint" strokeWidth="2.5" strokeLinecap="round" />
 
-        {/* Receiver: changes with every hop */}
+        {/* Receiver: changes with every flight */}
         <AnimatePresence initial={false}>
           <motion.g
             key={receiver.id}
@@ -280,7 +281,7 @@ export function HopIllustration({
           style={{ strokeDashoffset: dash, opacity: active ? 1 : 0.65 }}
         />
 
-        {/* Trail and travelling file */}
+        {/* Trail and the mayfly carrying the file */}
         <motion.circle
           r={2}
           cx={0}
@@ -295,29 +296,21 @@ export function HopIllustration({
           className="fill-accent"
           style={{ x: trailB.x, y: trailB.y, opacity: trailOpacityB }}
         />
-        <motion.g style={{ x: fileX, y: fileY }}>
+        <motion.g style={{ x: markX, y: markY }}>
           <motion.g
             style={{
-              rotate: hop.rotate,
-              scale: hop.scale,
-              opacity: hop.opacity,
+              rotate: flight.rotate,
+              scale: flight.scale,
+              opacity: flight.opacity,
               transformBox: "fill-box",
               transformOrigin: "center",
             }}
           >
-            <path
-              d="M3 0h12l6 6v18a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3z"
-              className="fill-surface stroke-accent"
-              strokeWidth="2"
-            />
-            <path d="M15 0v6h6" className="stroke-accent" strokeWidth="2" strokeLinejoin="round" />
-            <path
-              d="M5 14h10M5 19h7"
-              className="stroke-accent"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              opacity="0.6"
-            />
+            <g transform="scale(0.5)">
+              <path d={MARK.wing} className="fill-accent" />
+              <path d={MARK.body} className="stroke-fg" strokeWidth="4.5" strokeLinecap="round" />
+              <path d={MARK.tails} className="stroke-fg" strokeWidth="1.8" strokeLinecap="round" />
+            </g>
           </motion.g>
         </motion.g>
       </svg>

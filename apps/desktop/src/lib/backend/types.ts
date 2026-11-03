@@ -34,7 +34,7 @@ export type BackendEvent =
   /** The app menu asked for the About dialog. */
   | { kind: "showAbout" };
 
-/** FileHop's fixed web pages; Rust owns the URLs. */
+/** Mayfly's fixed web pages; Rust owns the URLs. */
 export type ExternalLink = "repository" | "issues" | "website" | "author";
 
 export interface AppInfo {
@@ -114,6 +114,6 @@ export interface Backend {
   quit(): Promise<void>;
 
   getAppInfo(): Promise<AppInfo>;
-  /** Opens one of FileHop's web pages in the default browser. */
+  /** Opens one of Mayfly's web pages in the default browser. */
   openLink(link: ExternalLink): Promise<void>;
 }

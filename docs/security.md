@@ -7,7 +7,7 @@ The share registry and LAN listener are implemented and covered by unit and real
 HTTP tests (see `apps/desktop/src-tauri/src/server/tests.rs`); the hardening audit
 (#7) and platform checks are still outstanding.
 
-FileHop is intended for trusted local networks. Plain HTTP exposes transferred
+Mayfly is intended for trusted local networks. Plain HTTP exposes transferred
 contents and bearer tokens to observers on the network. A share URL authorizes
 access until revocation, expiration, process exit, or download-limit exhaustion.
 No port forwarding or public internet exposure is part of the product.
@@ -159,7 +159,7 @@ bound to `127.0.0.1` on a separately configured port.
 
 - Configure a restrictive Tauri CSP and minimal capabilities. No arbitrary shell
   execution, broadly scoped filesystem commands, or remote web content in the app.
-- The About dialog opens FileHop's own web pages through `open_link`, which accepts
+- The About dialog opens Mayfly's own web pages through `open_link`, which accepts
   only a link name; the fixed URLs live in Rust (`menu.rs`). The opener plugin is
   used from Rust only and grants the frontend no permission.
 - Treat profile templates as data. Resolve placeholders once, percent-encode URI

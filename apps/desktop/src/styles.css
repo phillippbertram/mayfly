@@ -2,57 +2,57 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Design tokens: docs/design.md, "Color". Light on :root, dark under data-theme. */
+/* Design tokens: docs/design.md, "Color" (Mayfly: Still water, Dusk, River, Hatch). Light on :root, dark under data-theme. */
 :root {
-  --bg: #f7f7f8;
+  --bg: #f5f8f7;
   --surface: #ffffff;
-  --surface-muted: #f0f1f3;
-  --surface-hover: #f4f5f6;
-  --border: #e2e4e8;
-  --border-strong: #cbd0d6;
-  --text: #17191d;
-  --text-muted: #6b7280;
-  --text-faint: #9ba3ae;
+  --surface-muted: #eef3f1;
+  --surface-hover: #f2f6f4;
+  --border: #dfe7e4;
+  --border-strong: #c7d3cf;
+  --text: #142326;
+  --text-muted: #4b5957;
+  --text-faint: #626f6d;
   --accent: #0e7c66;
   --accent-hover: #0b6a57;
   --accent-strong: #0b5f4e;
   --accent-foreground: #ffffff;
   --accent-soft: #ddf3ec;
-  --warning: #b45309;
-  --warning-strong: #8a3f06;
-  --warning-soft: #fbebd3;
+  --warning: #9a5410;
+  --warning-strong: #7d4409;
+  --warning-soft: #fbebd8;
   --danger: #b42323;
   --danger-strong: #8f1d1d;
   --danger-soft: #fbe1e1;
   --qr-card: #ffffff;
-  --qr-ink: #17191d;
-  --shadow-color: 220 15% 20%;
-  --overlay: rgb(23 25 29 / 0.32);
+  --qr-ink: #142326;
+  --shadow-color: 190 30% 15%;
+  --overlay: rgb(15 26 28 / 0.32);
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #121316;
-  --surface: #1b1d21;
-  --surface-muted: #23262b;
-  --surface-hover: #202328;
-  --border: #2e3239;
-  --border-strong: #3a3f47;
-  --text: #eceef1;
-  --text-muted: #9ba3ae;
-  --text-faint: #6b7380;
+  --bg: #0f1a1c;
+  --surface: #152224;
+  --surface-muted: #1c2b2e;
+  --surface-hover: #192729;
+  --border: #26373a;
+  --border-strong: #33474b;
+  --text: #e8efed;
+  --text-muted: #a3b3b0;
+  --text-faint: #869794;
   --accent: #3dd6a8;
   --accent-hover: #5fe0b9;
   --accent-strong: #6fe3c0;
   --accent-foreground: #0b1f19;
   --accent-soft: #163a31;
-  --warning: #f5b454;
-  --warning-strong: #f5b454;
-  --warning-soft: #3d2e12;
+  --warning: #f0a64a;
+  --warning-strong: #f5b860;
+  --warning-soft: #3a2a14;
   --danger: #f87171;
   --danger-strong: #fca5a5;
   --danger-soft: #3f1c1c;
-  --shadow-color: 220 40% 2%;
+  --shadow-color: 190 40% 2%;
   --overlay: rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }

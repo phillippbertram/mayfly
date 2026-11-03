@@ -5,7 +5,7 @@
 
 ## Context
 
-FileHop needs direct desktop-to-phone file sharing over a trusted local network,
+Mayfly needs direct desktop-to-phone file sharing over a trusted local network,
 without a cloud service or account. The first task explicitly establishes the
 project basis before any application code is written. Work is managed in GitHub
 Issues, and all source and documentation must be in English.

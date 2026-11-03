@@ -2,7 +2,7 @@
 
 ## Goal and current state
 
-FileHop will let a desktop user temporarily share selected files with a browser
+Mayfly will let a desktop user temporarily share selected files with a browser
 on the same trusted local network, particularly Safari on an iPhone. No account,
 cloud service, external server, or mobile application is required.
 
@@ -33,7 +33,7 @@ users. An unlimited lifetime is represented explicitly rather than as a distant 
 
 ## Desktop interface
 
-- Header: FileHop name, server status, selected local address, and settings.
+- Header: Mayfly name, server status, selected local address, and settings.
 - Drop zone: clear drag feedback and a native file-picker button.
 - Share list: name/type, size, remaining lifetime, download count, and copy/QR/revoke actions.
 - Share detail: large QR, selected profile, generated URL, expiration, copy and PNG actions.
@@ -114,7 +114,7 @@ than generating misleading QR codes.
 The user can switch between the share page and a custom profile in share details
 ("QR opens"). The copied link, displayed link, copied QR image, exported PNG, and
 QR all match the selection and the current network address. A compatible installed application is required for custom schemes;
-FileHop neither installs apps nor registers deep links itself.
+Mayfly neither installs apps nor registers deep links itself.
 
 ## Optional second step
 
@@ -136,7 +136,7 @@ and Intel, and Linux, together with checksums, release notes, and verified insta
 guidance. Platform signing/notarization and distribution licensing are explicit
 release-readiness decisions tracked in GitHub Issues.
 
-A separate English GitHub Pages website will explain FileHop with polished product
+A separate English GitHub Pages website will explain Mayfly with polished product
 content, real screenshots, a short getting-started guide, platform download links,
 and installation/network troubleshooting. It must reflect actual release availability
 and provide downloads accessible through the approved public distribution arrangement.

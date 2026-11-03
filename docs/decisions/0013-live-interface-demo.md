@@ -20,7 +20,7 @@ re-recording for every UI change.
   only when a scene asks for one. A director moves a drawn cursor to elements
   found by their accessible name and clicks them. Scenes live in
   `src/demo/scenes.ts`.
-- **Separate build.** `pnpm --filter @filehop/desktop build:demo` (`vite build
+- **Separate build.** `pnpm --filter @mayfly/desktop build:demo` (`vite build
   --mode demo`) builds only the demo, with relative asset paths. The desktop
   bundle never contains it. The website's `dev` and `build` scripts build it and
   copy it to `apps/website/public/demo/` (ignored by Git).

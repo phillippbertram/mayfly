@@ -13,7 +13,7 @@ pub fn validate_png(data: &[u8]) -> Result<(), String> {
         return Err("The image is too large to save.".into());
     }
     if !data.starts_with(PNG_SIGNATURE) {
-        return Err("FileHop can only save PNG images here.".into());
+        return Err("Mayfly can only save PNG images here.".into());
     }
     Ok(())
 }
@@ -42,7 +42,7 @@ pub fn png_file_name(suggested: &str) -> String {
     let stem: String = stem.chars().take(MAX_NAME_CHARS).collect();
     let stem = stem.trim();
     if stem.is_empty() {
-        "filehop-qr.png".to_owned()
+        "mayfly-qr.png".to_owned()
     } else {
         format!("{stem}.png")
     }
@@ -72,8 +72,8 @@ mod tests {
         assert_eq!(png_file_name("C:\\Users\\a\\x.png"), "x.png");
         assert_eq!(png_file_name("a:b*c?\"d\"<e>|\n.png"), "a_b_c__d__e___.png");
         assert_eq!(png_file_name(".hidden"), "hidden.png");
-        assert_eq!(png_file_name("   "), "filehop-qr.png");
-        assert_eq!(png_file_name(".png"), "filehop-qr.png");
+        assert_eq!(png_file_name("   "), "mayfly-qr.png");
+        assert_eq!(png_file_name(".png"), "mayfly-qr.png");
         assert_eq!(png_file_name(&"x".repeat(300)).chars().count(), 124);
     }
 }

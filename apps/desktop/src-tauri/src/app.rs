@@ -58,7 +58,7 @@ pub enum BackendEvent {
     },
     /// The app or tray menu asked for the settings.
     OpenSettings,
-    /// The app menu asked for FileHop's About dialog.
+    /// The app menu asked for Mayfly's About dialog.
     ShowAbout,
 }
 
@@ -377,7 +377,7 @@ impl App {
     }
 
     /// Applies settings in memory and saves them. A failed save is reported, but
-    /// the settings still apply until FileHop quits.
+    /// the settings still apply until Mayfly quits.
     fn commit_settings(&self, next: Settings) -> Result<(), String> {
         *lock(&self.settings) = next;
         self.persist()
@@ -391,7 +391,7 @@ impl App {
         let settings = self.settings();
         let custom = lock(&self.profiles).clone();
         store.save(&settings, &custom).map_err(|_| {
-            "FileHop couldn't save your settings. They apply until FileHop quits.".to_owned()
+            "Mayfly couldn't save your settings. They apply until Mayfly quits.".to_owned()
         })
     }
 
@@ -460,10 +460,10 @@ impl App {
                 }
                 None => {
                     if custom.len() >= MAX_PROFILES {
-                        return Err("FileHop keeps up to 20 link profiles.".into());
+                        return Err("Mayfly keeps up to 20 link profiles.".into());
                     }
                     let id = crate::shares::token::generate_id()
-                        .map_err(|_| "FileHop couldn't create the profile.".to_owned())?;
+                        .map_err(|_| "Mayfly couldn't create the profile.".to_owned())?;
                     custom.push(Profile {
                         id: id.clone(),
                         name: name.clone(),
@@ -573,7 +573,7 @@ impl App {
         let registry = self.registry.clone();
         tokio::task::spawn_blocking(move || registry.stage(accepted))
             .await
-            .map_err(|_| "FileHop couldn't read the dropped files.".to_owned())
+            .map_err(|_| "Mayfly couldn't read the dropped files.".to_owned())
     }
 
     pub fn list_shares(&self) -> Vec<ShareDto> {
@@ -659,7 +659,7 @@ async fn hash(password: Password) -> Result<Arc<Verifier>, String> {
     password.validate().map_err(|e| e.0)?;
     tokio::task::spawn_blocking(move || Verifier::new(&password))
         .await
-        .map_err(|_| "FileHop couldn't protect this share.".to_owned())?
+        .map_err(|_| "Mayfly couldn't protect this share.".to_owned())?
         .map(Arc::new)
         .map_err(|e| e.0)
 }

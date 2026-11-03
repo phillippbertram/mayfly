@@ -1,6 +1,6 @@
 # Agent instructions
 
-This is the canonical, tool-independent instruction file for FileHop. Keep shared
+This is the canonical, tool-independent instruction file for Mayfly. Keep shared
 rules here; tool-specific entry points should only reference this file.
 
 ## Scope and language

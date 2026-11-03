@@ -143,5 +143,5 @@ jobs:
             --verify-tag \
             --draft \
             "${prerelease[@]}" \
-            --title "FileHop $version" \
+            --title "Mayfly $version" \
             --generate-notes

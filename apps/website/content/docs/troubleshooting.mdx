@@ -17,10 +17,10 @@ for real sharing.
 ## The QR opens a link, but my phone cannot connect
 
 1. Check that both devices can reach each other on the same trusted network.
-2. Keep the desktop awake and FileHop running, with a usable address in its header.
+2. Keep the desktop awake and Mayfly running, with a usable address in its header.
 3. Select the Wi-Fi/interface address reachable from the phone.
 4. Check that guest Wi-Fi or router client isolation is not separating the devices.
-5. Allow FileHop through the desktop firewall on the intended private network.
+5. Allow Mayfly through the desktop firewall on the intended private network.
 
 A VPN may change routing or the advertised interface. Re-select the correct address
 and scan the updated code. Do not disable the firewall globally or forward the port
@@ -48,19 +48,19 @@ does not. Prefer the share-page link when sending a limited share in chat.
 
 ## A file is unavailable or a large transfer stops
 
-Keep the computer awake and connected. FileHop streams the original contents; if
+Keep the computer awake and connected. Mayfly streams the original contents; if
 a file's size changes, it reports the file as unavailable. Removing a file, stopping
-a share, or fully quitting FileHop cancels running transfers. Expiration prevents
+a share, or fully quitting Mayfly cancels running transfers. Expiration prevents
 new downloads but lets already-started downloads finish.
 
 Check free space on the receiving device. A retry starts the full file again;
 partial-download resume is not supported. Optional remote proxies have separate
-limits and timeouts and are not a verified FileHop workflow.
+limits and timeouts and are not a verified Mayfly workflow.
 
 ## Closing the window did not stop sharing
 
-Closing normally hides FileHop in the menu bar or tray. Use **Stop sharing** to end
-one link, or **Quit FileHop** to stop all shares and downloads. On Linux without
+Closing normally hides Mayfly in the menu bar or tray. Use **Stop sharing** to end
+one link, or **Quit Mayfly** to stop all shares and downloads. On Linux without
 AppIndicator support, closing quits instead. See [Settings](../settings/).
 
 ## The development server cannot start
@@ -71,6 +71,6 @@ versions and load Rust's environment if `cargo` is not found.
 
 ## Report a reproducible problem
 
-Include the FileHop version/commit, OS and architecture, browser/device, sanitized
+Include the Mayfly version/commit, OS and architecture, browser/device, sanitized
 steps, expected result, and observed result. State whether you used the native app
 or sample-data browser preview. Remove tokens, private filenames, and local paths.

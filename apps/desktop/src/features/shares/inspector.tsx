@@ -198,8 +198,8 @@ export function InspectorBody({
         )}
         {!ended && qrApp?.customScheme && (
           <p className="max-w-[300px] text-center text-[11.5px] text-muted">
-            A compatible app must be installed on the device that scans this. FileHop never opens
-            the link itself.
+            A compatible app must be installed on the device that scans this. Mayfly never opens the
+            link itself.
           </p>
         )}
         {!ended && <ConnectionHelp />}
@@ -262,7 +262,7 @@ export function InspectorBody({
       <div className="grid grid-cols-2 gap-3 rounded-xl border border-line bg-bg/60 p-3">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-muted">{ended ? "Ended" : "Expires"}</span>
+            <span className="text-[11px] text-muted">{ended ? "Ended" : "Lives"}</span>
             <DetailMenu
               label="Extend"
               hotkey={appHotkeys["share.extend"].hotkey}

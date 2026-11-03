@@ -361,7 +361,7 @@ impl Entry {
 
     fn add(&mut self, file: Arc<SharedFile>) -> Result<(), ShareError> {
         let id =
-            token::generate_id().map_err(|_| ShareError::new("FileHop couldn't add this file."))?;
+            token::generate_id().map_err(|_| ShareError::new("Mayfly couldn't add this file."))?;
         self.files.push(FileEntry {
             id,
             file,
@@ -495,7 +495,7 @@ impl Registry {
             let Ok(stage_id) = token::generate_id() else {
                 result
                     .rejected
-                    .push(rejected(&file, "FileHop couldn't prepare this file."));
+                    .push(rejected(&file, "Mayfly couldn't prepare this file."));
                 continue;
             };
             if inner.staged.len() >= MAX_STAGED {
@@ -1054,7 +1054,7 @@ fn new_entry(
     now: Instant,
     wall: u64,
 ) -> Result<Entry, ShareError> {
-    let unavailable = || ShareError::new("FileHop couldn't create a secure link.");
+    let unavailable = || ShareError::new("Mayfly couldn't create a secure link.");
     let lifetime = options
         .lifetime_minutes
         .map(|m| Duration::from_secs(u64::from(m) * 60));

@@ -13,7 +13,7 @@ const WIDTH = 1200;
 const HEIGHT = 800;
 
 /**
- * The actual FileHop interface on its sample-data simulator, playing a scripted
+ * The actual Mayfly interface on its sample-data simulator, playing a scripted
  * scene in an inert iframe. The screenshot stays underneath: it is the content
  * without JavaScript, before the demo is ready, and for reduced motion.
  */
@@ -54,7 +54,7 @@ export function LiveScreen({
     if (live && !source) setSource(`/demo/demo.html?scene=${scene}${loop ? "&loop=1" : ""}`);
   }, [live, source, scene, loop]);
   useEffect(() => {
-    frame.current?.contentWindow?.postMessage({ source: "filehop-site", scene }, location.origin);
+    frame.current?.contentWindow?.postMessage({ source: "mayfly-site", scene }, location.origin);
   }, [scene]);
 
   useEffect(() => {
@@ -71,11 +71,11 @@ export function LiveScreen({
     const onMessage = (event: MessageEvent) => {
       if (event.source !== frame.current?.contentWindow || event.origin !== location.origin) return;
       const data = (event.data ?? {}) as { source?: unknown; event?: unknown; scene?: unknown };
-      if (data.source !== "filehop-demo") return;
+      if (data.source !== "mayfly-demo") return;
       // A scene change sent while the demo was still loading never arrived.
       if (data.scene !== wanted.current)
         frame.current?.contentWindow?.postMessage(
-          { source: "filehop-site", scene: wanted.current },
+          { source: "mayfly-site", scene: wanted.current },
           location.origin,
         );
       else if (data.event === "ready") {
@@ -101,7 +101,7 @@ export function LiveScreen({
         <iframe
           ref={frame}
           src={asset(source)}
-          title="FileHop interface demo"
+          title="Mayfly interface demo"
           aria-hidden="true"
           tabIndex={-1}
           inert

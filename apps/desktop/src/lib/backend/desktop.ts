@@ -14,7 +14,7 @@ import {
 import { type Backend, BackendError, type BackendEvent, type ServerState } from "./types";
 
 /** The single channel Rust uses for change notifications. */
-const EVENT = "filehop://event";
+const EVENT = "mayfly://event";
 
 const NOT_YET = "This isn't available in this build yet.";
 
@@ -48,10 +48,10 @@ async function call<T>(command: string, schema: z.ZodType<T>, args?: InvokeArgs)
   try {
     result = await invoke(command, args);
   } catch (error) {
-    throw new BackendError(typeof error === "string" ? error : "FileHop's backend didn't respond.");
+    throw new BackendError(typeof error === "string" ? error : "Mayfly's backend didn't respond.");
   }
   const parsed = schema.safeParse(result);
-  if (!parsed.success) throw new BackendError("FileHop received unexpected data from its backend.");
+  if (!parsed.success) throw new BackendError("Mayfly received unexpected data from its backend.");
   return parsed.data;
 }
 
@@ -75,7 +75,7 @@ export function createDesktopBackend(): Backend {
       call("get_server", ServerStateSchema).catch(
         (): ServerState => ({
           kind: "unavailable",
-          message: "FileHop can't reach its desktop backend.",
+          message: "Mayfly can't reach its desktop backend.",
         }),
       ),
     listShares: () => call("list_shares", z.array(ShareSchema)),
@@ -126,7 +126,7 @@ export function createDesktopBackend(): Backend {
     previewTemplate: (template) =>
       call("preview_template", TemplatePreviewSchema, { template }).catch(() => ({
         ok: false as const,
-        error: "FileHop couldn't check the template.",
+        error: "Mayfly couldn't check the template.",
       })),
     // Rust opens the native save dialog; the webview only supplies the image.
     takeNotice: () => call("take_notice", z.string().nullable()),

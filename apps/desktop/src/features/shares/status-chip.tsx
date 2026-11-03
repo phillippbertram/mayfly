@@ -12,9 +12,9 @@ const STYLE: Record<DisplayStatus, string> = {
 };
 
 export const STATUS_LABEL: Record<DisplayStatus, string> = {
-  active: "Active",
-  expiring: "Expiring",
-  expired: "Expired",
+  active: "Live",
+  expiring: "Fading",
+  expired: "Gone",
   stopped: "Stopped",
   limitReached: "Limit reached",
 };

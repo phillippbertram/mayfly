@@ -18,27 +18,27 @@ function Miniature({ dark }: { dark: boolean }) {
     <span
       className={cn(
         "flex h-full w-full flex-col gap-1.5 p-2",
-        dark ? "bg-[#121316]" : "bg-[#f7f7f8]",
+        dark ? "bg-[#0f1a1c]" : "bg-[#f5f8f7]",
       )}
     >
-      <span className={cn("h-2 w-10 rounded-sm", dark ? "bg-[#2e3239]" : "bg-[#e2e4e8]")} />
+      <span className={cn("h-2 w-10 rounded-sm", dark ? "bg-[#26373a]" : "bg-[#dfe7e4]")} />
       <span
         className={cn(
           "flex h-4 items-center gap-1 rounded-sm px-1",
-          dark ? "bg-[#1b1d21]" : "bg-white",
+          dark ? "bg-[#152224]" : "bg-white",
         )}
       >
         <span className={cn("size-2 rounded-[2px]", dark ? "bg-[#3dd6a8]" : "bg-[#0e7c66]")} />
-        <span className={cn("h-1 flex-1 rounded-full", dark ? "bg-[#2e3239]" : "bg-[#e2e4e8]")} />
+        <span className={cn("h-1 flex-1 rounded-full", dark ? "bg-[#26373a]" : "bg-[#dfe7e4]")} />
       </span>
       <span
         className={cn(
           "flex h-4 items-center gap-1 rounded-sm px-1",
-          dark ? "bg-[#1b1d21]" : "bg-white",
+          dark ? "bg-[#152224]" : "bg-white",
         )}
       >
-        <span className={cn("size-2 rounded-[2px]", dark ? "bg-[#3a3f47]" : "bg-[#cbd0d6]")} />
-        <span className={cn("h-1 flex-1 rounded-full", dark ? "bg-[#2e3239]" : "bg-[#e2e4e8]")} />
+        <span className={cn("size-2 rounded-[2px]", dark ? "bg-[#33474b]" : "bg-[#c7d3cf]")} />
+        <span className={cn("h-1 flex-1 rounded-full", dark ? "bg-[#26373a]" : "bg-[#dfe7e4]")} />
       </span>
     </span>
   );
@@ -52,7 +52,7 @@ export function AppearanceSection() {
     <div>
       <SectionHeader
         title="Appearance"
-        description="Follow the system or keep FileHop light or dark."
+        description="Follow the system or keep Mayfly light or dark."
       />
       <RadioGroup.Root
         aria-label="Theme"

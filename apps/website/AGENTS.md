@@ -1,6 +1,6 @@
 # Website instructions
 
-Read the root `AGENTS.md` first. This workspace contains FileHop's public product
+Read the root `AGENTS.md` first. This workspace contains Mayfly's public product
 website and English user manual, implemented with Next.js, Fumadocs, and Motion.
 
 - Export static files for GitHub Pages; no runtime API, authentication, or secrets.

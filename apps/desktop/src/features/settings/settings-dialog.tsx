@@ -98,7 +98,7 @@ export function SettingsDialog() {
               <div>
                 <SectionHeader
                   title="Shortcuts"
-                  description="FileHop works from the keyboard. Single-letter keys act on the selected share."
+                  description="Mayfly works from the keyboard. Single-letter keys act on the selected share."
                 />
                 <ShortcutList columns={1} />
               </div>

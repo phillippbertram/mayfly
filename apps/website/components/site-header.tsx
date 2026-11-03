@@ -10,7 +10,7 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="nav-inner">
-        <Link href="/" aria-label="FileHop home">
+        <Link href="/" aria-label="Mayfly home">
           <Brand />
         </Link>
         <nav aria-label="Main navigation" className="desktop-nav">
@@ -21,7 +21,7 @@ export function SiteHeader() {
           </Link>
         </nav>
         <Link href="/#download" className="nav-cta">
-          Get FileHop <ArrowUpRight size={14} aria-hidden="true" />
+          Get Mayfly <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
         <button
           type="button"

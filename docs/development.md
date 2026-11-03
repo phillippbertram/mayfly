@@ -37,7 +37,7 @@ pnpm format
 | `pnpm check:rust` | Check rustfmt and run Clippy for all Rust targets       |
 | `pnpm build`      | Build and package the desktop app for the current host  |
 
-The workspace root and `@filehop/desktop` package are private. The root contains
+The workspace root and `@mayfly/desktop` package are private. The root contains
 Biome and TypeScript tooling; app dependencies live in `apps/desktop`.
 The desktop `tsconfig.json` extends the shared strict `tsconfig.base.json`.
 Biome 2.6.4 supports Markdown and YAML as well as TypeScript, JavaScript, JSON,
@@ -88,7 +88,7 @@ pnpm check:rust
 pnpm dev
 ```
 
-`pnpm dev` starts Vite on loopback port 1420, then compiles/opens FileHop. The
+`pnpm dev` starts Vite on loopback port 1420, then compiles/opens Mayfly. The
 frontend's status and version are returned by the real `get_app_info` Rust command.
 The capability file grants only native file-drop event listening and title-bar
 dragging; it grants no filesystem, shell, network, or plugin permissions.
@@ -126,7 +126,7 @@ supervisor is needed.
 
 `pnpm build` uses release mode and the current host's supported bundle formats.
 For a quicker macOS debug app bundle, use
-`pnpm --filter @filehop/desktop tauri build --debug --bundles app`.
+`pnpm --filter @mayfly/desktop tauri build --debug --bundles app`.
 Build outputs are ignored under `apps/desktop/src-tauri/target/`.
 The starter icon has an editable SVG source in `src-tauri/icons/`; final brand/tray
 assets remain issue #12. Interface components follow the shadcn/ui pattern on Radix
@@ -140,7 +140,7 @@ build never loads it and reports sharing as unavailable until the Rust services 
 
 ## Website interface demo
 
-`pnpm --filter @filehop/desktop build:demo` builds `demo.html`: the unchanged
+`pnpm --filter @mayfly/desktop build:demo` builds `demo.html`: the unchanged
 interface on the scripted sample-data simulator, which the product website embeds
 ([ADR 0013](decisions/0013-live-interface-demo.md)). Scenes live in
 `apps/desktop/src/demo/scenes.ts` and find controls by their accessible names; when
@@ -151,7 +151,7 @@ you rename a control a scene uses, update the scene and check it at
 
 Local build commands are available from the repository root and from `apps/desktop`.
 They prepare the packaging work tracked in
-[#8](https://github.com/phillippbertram/filehop/issues/8); native CI and release
+[#8](https://github.com/phillippbertram/mayfly/issues/8); native CI and release
 publishing remain separate work.
 
 | Command                  | Rust target                                  | Tauri bundles  |
@@ -199,7 +199,7 @@ universal macOS bundles are outside these commands.
 `apps/desktop/src-tauri/target/release/bundle/`. Commands with an explicit target
 write under `apps/desktop/src-tauri/target/<target>/release/bundle/`:
 
-- `macos/FileHop.app` and `dmg/*.dmg` on macOS.
+- `macos/Mayfly.app` and `dmg/*.dmg` on macOS.
 - `nsis/*-setup.exe` on Windows.
 - `appimage/*.AppImage` and `deb/*.deb` on Linux.
 
@@ -213,7 +213,7 @@ The new aliases are fixed release commands. For debug builds or custom Tauri fla
 invoke the CLI directly, placing Cargo arguments after `--`, for example:
 
 ```sh
-pnpm --filter @filehop/desktop tauri build --debug --bundles app -- --locked
+pnpm --filter @mayfly/desktop tauri build --debug --bundles app -- --locked
 ```
 
 ## Current verification

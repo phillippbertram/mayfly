@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "FileHop",
+  "productName": "Mayfly",
   "version": "0.8.0",
-  "identifier": "de.phillippbertram.filehop",
+  "identifier": "de.phillippbertram.mayfly",
   "build": {
     "beforeDevCommand": "pnpm dev:web",
     "devUrl": "http://127.0.0.1:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "FileHop",
+        "title": "Mayfly",
         "width": 960,
         "height": 640,
         "minWidth": 720,

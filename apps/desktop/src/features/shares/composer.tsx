@@ -189,7 +189,7 @@ export function Composer({ actions }: { actions: ShareActions }) {
                   <p id="share-password-hint" className="text-[11.5px] text-muted">
                     {password.length > 0 && problem
                       ? problem
-                      : "Send it separately from the link. FileHop can't show it again later."}
+                      : "Send it separately from the link. Mayfly can't show it again later."}
                   </p>
                 </div>
               </motion.div>

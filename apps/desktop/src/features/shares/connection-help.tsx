@@ -17,9 +17,9 @@ export function ConnectionHelp() {
   const port = server && "port" in server ? server.port : 8765;
 
   const firewall = isMac
-    ? "If macOS asked whether FileHop may accept incoming connections, allow it. You can check this in System Settings → Network → Firewall."
+    ? "If macOS asked whether Mayfly may accept incoming connections, allow it. You can check this in System Settings → Network → Firewall."
     : isWindows
-      ? "When Windows Defender Firewall asks, allow FileHop on private networks. A network marked as public blocks it."
+      ? "When Windows Defender Firewall asks, allow Mayfly on private networks. A network marked as public blocks it."
       : `Allow incoming TCP connections on port ${port} in your firewall, for example with ufw.`;
 
   const tips = [

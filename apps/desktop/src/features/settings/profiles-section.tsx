@@ -270,7 +270,7 @@ function ProfileEditor({
             {profile ? "Edit link profile" : "New link profile"}
           </h3>
           <p className="text-[12px] text-muted">
-            Templates are text. FileHop fills placeholders once and never runs them.
+            Templates are text. Mayfly fills placeholders once and never runs them.
           </p>
         </div>
       </div>

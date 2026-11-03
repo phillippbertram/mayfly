@@ -41,5 +41,5 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             super().send_error(code, message, explain)
 
-print(f"FileHop static preview: http://127.0.0.1:{port}{base}/", flush=True)
+print(f"Mayfly static preview: http://127.0.0.1:{port}{base}/", flush=True)
 ThreadingHTTPServer(("127.0.0.1", port), partial(Handler, directory=str(root))).serve_forever()

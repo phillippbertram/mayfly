@@ -1,7 +1,9 @@
 # Website review captures
 
-These captures show the actual locally exported FileHop website, reviewed on
-2026-11-02 with the `/filehop` GitHub Pages project path.
+These captures show the actual locally exported Mayfly website, recaptured on
+2026-11-03 after the rename from FileHop, served with the `/mayfly` GitHub Pages
+project path (`serve-export.py`) and captured by headless Chrome with dark mode and
+reduced motion, so the tour shows its static screenshots.
 
 - `website-desktop.jpg`: desktop product-page viewport.
 - `website-full.jpg`: the complete desktop product page.

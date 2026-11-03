@@ -2,10 +2,10 @@
 
 Status: proposed architecture for an optional feature beyond the LAN MVP.
 
-FileHop could share selected files over the internet through Cloudflare Workers
+Mayfly could share selected files over the internet through Cloudflare Workers
 and Durable Objects. The recipient would open a normal HTTPS link in a browser.
 The desktop would stream the original file through the relay without uploading
-it to permanent storage. FileHop and the sender's computer must remain online.
+it to permanent storage. Mayfly and the sender's computer must remain online.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ KV, and Queues are unnecessary for this live-transfer model.
 1. The user explicitly enables internet sharing. Rust creates a temporary relay
    session and opens an authenticated outbound WSS connection through the Worker
    to its Durable Object. No inbound router port forwarding is required.
-2. FileHop creates a public share link containing a session routing ID and share
+2. Mayfly creates a public share link containing a session routing ID and share
    token. The UI uses that public origin for the page, download link, and QR code.
 3. A browser download reaches the Worker, which forwards it to the session object.
 4. The object assigns a transfer ID and sends a download request to the desktop.
@@ -121,7 +121,7 @@ and a slow recipient. Exercise cancellation, reconnects, object resets, expired
 and revoked tokens, and concurrent requests against a download limit. Compare
 downloaded bytes with the original file.
 
-The underlying share service is tracked in [issue #2](https://github.com/phillippbertram/filehop/issues/2).
+The underlying share service is tracked in [issue #2](https://github.com/phillippbertram/mayfly/issues/2).
 Relay implementation requires a separate issue after the concept is scoped.
 No relay, deployment, or end-to-end remote transfer is implemented or verified.
 

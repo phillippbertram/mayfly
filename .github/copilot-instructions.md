@@ -1,4 +1,4 @@
-# FileHop instructions
+# Mayfly instructions
 
 Read and follow [AGENTS.md](../AGENTS.md) at the repository root before starting
 work. It is the canonical project instruction file. Read relevant nested

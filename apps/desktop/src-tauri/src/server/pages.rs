@@ -174,8 +174,8 @@ pub fn locked_download(token: &str) -> String {
 pub fn error(reason: Unavailable) -> String {
     let (headline, sentence) = match reason {
         Unavailable::Expired => (
-            "This link expired",
-            "Ask for a new link from the computer that shared the file.",
+            "This link is gone",
+            "Its time ran out. Ask for a new link from the computer that shared the file.",
         ),
         Unavailable::Stopped => (
             "Sharing was stopped",
@@ -221,16 +221,16 @@ fn document(title: &str, body: &str) -> String {
 <meta name="color-scheme" content="light dark">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
-<title>{title} · FileHop</title>
+<title>{title} · Mayfly</title>
 <style>{CSS}</style>
 </head>
 <body>
 <main>
-<header class="brand"><span class="mark">{MARK_ICON}</span>FileHop</header>
+<header class="brand"><span class="mark">{MARK_ICON}</span>mayfly</header>
 <section class="card">
 {body}
 </section>
-<footer>Shared temporarily from a computer on your network.<br>This page uses unencrypted HTTP. Only use it on networks you trust.</footer>
+<footer>Shared for a moment from a computer on your network. No account, no cloud.<br>This page uses unencrypted HTTP. Only use it on networks you trust.</footer>
 </main>
 </body>
 </html>
@@ -241,13 +241,13 @@ fn document(title: &str, body: &str) -> String {
 fn availability(remaining: Option<Duration>, downloads_left: Option<u32>) -> String {
     let time = match remaining {
         None => "Available until the owner stops sharing".to_owned(),
-        Some(d) if d < Duration::from_secs(60) => "Available for less than a minute".to_owned(),
+        Some(d) if d < Duration::from_secs(60) => "Lives for less than a minute".to_owned(),
         Some(d) => {
             let minutes = d.as_secs().div_ceil(60);
             if minutes < 90 {
-                format!("Available for about {minutes} more minutes")
+                format!("Lives for about {minutes} more minutes")
             } else {
-                format!("Available for about {} more hours", (minutes + 30) / 60)
+                format!("Lives for about {} more hours", (minutes + 30) / 60)
             }
         }
     };
@@ -346,17 +346,18 @@ const BUNDLE_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d
 const DOWNLOAD_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>"#;
 const ALERT_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>"#;
 const LOCK_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>"#;
-const MARK_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>"#;
+const MARK_ICON: &str = r#"<svg viewBox="6 2 58 46" aria-hidden="true"><path class="w" d="M24 37C21 25 25 13 35 5C38 16 36 28 31 37Z"/><path d="M10 43C20 37 33 36 44 32"/></svg>"#;
 
-const CSS: &str = r#":root{--bg:#f7f7f8;--surface:#fff;--muted-bg:#f0f1f3;--border:#e2e4e8;--text:#17191d;--muted:#6b7280;--faint:#9ba3ae;--accent:#0e7c66;--accent-hover:#0b6a57;--accent-fg:#fff;--image:#7c5cd6;--document:#3f6fd1;--archive:#a2641a;--audio:#c2437b;--video:#c24a3a;--shadow:0 1px 2px rgb(23 25 29/.06),0 8px 24px rgb(23 25 29/.06)}
-@media (prefers-color-scheme:dark){:root{--bg:#121316;--surface:#1b1d21;--muted-bg:#23262b;--border:#2e3239;--text:#eceef1;--muted:#9ba3ae;--faint:#6b7380;--accent:#3dd6a8;--accent-hover:#5fe0b9;--accent-fg:#0b1f19;--image:#b7a4f5;--document:#8fb0f2;--archive:#e8b06a;--audio:#f19ac0;--video:#f2998c;--shadow:0 1px 2px rgb(0 0 0/.3),0 8px 24px rgb(0 0 0/.25)}}
+const CSS: &str = r#":root{--bg:#f5f8f7;--surface:#fff;--muted-bg:#eef3f1;--border:#dfe7e4;--text:#142326;--muted:#4b5957;--faint:#626f6d;--accent:#0e7c66;--accent-hover:#0b6a57;--accent-fg:#fff;--image:#7c5cd6;--document:#3f6fd1;--archive:#a2641a;--audio:#c2437b;--video:#c24a3a;--shadow:0 1px 2px rgb(15 26 28/.06),0 8px 24px rgb(15 26 28/.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1a1c;--surface:#152224;--muted-bg:#1c2b2e;--border:#26373a;--text:#e8efed;--muted:#a3b3b0;--faint:#869794;--accent:#3dd6a8;--accent-hover:#5fe0b9;--accent-fg:#0b1f19;--image:#b7a4f5;--document:#8fb0f2;--archive:#e8b06a;--audio:#f19ac0;--video:#f2998c;--shadow:0 1px 2px rgb(0 0 0/.3),0 8px 24px rgb(0 0 0/.25)}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
 main{max-width:560px;margin:0 auto;padding:28px 16px 32px;display:flex;flex-direction:column;min-height:100vh}
 .brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:-.01em;margin:0 4px 20px}
 .mark{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--accent-fg)}
-.mark svg{width:14px;height:14px;stroke-width:2.2}
+.mark svg{width:17px;height:17px;stroke-width:5.5}
+.mark .w{fill:currentColor;stroke:none}
 svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 24px 24px;box-shadow:var(--shadow);text-align:center}
 .glyph{display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:0 auto 18px;border-radius:16px;background:var(--muted-bg);color:var(--muted)}
@@ -494,7 +495,7 @@ mod tests {
         let html = landing("TOKEN", &view);
         assert!(html.contains("<h1>&lt;b&gt;Holiday&lt;/b&gt; photos</h1>"));
         assert!(html.contains("2 files · "));
-        assert!(html.contains("<title>&lt;b&gt;Holiday&lt;/b&gt; photos · FileHop</title>"));
+        assert!(html.contains("<title>&lt;b&gt;Holiday&lt;/b&gt; photos · Mayfly</title>"));
 
         let single = PageView {
             files: vec![file("a.pdf", None)],

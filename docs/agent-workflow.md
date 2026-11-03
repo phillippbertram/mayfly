@@ -29,7 +29,7 @@ scope limits, and available verification environment. Agents should read the iss
 and its dependencies, inspect the working tree, implement a focused change, run
 applicable checks, and report evidence and limitations.
 
-Project work is tracked in [GitHub Issues](https://github.com/phillippbertram/filehop/issues).
+Project work is tracked in [GitHub Issues](https://github.com/phillippbertram/mayfly/issues).
 Do not use chat history or a vendor-specific task store as the only record of a
 decision. Put acceptance criteria in the issue and architecture decisions in
 `docs/decisions/`. Keep the roadmap as an issue index.

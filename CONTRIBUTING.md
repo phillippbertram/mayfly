@@ -1,9 +1,9 @@
-# Contributing to FileHop
+# Contributing to Mayfly
 
 ## Start with an issue
 
 GitHub Issues are the project-management source of truth:
-<https://github.com/phillippbertram/filehop/issues>.
+<https://github.com/phillippbertram/mayfly/issues>.
 
 Search existing issues before creating work. Each implementation issue should state
 the expected user behavior, scope, acceptance criteria, verification, and dependencies.

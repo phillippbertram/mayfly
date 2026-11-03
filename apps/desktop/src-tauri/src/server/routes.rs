@@ -28,7 +28,7 @@ use crate::shares::{
 const MAX_PASSWORD_CHECKS: usize = 2;
 /// Enough for a percent-encoded password of the longest allowed length.
 const MAX_FORM_BYTES: usize = 2_048;
-const UNLOCK_COOKIE: &str = "filehop_unlock";
+const UNLOCK_COOKIE: &str = "mayfly_unlock";
 
 #[derive(Clone)]
 pub struct HttpState {
@@ -113,7 +113,7 @@ async fn unlock(
         return retry_after(
             form(
                 StatusCode::SERVICE_UNAVAILABLE,
-                "FileHop is busy. Try again in a moment.",
+                "Mayfly is busy. Try again in a moment.",
             ),
             Duration::from_secs(2),
         );
@@ -234,7 +234,7 @@ fn attachment(
 ) -> (HeaderMap, Option<ZipPlan>) {
     let mut headers = HeaderMap::new();
     let (name, media_type, len, plan) = if *target == Target::All {
-        let name = format!("FileHop-{}-files.zip", files.len());
+        let name = format!("Mayfly-{}-files.zip", files.len());
         let plan = ZipPlan::new(files, state.clock.wall_ms());
         (name, "application/zip".to_owned(), plan.len(), Some(plan))
     } else {

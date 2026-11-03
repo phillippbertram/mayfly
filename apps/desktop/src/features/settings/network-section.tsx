@@ -153,7 +153,7 @@ export function NetworkSection() {
       <div className="flex-1" />
       <div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4">
         <span className="text-[12px] text-muted">
-          FileHop keeps the last working address until the new one binds.
+          Mayfly keeps the last working address until the new one binds.
         </span>
         <Button variant="primary" disabled={!dirty || !portValid || busy} onClick={apply} layout>
           {busy && <LoaderCircle aria-hidden="true" size={14} className="spin" />}

@@ -2,7 +2,7 @@
 
 ## Status
 
-This document describes the intended desktop and mobile-page design for FileHop.
+This document describes the intended desktop and mobile-page design for Mayfly.
 It is a concept for the implementation issues, not a description of a shipped
 interface. Where it names behavior, the product specification in
 [product.md](product.md) and the invariants in [security.md](security.md) remain
@@ -16,12 +16,18 @@ labeled sample data.
 
 ## Product character
 
-FileHop does one thing: it hops a file from the desktop to a phone on the same
-network, for a few minutes, and then forgets about it. The interface should feel
+Mayfly does one thing: it carries a file from the desktop to a phone on the same
+network, for a few minutes, and then forgets about it. The name is the model: a
+mayfly lives for a single day, and every share lives one short life too. The interface should feel
 like a well-made utility rather than a service: quiet, fast, honest about what it
 is doing, and finished after a single screen.
 
 Three words guide every decision: **calm**, **temporary**, **truthful**.
+
+The brand concept adds one image and one rule. The image is a lifecycle, not a
+mascot: every share is **Live**, then **Fading**, then **Gone**. The rule: the
+metaphor sets the mood but stops at security. Stop sharing, passwords, download
+limits, errors, and the HTTP trusted-network notice keep plain words.
 
 ## Design principles
 
@@ -80,9 +86,9 @@ Settings dialog
 └── Link profiles: list, default marker, profile editor
 
 Tray menu
-├── Open FileHop
+├── Open Mayfly
 ├── Active share summary (informational)
-└── Quit FileHop
+└── Quit Mayfly
 
 Mobile page (served by the Rust HTTP service)
 ├── Share page: one file large, several as a list with a ZIP, or "No files yet"
@@ -118,9 +124,9 @@ afterwards. The header already shows the real server status so the user knows
 scanning will work before the first file is added.
 
 The illustration loops gently while idle: a soft glow breathes behind it, a file
-card lifts off the laptop screen, travels the dashed arc with a short trail, and
+card lifts on the laptop screen, the mayfly mark flies the dashed arc with a short trail, and
 the receiving device lights up with a drawn check mark and a ripple. The receiver
-changes with every hop (phone, tablet, laptop, desktop monitor) because FileHop
+changes with every flight (phone, tablet, laptop, desktop monitor) because Mayfly
 serves any browser on the network, not only phones. A single clock drives the scene
 so its parts never drift apart; with reduced motion it rests on the received frame. Hover or an incoming drag
 speeds the loop up and brightens the accent. Heading, text, and button rise in with
@@ -187,7 +193,7 @@ Each active row (64 points) shows, from left to right:
   and a meta line with size and contents ("2.4 MB · PDF document", or
   "8.2 MB · 2 images, 1 document").
 - A timer pill with the countdown ("7:42", or "Until stopped"), accent while active
-  and amber when expiring. It replaces the status chip for active shares; the ring
+  and Hatch amber while fading. It replaces the status chip for active shares; the ring
   and pill carry the state together, and the row's accessible name states it.
 - A download meter: the count, plus one segment per allowed download for limits up
   to ten, a bar for larger limits, or just the count without a limit. The counter's
@@ -304,20 +310,22 @@ back.
 
 ### Tray and lifecycle
 
-- The tray icon is the FileHop arrow as a monochrome template glyph on macOS, so
-  the menu bar tints it, and the colored app icon on Windows and Linux. It is
-  rendered by `apps/desktop/scripts/render-tray-icon.py`.
-- The menu contains "Open FileHop", an informational line such as "3 active
+- The tray icon is the mayfly wing and body as a monochrome template glyph on
+  macOS, so the menu bar tints it, and the colored app icon on Windows and Linux.
+  It is drawn in `icons/tray-template.svg` and rendered with
+  `rsvg-convert -w 44 -h 44 icons/tray-template.svg -o icons/tray-template.png`
+  (from `apps/desktop/src-tauri`).
+- The menu contains "Open Mayfly", an informational line such as "3 active
   shares · next ends in 4 min" (or "No active shares"), a separator, and "Quit
-  FileHop". The line updates every second when its text changes.
+  Mayfly". The line updates every second when its text changes.
 - Closing the window (red button or Cmd/Ctrl+W) hides it. While "Explain closing
-  the window" is on (General settings), the window stays open first with "FileHop
+  the window" is on (General settings), the window stays open first with "Mayfly
   keeps sharing in the background", the number of active shares, "Don't show this
-  again", and the buttons "Quit FileHop" and "Hide window" (default). Clicking the
+  again", and the buttons "Quit Mayfly" and "Hide window" (default). Clicking the
   Dock icon on macOS brings the window back.
 - Quitting from the tray, the app menu, or Cmd/Ctrl+Q while shares are active
-  shows the window with "Quit FileHop? N active shares stop immediately, and
-  downloads in progress are cut off." With nothing active, FileHop quits at once.
+  shows the window with "Quit Mayfly? N active shares stop immediately, and
+  downloads in progress are cut off." With nothing active, Mayfly quits at once.
 - Without a tray (a Linux desktop without AppIndicator support), closing the window
   goes through the same quit confirmation, because nothing could bring it back.
 
@@ -327,7 +335,7 @@ The page served at `/s/{token}` is a self-contained HTML document with inline CS
 no scripts, no external fonts, and no third-party requests. It uses the system
 font stack and respects `prefers-color-scheme`.
 
-Layout, top to bottom: a small FileHop wordmark, a file-type glyph, the escaped
+Layout, top to bottom: a small Mayfly wordmark, a file-type glyph, the escaped
 filename in large type with word breaking allowed, the formatted size and type, a
 full-width 52-point "Download" button pointing to `/d/{token}/{file}`, the remaining time
 and downloads, and a footer line "Shared temporarily from a computer on your
@@ -362,23 +370,26 @@ way that reveals whether a token once existed beyond what the headline states.
 
 ### Color
 
-The palette is neutral with a single accent. The accent, a teal green, signals a
-live, local connection and doubles as the Active status color. Warning and error
-colors are reserved for expiring shares and listener failures.
+The palette is an evening hatch over still water: teal-tinted neutrals ("Still
+water" in light, "Dusk" in dark) with a single accent. The accent, River green,
+signals a live, local connection and doubles as the Live status color. "Hatch"
+amber is reserved for fading shares and the no-address state; danger red for
+stopping and listener failures.
 
 | Token                 | Light     | Dark      | Use                                              |
 | --------------------- | --------- | --------- | ------------------------------------------------ |
-| `--bg`                | `#F7F7F8` | `#121316` | Window background                                |
-| `--surface`           | `#FFFFFF` | `#1B1D21` | Cards, rows, inspector, dialogs                  |
-| `--surface-muted`     | `#F0F1F3` | `#23262B` | Drop strip, settings section list, glyph squares |
-| `--border`            | `#E2E4E8` | `#2E3239` | 1-point borders and separators                   |
-| `--text`              | `#17191D` | `#ECEEF1` | Primary text                                     |
-| `--text-muted`        | `#6B7280` | `#9BA3AE` | Secondary text, captions                         |
+| `--bg`                | `#F5F8F7` | `#0F1A1C` | Window background                                |
+| `--surface`           | `#FFFFFF` | `#152224` | Cards, rows, inspector, dialogs                  |
+| `--surface-muted`     | `#EEF3F1` | `#1C2B2E` | Drop strip, settings section list, glyph squares |
+| `--border`            | `#DFE7E4` | `#26373A` | 1-point borders and separators                   |
+| `--text`              | `#142326` | `#E8EFED` | Primary text                                     |
+| `--text-muted`        | `#4B5957` | `#A3B3B0` | Secondary text, captions                         |
+| `--text-faint`        | `#626F6D` | `#869794` | Tertiary text, hints, device outlines            |
 | `--accent`            | `#0E7C66` | `#3DD6A8` | Primary buttons, active dot, focus ring, links   |
 | `--accent-foreground` | `#FFFFFF` | `#0B1F19` | Text on accent                                   |
-| `--accent-soft`       | `#DDF3EC` | `#163A31` | Active chip background, drag tint                |
-| `--warning`           | `#B45309` | `#F5B454` | Expiring chip, no-address state                  |
-| `--warning-soft`      | `#FBEBD3` | `#3D2E12` | Warning chip background                          |
+| `--accent-soft`       | `#DDF3EC` | `#163A31` | Live chip background, drag tint                  |
+| `--warning`           | `#9A5410` | `#F0A64A` | Fading chip and ring, no-address state           |
+| `--warning-soft`      | `#FBEBD8` | `#3A2A14` | Warning chip background                          |
 | `--danger`            | `#B42323` | `#F87171` | Stop sharing, bind failure                       |
 | `--danger-soft`       | `#FBE1E1` | `#3F1C1C` | Danger chip background                           |
 | `--qr-card`           | `#FFFFFF` | `#FFFFFF` | QR card, identical in both themes                |
@@ -391,6 +402,8 @@ always conveyed by label and glyph as well as color.
 Use the platform UI font: SF Pro on macOS, Segoe UI Variable on Windows, and the
 system sans on Linux with Inter as a bundled fallback. Monospace for links and
 templates uses SF Mono, Cascadia Mono, or the system monospace.
+The product website alone sets the wordmark and display headings in Bricolage
+Grotesque (self-hosted, OFL-1.1); the app stays native.
 
 | Role           | Size / line height | Weight   | Notes                                |
 | -------------- | ------------------ | -------- | ------------------------------------ |
@@ -413,9 +426,12 @@ so rows do not jitter.
 - Icons are Lucide at 16 points in rows and menus and 20 points in primary
   buttons, with a 1.5-point stroke. File-type glyphs reuse Lucide file icons inside
   a 36-point rounded square on the muted surface.
-- The application icon is a rounded square in the accent color with a white file
-  glyph and a short dashed arc leaving its top-right corner. The same arc appears
-  in the empty-state illustration and the mobile wordmark.
+- The mark is a resting mayfly: an upright wing in the accent color, a curved
+  body, and two tails whose tips fade. Below 32 points the tails are dropped. The
+  application icon puts the mark on a Dusk (`#0F1A1C`) rounded square with a mint
+  wing (`icons/source.svg`; `icons/source-small.svg` for 32 px). The wordmark is
+  always lowercase "mayfly". The same mark flies the empty-state arc and heads
+  the mobile page.
 
 ### Motion
 
@@ -435,7 +451,7 @@ With reduced motion enabled, transitions are replaced by immediate state changes
 
 ### Keyboard
 
-FileHop works from the keyboard. Every shortcut is declared once with TanStack
+Mayfly works from the keyboard. Every shortcut is declared once with TanStack
 Hotkeys and feeds three places: the global key handling, the Cmd/Ctrl+K command
 palette, and the shortcut overview (Cmd/Ctrl+/ and Settings › Shortcuts). Labels use
 the platform's symbols. Single-letter keys act on the selected share and are
@@ -487,7 +503,7 @@ the tray and lifecycle work.
 ### Time and quantity formatting
 
 - Remaining time: "45 s", "7 min", "1 h 10 min"; under two minutes the chip turns
-  to Expiring. No expiry is written as "No expiry", never as a far-future date.
+  to Fading. No expiry is written as "No expiry", never as a far-future date.
 - Absolute times use the system locale and 24-hour or 12-hour preference.
 - Sizes use decimal units with one decimal place above 1 MB ("2.4 MB", "812 KB").
 - Download counters read "0 downloads", "1 of 3", or "3 of 3", with "Limit

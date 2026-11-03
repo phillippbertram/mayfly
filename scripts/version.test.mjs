@@ -41,17 +41,17 @@ test("finds every declaration in the workspace", () => {
 test("rewrites only the package version in Cargo files", () => {
   const cargo = files.find(({ path }) => path.endsWith("Cargo.toml")).pattern;
   const toml =
-    '[package]\nname = "filehop"\nversion = "0.8.0"\n\n[dependencies]\nfoo = { version = "1.0.0" }\n';
+    '[package]\nname = "mayfly"\nversion = "0.8.0"\n\n[dependencies]\nfoo = { version = "1.0.0" }\n';
   assert.equal(
     writeVersion(toml, cargo, "0.9.0"),
-    '[package]\nname = "filehop"\nversion = "0.9.0"\n\n[dependencies]\nfoo = { version = "1.0.0" }\n',
+    '[package]\nname = "mayfly"\nversion = "0.9.0"\n\n[dependencies]\nfoo = { version = "1.0.0" }\n',
   );
   const lock = files.find(({ path }) => path.endsWith("Cargo.lock")).pattern;
   const lockfile =
-    '[[package]]\nname = "filedescriptor"\nversion = "0.8.0"\n\n[[package]]\nname = "filehop"\nversion = "0.8.0"\n';
+    '[[package]]\nname = "filedescriptor"\nversion = "0.8.0"\n\n[[package]]\nname = "mayfly"\nversion = "0.8.0"\n';
   assert.equal(
     writeVersion(lockfile, lock, "0.9.0"),
-    '[[package]]\nname = "filedescriptor"\nversion = "0.8.0"\n\n[[package]]\nname = "filehop"\nversion = "0.9.0"\n',
+    '[[package]]\nname = "filedescriptor"\nversion = "0.8.0"\n\n[[package]]\nname = "mayfly"\nversion = "0.9.0"\n',
   );
   assert.throws(() => writeVersion("[dependencies]\n", cargo, "0.9.0"));
 });

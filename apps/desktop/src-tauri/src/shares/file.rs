@@ -1,7 +1,7 @@
 //! Validated shared files.
 //!
 //! Symlink and replacement policy: a selected path is resolved once, when the
-//! user picks or drops it. FileHop then keeps the opened handle and serves every
+//! user picks or drops it. Mayfly then keeps the opened handle and serves every
 //! download from that handle with positional reads. Renaming, replacing, or
 //! re-linking the path afterwards cannot redirect a share to another file. If the
 //! original file changes size, downloads report it as unavailable instead of
@@ -46,7 +46,7 @@ impl Rejection {
         match self {
             Rejection::Directory => "Folders can't be shared.",
             Rejection::NotRegular => "Only regular files can be shared.",
-            Rejection::Unreadable => "FileHop can't read this file.",
+            Rejection::Unreadable => "Mayfly can't read this file.",
         }
     }
 }

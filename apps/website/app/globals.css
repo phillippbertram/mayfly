@@ -6,11 +6,12 @@
 
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-bricolage), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --color-fd-primary: #12836c;
 }
 .dark {
-  --color-fd-background: #0c0e11;
-  --color-fd-card: #121518;
+  --color-fd-background: #0f1a1c;
+  --color-fd-card: #142326;
   --color-fd-primary: #94dcc5;
   --color-fd-primary-foreground: #10231d;
 }
@@ -60,7 +61,7 @@ summary {
   --quiet: #92989f;
   --line: #ffffff12;
   color: #eff0f1;
-  background: #0b0d0f;
+  background: #0f1a1c;
   overflow: clip;
 }
 .section-wrap {
@@ -73,7 +74,7 @@ summary {
   top: 0;
   z-index: 30;
   border-bottom: 1px solid var(--line);
-  background: #0b0d0fe8;
+  background: #0f1a1ce8;
   backdrop-filter: blur(16px);
 }
 .nav-inner {
@@ -88,9 +89,10 @@ summary {
 .brand {
   display: inline-flex;
   align-items: center;
-  font-size: 21px;
+  font-family: var(--font-display);
+  font-size: 23px;
   font-weight: 620;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.03em;
   gap: 10px;
   white-space: nowrap;
 }
@@ -103,10 +105,6 @@ summary {
   width: 29px;
   height: 29px;
   border-radius: 9px;
-}
-.brand-period {
-  color: #b8ecda;
-  margin-left: -9px;
 }
 .desktop-nav {
   display: flex;
@@ -172,10 +170,11 @@ summary {
   box-shadow: 0 0 12px #99d9bf33;
 }
 .hero h1 {
-  font-size: clamp(58px, 7.5vw, 96px);
-  line-height: 1.02;
-  letter-spacing: -4.8px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: clamp(56px, 7.2vw, 92px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 640;
   margin: 0;
 }
 .hero h1 > span {
@@ -250,7 +249,7 @@ summary {
   position: relative;
 }
 .screenshot-window {
-  background: #111417;
+  background: #142326;
   border-radius: 11px;
   border: 1px solid #ffffff1b;
   overflow: hidden;
@@ -298,7 +297,7 @@ summary {
   position: relative;
   aspect-ratio: 3 / 2;
   overflow: hidden;
-  background: #111417;
+  background: #142326;
 }
 .live-screen iframe {
   position: absolute;
@@ -379,10 +378,11 @@ summary {
 .profile-copy h2,
 .manual-heading h2,
 .download-heading h2 {
+  font-family: var(--font-display);
   font-size: clamp(32px, 4vw, 46px);
-  line-height: 1.16;
-  letter-spacing: -1.9px;
-  font-weight: 510;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  font-weight: 620;
   margin-top: 22px;
 }
 .section-intro h2 span,
@@ -688,7 +688,7 @@ summary {
 }
 .tour-frames {
   display: grid;
-  background: #111417;
+  background: #142326;
   aspect-ratio: 3 / 2;
 }
 .tour-frame {

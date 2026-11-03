@@ -7,7 +7,7 @@ import { Tooltip } from "../../components/ui/tooltip";
 import type { ServerState } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { appHotkeys } from "../../lib/hotkeys";
-import { DEVICES, HopIllustration } from "./hop-illustration";
+import { DEVICES, FlightIllustration } from "./flight-illustration";
 
 const stagger: Variants = {
   hidden: {},
@@ -88,7 +88,7 @@ export function EmptyState({
             animate={{ y: active ? -4 : 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 18 }}
           >
-            <HopIllustration
+            <FlightIllustration
               active={active}
               dimmed={!online}
               device={device}
@@ -128,7 +128,7 @@ export function EmptyState({
         </motion.h1>
         <motion.p variants={rise} className="max-w-[400px] text-[13px] leading-5 text-muted">
           Phone, tablet, or another computer: anything with a browser on your network can download
-          it. Nothing leaves your network, and every share ends on its own.
+          it. Nothing leaves your network, and each share lives only as long as you let it.
         </motion.p>
         <motion.div variants={rise} className="mt-1.5 flex items-center gap-2">
           <Button variant="primary" size="lg" disabled={!online} onClick={onChoose}>

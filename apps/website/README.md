@@ -1,4 +1,4 @@
-# FileHop website and user manual
+# Mayfly website and user manual
 
 An English product website and Fumadocs manual, built with Next.js, Tailwind CSS,
 and Motion. The product page uses actual interface-preview screenshots, an animated
@@ -20,8 +20,8 @@ Open `http://127.0.0.1:3037`. The development server binds only to loopback.
 ## Static export for GitHub Pages
 
 ```sh
-NEXT_TELEMETRY_DISABLED=1 NEXT_PUBLIC_BASE_PATH=/filehop pnpm build:website
-NEXT_PUBLIC_BASE_PATH=/filehop pnpm --filter @filehop/website check:export
+NEXT_TELEMETRY_DISABLED=1 NEXT_PUBLIC_BASE_PATH=/mayfly pnpm build:website
+NEXT_PUBLIC_BASE_PATH=/mayfly pnpm --filter @mayfly/website check:export
 ```
 
 The complete deployable artifact is `apps/website/out`. There is no Node.js runtime,
@@ -30,7 +30,7 @@ pre-rendered into `search-index.json` and runs in the browser. All public assets
 the configured project base path; Next.js handles internal route prefixes.
 
 Set `NEXT_PUBLIC_BASE_PATH` to an empty string for a root/custom-domain site, or a
-single path such as `/filehop` for a GitHub project site. `NEXT_PUBLIC_SITE_URL`
+single path such as `/mayfly` for a GitHub project site. `NEXT_PUBLIC_SITE_URL`
 sets the canonical origin (default `https://phillippbertram.github.io`). Do not
 include the project path in the origin. Build again after changing either setting.
 
@@ -41,18 +41,18 @@ path. A static HTTP server needs directory-index support and the export's genera
 The included preview server handles both:
 
 ```sh
-NEXT_PUBLIC_BASE_PATH=/filehop pnpm --filter @filehop/website preview
+NEXT_PUBLIC_BASE_PATH=/mayfly pnpm --filter @mayfly/website preview
 ```
 
-Open `http://127.0.0.1:3037/filehop/`. Override `PORT` if that port is occupied.
+Open `http://127.0.0.1:3037/mayfly/`. Override `PORT` if that port is occupied.
 
 ## Checks
 
 ```sh
-pnpm --filter @filehop/website typecheck
+pnpm --filter @mayfly/website typecheck
 pnpm test:website
 pnpm build:website
-pnpm --filter @filehop/website check:export
+pnpm --filter @mayfly/website check:export
 ```
 
 Root `pnpm check` also checks the website's TypeScript. Biome is shared with the
@@ -72,17 +72,17 @@ Without verified public release assets, the website shows a clear unavailable st
 and source-development instructions. It never invents installer URLs or minimum OS
 versions. macOS Apple Silicon/Intel and all platform choices remain visible.
 
-While the source repository is private, `pnpm --filter @filehop/website
+While the source repository is private, `pnpm --filter @mayfly/website
 release:pull [tag]` downloads a release's manifest with your own GitHub CLI session
 into `.release/pulled-manifest.json` for a local preview with
-`FILEHOP_RELEASE_MANIFEST`. Never use it in CI or for a public build.
+`MAYFLY_RELEASE_MANIFEST`. Never use it in CI or for a public build.
 
 The build accepts either:
 
-- `FILEHOP_RELEASE_MANIFEST`: a local, validated manifest file for build-time input.
-- `FILEHOP_RELEASE_REPOSITORY=owner/public-releases`: an approved public GitHub
+- `MAYFLY_RELEASE_MANIFEST`: a local, validated manifest file for build-time input.
+- `MAYFLY_RELEASE_REPOSITORY=owner/public-releases`: an approved public GitHub
   repository. The build requests its latest stable release without authentication,
-  downloads the attached `filehop-release.json`, verifies its tag, and checks that
+  downloads the attached `mayfly-release.json`, verifies its tag, and checks that
   every listed download is an actual release asset. A 404 yields the unavailable
   state; malformed metadata and other request failures fail the build.
 
@@ -101,7 +101,7 @@ An available manifest has this structure (illustrative only):
         "format": "dmg",
         "minimumOs": "A verified minimum version",
         "sha256": "REPLACE_WITH_64_LOWERCASE_HEX_CHARACTERS",
-        "url": "https://github.com/OWNER/PUBLIC-RELEASES/releases/download/v1.0.0/FileHop-arm64.dmg"
+        "url": "https://github.com/OWNER/PUBLIC-RELEASES/releases/download/v1.0.0/Mayfly-arm64.dmg"
       }
     ]
   }
@@ -118,14 +118,14 @@ integrity still require signed-out acceptance testing before release promotion.
 ## GitHub Actions and publication
 
 `.github/workflows/website.yml` builds and validates project-path exports on relevant
-PRs/main changes, release publication, `filehop-release-published` repository-dispatch
+PRs/main changes, release publication, `mayfly-release-published` repository-dispatch
 events, and manual runs. This refreshes build-time download metadata when configured.
 For a separate public release repository, its release workflow can dispatch that
 event to this source repository using a suitably scoped credential stored there.
 The browser never needs that credential.
 
 Deployment is a separate job. It is disabled until the repository variable
-`FILEHOP_PAGES_ENABLED` is `true`, and then runs only on `main`, from a manual run
+`MAYFLY_PAGES_ENABLED` is `true`, and then runs only on `main`, from a manual run
 with the `publish` input selected. A published release requests such a run
 automatically, so release-triggered deployments also come from `main`. To enable
 publication later:
@@ -133,10 +133,10 @@ publication later:
 1. Resolve issue #13's repository visibility/public distribution decision and verify
    that the account plan supports Pages for the selected source repository.
 2. Configure GitHub Pages to use GitHub Actions and the `github-pages` environment.
-3. Configure the approved `FILEHOP_RELEASE_REPOSITORY` repository variable, if ready.
-4. Set `FILEHOP_PAGES_ENABLED` to `true`.
+3. Configure the approved `MAYFLY_RELEASE_REPOSITORY` repository variable, if ready.
+4. Set `MAYFLY_PAGES_ENABLED` to `true`.
 5. Review the built artifact, then run the workflow with publication explicitly enabled.
-6. Check the deployed `/filehop/` site, manual, static search, and signed-out downloads.
+6. Check the deployed `/mayfly/` site, manual, static search, and signed-out downloads.
 
 After future releases, publish a newly validated build to refresh the public site.
 To roll back site changes, revert the relevant website change on `main`, build it
@@ -150,7 +150,7 @@ The hero and the product tour embed the actual desktop interface, running on its
 sample-data simulator with scripted scenes (`components/live-screen.tsx`,
 `apps/desktop/src/demo/`, [ADR 0013](../../docs/decisions/0013-live-interface-demo.md)).
 `pnpm dev` and `pnpm build` first run `scripts/prepare-demo.mjs`, which builds the
-demo with `pnpm --filter @filehop/desktop build:demo` and copies it to the ignored
+demo with `pnpm --filter @mayfly/desktop build:demo` and copies it to the ignored
 `public/demo/`. To work on scenes, run `pnpm dev:web` and open
 `http://127.0.0.1:1420/demo.html?scene=share` (`bundle`, `qr`, `settings`; add
 `&loop=1` to repeat).

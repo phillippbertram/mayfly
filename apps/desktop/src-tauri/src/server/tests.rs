@@ -303,7 +303,7 @@ async fn expired_and_stopped_shares_are_gone() {
         .get(&format!("/d/{}/{}", expiring.token, expiring.files[0].id))
         .await;
     assert_eq!(response.status(), StatusCode::GONE);
-    assert!(response.text().await.unwrap().contains("This link expired"));
+    assert!(response.text().await.unwrap().contains("This link is gone"));
 
     h.registry.stop(&stopped.id).unwrap();
     let response = h.get(&format!("/s/{}", stopped.token)).await;
@@ -441,7 +441,7 @@ async fn bundles_serve_single_files_and_a_zip() {
     let response = h.get(&format!("/z/{}", share.token)).await;
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(header(&response, header::CONTENT_TYPE), "application/zip");
-    assert!(header(&response, header::CONTENT_DISPOSITION).contains("FileHop-3-files.zip"));
+    assert!(header(&response, header::CONTENT_DISPOSITION).contains("Mayfly-3-files.zip"));
     let length: usize = header(&response, header::CONTENT_LENGTH).parse().unwrap();
     let body = response.bytes().await.unwrap();
     assert_eq!(body.len(), length);
@@ -661,7 +661,7 @@ async fn protected_shares_hide_everything_until_unlocked() {
         assert_eq!(ranged.status(), StatusCode::FORBIDDEN, "range {path}");
     }
     let forged = format!(
-        "filehop_unlock={}",
+        "mayfly_unlock={}",
         crate::shares::token::generate().unwrap()
     );
     assert_eq!(
@@ -669,7 +669,7 @@ async fn protected_shares_hide_everything_until_unlocked() {
         StatusCode::FORBIDDEN
     );
     assert_eq!(
-        h.get_with(&format!("/s/{token}"), "filehop_unlock=../../x")
+        h.get_with(&format!("/s/{token}"), "mayfly_unlock=../../x")
             .await
             .status(),
         StatusCode::OK

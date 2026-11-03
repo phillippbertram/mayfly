@@ -8,14 +8,14 @@ function fixture() {
     release: {
       version: "1.0.0",
       publishedAt: "2026-11-02T12:00:00Z",
-      notesUrl: "https://github.com/example/filehop/releases/tag/v1.0.0",
+      notesUrl: "https://github.com/example/mayfly/releases/tag/v1.0.0",
       assets: [
         {
           target: "macos-arm64",
           format: "dmg",
           minimumOs: "the verified OS version",
           sha256: "a".repeat(64),
-          url: "https://github.com/example/filehop/releases/download/v1.0.0/FileHop-arm64.dmg",
+          url: "https://github.com/example/mayfly/releases/download/v1.0.0/Mayfly-arm64.dmg",
         },
       ],
     },
@@ -30,10 +30,10 @@ test("valid versioned release metadata is accepted", () =>
 test("untrusted or credential-bearing download URLs are rejected", () => {
   for (const url of [
     "javascript:alert(1)",
-    "http://github.com/example/filehop/a.dmg",
-    "https://user:secret@github.com/example/filehop/a.dmg",
+    "http://github.com/example/mayfly/a.dmg",
+    "https://user:secret@github.com/example/mayfly/a.dmg",
     "https://evil.example/file.dmg",
-    "https://github.com/example/filehop/releases/download/v1.0.0/a.dmg?token=secret",
+    "https://github.com/example/mayfly/releases/download/v1.0.0/a.dmg?token=secret",
   ]) {
     const data = fixture();
     data.release.assets[0].url = url;

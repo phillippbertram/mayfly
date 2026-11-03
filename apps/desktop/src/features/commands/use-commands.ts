@@ -132,7 +132,7 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
       },
       {
         id: "about.open",
-        label: "About FileHop",
+        label: "About Mayfly",
         group: "General",
         icon: Info,
         keywords: ["version", "github", "help", "website"],

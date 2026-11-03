@@ -5,7 +5,7 @@ fn main() {
     tauri_build::build();
 }
 
-/// Embeds the short commit hash as `FILEHOP_BUILD_COMMIT` (empty when unknown), so
+/// Embeds the short commit hash as `MAYFLY_BUILD_COMMIT` (empty when unknown), so
 /// the About dialog can name the exact source of a build. CI provides `GITHUB_SHA`;
 /// local builds ask Git and rebuild when HEAD moves.
 fn embed_build_commit() {
@@ -28,7 +28,7 @@ fn embed_build_commit() {
             git(&["rev-parse", "--short=7", "HEAD"])
         })
         .unwrap_or_default();
-    println!("cargo:rustc-env=FILEHOP_BUILD_COMMIT={commit}");
+    println!("cargo:rustc-env=MAYFLY_BUILD_COMMIT={commit}");
 }
 
 fn git(args: &[&str]) -> Option<String> {

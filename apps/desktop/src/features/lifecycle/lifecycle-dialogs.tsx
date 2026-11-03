@@ -15,7 +15,7 @@ function shareCount(count: number) {
 }
 
 /**
- * Shown the first time the window closes: FileHop keeps sharing in the
+ * Shown the first time the window closes: Mayfly keeps sharing in the
  * background and returns from the tray. Hiding is the default action.
  */
 export function CloseNoticeDialog({ activeShares }: { activeShares: number }) {
@@ -40,11 +40,11 @@ export function CloseNoticeDialog({ activeShares }: { activeShares: number }) {
         </span>
         <div className="flex flex-col gap-1">
           <h2 id="close-notice-title" className="text-[15px] font-semibold">
-            FileHop keeps sharing in the background
+            Mayfly keeps sharing in the background
           </h2>
           <p className="text-[13px] leading-5 text-muted">
             Closing the window only hides it
-            {activeShares > 0 ? `; ${shareCount(activeShares)} keep working` : ""}. Open FileHop
+            {activeShares > 0 ? `; ${shareCount(activeShares)} keep working` : ""}. Open Mayfly
             again from {TRAY}, and quit there to stop all shares.
           </p>
         </div>
@@ -63,7 +63,7 @@ export function CloseNoticeDialog({ activeShares }: { activeShares: number }) {
       <div className="mt-5 flex justify-end gap-2">
         <Button onClick={() => backend.quit()}>
           <Power aria-hidden="true" size={14} />
-          Quit FileHop
+          Quit Mayfly
         </Button>
         <Button variant="primary" onClick={hide} data-autofocus>
           Hide window
@@ -88,7 +88,7 @@ export function QuitDialog({ activeShares }: { activeShares: number }) {
         </span>
         <div className="flex flex-col gap-1">
           <h2 id="quit-title" className="text-[15px] font-semibold">
-            Quit FileHop?
+            Quit Mayfly?
           </h2>
           <p className="text-[13px] leading-5 text-muted">
             {activeShares > 0

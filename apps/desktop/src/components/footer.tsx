@@ -21,19 +21,19 @@ export function Footer({ preview, onOpenAbout }: { preview: boolean; onOpenAbout
           </span>
         </Tooltip>
       ) : (
-        <Tooltip label="Shares live in memory only. Quitting FileHop stops every link.">
+        <Tooltip label="Shares live in memory only. Quitting Mayfly stops every link.">
           <span className="hidden shrink-0 items-center gap-1.5 min-[820px]:flex">
             <Timer aria-hidden="true" size={13} strokeWidth={1.6} />
-            Shares end when FileHop quits
+            Shares end when Mayfly quits
           </span>
         </Tooltip>
       )}
       <span aria-hidden="true" className="h-3.5 w-px shrink-0 bg-line" />
-      <Tooltip label="About FileHop">
+      <Tooltip label="About Mayfly">
         <button
           type="button"
           onClick={onOpenAbout}
-          aria-label={info ? `About FileHop, version ${info.version}` : "About FileHop"}
+          aria-label={info ? `About Mayfly, version ${info.version}` : "About Mayfly"}
           className="flex h-6 shrink-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-[11px] tabular-nums transition-colors hover:bg-surface-muted hover:text-fg"
         >
           <Info aria-hidden="true" size={13} strokeWidth={1.7} />
