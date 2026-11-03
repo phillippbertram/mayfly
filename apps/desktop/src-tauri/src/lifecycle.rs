@@ -16,6 +16,7 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Wry};
 
 use crate::app::{App, BackendEvent};
+use crate::menu;
 
 const MAIN_WINDOW: &str = "main";
 
@@ -55,10 +56,18 @@ pub fn setup_tray(app: &AppHandle) -> bool {
 fn build_tray(app: &AppHandle) -> tauri::Result<MenuItem<Wry>> {
     let open = MenuItem::with_id(app, "open", "Open FileHop", true, None::<&str>)?;
     let summary = MenuItem::with_id(app, "summary", "No active shares", false, None::<&str>)?;
+    let settings = MenuItem::with_id(app, menu::SETTINGS, "Settings…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit FileHop", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
-        &[&open, &summary, &PredefinedMenuItem::separator(app)?, &quit],
+        &[
+            &open,
+            &summary,
+            &PredefinedMenuItem::separator(app)?,
+            &settings,
+            &PredefinedMenuItem::separator(app)?,
+            &quit,
+        ],
     )?;
     let mut tray = TrayIconBuilder::with_id("main")
         .tooltip("FileHop")

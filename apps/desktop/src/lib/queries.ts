@@ -40,6 +40,12 @@ export function useProfiles() {
   );
 }
 
+/** Name and version of the running build; it never changes while FileHop runs. */
+export function useAppInfo() {
+  const backend = useBackend();
+  return useQuery({ queryKey: ["appInfo"], queryFn: () => backend.getAppInfo() }).data ?? null;
+}
+
 export function useInterfaces() {
   const backend = useBackend();
   return (
@@ -61,6 +67,10 @@ export function useBackendSync(client: QueryClient) {
           toast(`Your network address changed to ${event.address}. QR codes were updated.`);
         } else if (event.kind === "closeRequested") {
           useUi.getState().setOverlay("closeNotice");
+        } else if (event.kind === "openSettings") {
+          useUi.getState().openSettings();
+        } else if (event.kind === "showAbout") {
+          useUi.getState().setOverlay("about");
         } else {
           client.invalidateQueries({ queryKey: queryKeys.shares });
           useUi.getState().setOverlay("quit");

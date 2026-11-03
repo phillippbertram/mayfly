@@ -29,7 +29,11 @@ const BackendEventSchema: z.ZodType<BackendEvent> = z.discriminatedUnion("kind",
   z.object({ kind: z.literal("addressChanged"), address: z.string() }),
   z.object({ kind: z.literal("closeRequested") }),
   z.object({ kind: z.literal("quitRequested"), activeShares: z.int().nonnegative() }),
+  z.object({ kind: z.literal("openSettings") }),
+  z.object({ kind: z.literal("showAbout") }),
 ]);
+
+const AppInfoSchema = z.object({ name: z.string(), version: z.string() });
 
 /**
  * Invokes a Rust command and validates its result. Rust errors are already
@@ -127,6 +131,10 @@ export function createDesktopBackend(): Backend {
     },
     quit: async () => {
       await call("quit_app", done);
+    },
+    getAppInfo: () => call("get_app_info", AppInfoSchema),
+    openLink: async (link) => {
+      await call("open_link", done, { link });
     },
     savePng: async (suggestedName, data) =>
       call("save_png", z.boolean(), {

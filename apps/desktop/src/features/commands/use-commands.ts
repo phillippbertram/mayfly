@@ -10,6 +10,7 @@ import {
   FilePlus2,
   Hash,
   ImageDown,
+  Info,
   Keyboard,
   Link2,
   type LucideIcon,
@@ -128,6 +129,15 @@ export function useCommands(shares: Share[], actions: ShareActions): AppCommand[
         keywords: ["preferences", "port", "network", "profiles"],
         enabled: true,
         run: () => ui.openSettings(),
+      },
+      {
+        id: "about.open",
+        label: "About FileHop",
+        group: "General",
+        icon: Info,
+        keywords: ["version", "github", "help", "website"],
+        enabled: true,
+        run: () => ui.setOverlay("about"),
       },
       {
         id: "theme.toggle",

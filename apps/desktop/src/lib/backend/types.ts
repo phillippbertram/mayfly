@@ -28,7 +28,19 @@ export type BackendEvent =
   /** The window is closing; explain that sharing continues in the background. */
   | { kind: "closeRequested" }
   /** Quitting would stop active shares; confirm first. */
-  | { kind: "quitRequested"; activeShares: number };
+  | { kind: "quitRequested"; activeShares: number }
+  /** The app or tray menu asked for the settings. */
+  | { kind: "openSettings" }
+  /** The app menu asked for the About dialog. */
+  | { kind: "showAbout" };
+
+/** FileHop's fixed web pages; Rust owns the URLs. */
+export type ExternalLink = "repository" | "issues" | "website" | "author";
+
+export interface AppInfo {
+  name: string;
+  version: string;
+}
 
 export type DroppedFiles =
   | { kind: "paths"; paths: string[] }
@@ -98,4 +110,8 @@ export interface Backend {
   hideWindow(): Promise<void>;
   /** Quits after confirmation; all shares stop. */
   quit(): Promise<void>;
+
+  getAppInfo(): Promise<AppInfo>;
+  /** Opens one of FileHop's web pages in the default browser. */
+  openLink(link: ExternalLink): Promise<void>;
 }

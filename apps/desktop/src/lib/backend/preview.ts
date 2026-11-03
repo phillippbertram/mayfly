@@ -4,12 +4,14 @@
  * services. The UI labels it as sample data. It never ships behavior to the
  * desktop build; Rust remains the source of truth for the real application.
  */
+import tauriConfig from "../../../src-tauri/tauri.conf.json";
 import { DEFAULT_SETTINGS, HTTP_PROFILE } from "./defaults";
 import { createEmitter } from "./emitter";
 import {
   type Backend,
   BackendError,
   type DroppedFiles,
+  type ExternalLink,
   type FileKind,
   HTTP_PROFILE_ID,
   type LinkProfile,
@@ -28,6 +30,14 @@ const INTERFACES: NetworkInterface[] = [
   { id: "en0", name: "Wi‑Fi (en0)", address: "192.168.1.24" },
   { id: "en7", name: "Ethernet (en7)", address: "10.0.0.12" },
 ];
+
+/** Mirrors the fixed URLs in Rust's `menu.rs`. */
+const LINKS: Record<ExternalLink, string> = {
+  repository: "https://github.com/phillippbertram/filehop",
+  issues: "https://github.com/phillippbertram/filehop/issues",
+  website: "https://phillippbertram.github.io/filehop/",
+  author: "https://github.com/phillippbertram",
+};
 
 const PLACEHOLDERS = ["url", "encodedUrl", "filename", "encodedFilename", "token"] as const;
 type Placeholder = (typeof PLACEHOLDERS)[number];
@@ -573,6 +583,10 @@ export function createPreviewBackend(): Backend {
     takeNotice: async () => null,
     hideWindow: async () => {},
     quit: async () => {},
+    getAppInfo: async () => ({ name: "FileHop", version: tauriConfig.version }),
+    async openLink(link) {
+      window.open(LINKS[link], "_blank", "noopener");
+    },
 
     async savePng(suggestedName, data) {
       const url = URL.createObjectURL(data);

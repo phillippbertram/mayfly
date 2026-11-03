@@ -7,6 +7,7 @@ import { Header } from "./components/header";
 import { Modal } from "./components/ui/modal";
 import { ToastProvider } from "./components/ui/toast";
 import { TooltipProvider } from "./components/ui/tooltip";
+import { AboutDialog } from "./features/about/about-dialog";
 import { AppHotkeys } from "./features/commands/app-hotkeys";
 import { CommandPalette } from "./features/commands/command-palette";
 import { ShortcutsDialog } from "./features/commands/shortcuts-dialog";
@@ -177,7 +178,7 @@ function Shell({ client }: { client: QueryClient }) {
           )}
         </AnimatePresence>
       </div>
-      <Footer preview={backend.mode === "preview"} />
+      <Footer preview={backend.mode === "preview"} onOpenAbout={() => setOverlay("about")} />
 
       {!wide && (
         <Modal
@@ -201,6 +202,7 @@ function Shell({ client }: { client: QueryClient }) {
       <Composer actions={actions} />
       <CommandPalette commands={commands} shares={shares} />
       <ShortcutsDialog />
+      <AboutDialog />
       <SettingsDialog />
       <StopAllDialog
         count={shares.filter((s) => s.status === "active").length}

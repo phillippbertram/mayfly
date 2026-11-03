@@ -9,6 +9,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::app::{App, LinkProfile, ProfileInput, ServerState, ShareDto};
 use crate::export;
+use crate::menu::ExternalLink;
 use crate::network::NetworkInterface;
 use crate::settings::{Settings, SettingsPatch};
 use crate::shares::password::{self, Password};
@@ -256,4 +257,11 @@ pub fn hide_window(app: AppHandle) {
 #[tauri::command]
 pub fn quit_app(app: AppHandle) {
     crate::lifecycle::quit_now(&app);
+}
+
+/// Opens one of FileHop's fixed web pages in the default browser.
+#[tauri::command]
+pub fn open_link(link: ExternalLink) -> Result<(), String> {
+    tauri_plugin_opener::open_url(link.url(), None::<&str>)
+        .map_err(|_| "FileHop couldn't open your browser.".to_string())
 }

@@ -159,6 +159,9 @@ bound to `127.0.0.1` on a separately configured port.
 
 - Configure a restrictive Tauri CSP and minimal capabilities. No arbitrary shell
   execution, broadly scoped filesystem commands, or remote web content in the app.
+- The About dialog opens FileHop's own web pages through `open_link`, which accepts
+  only a link name; the fixed URLs live in Rust (`menu.rs`). The opener plugin is
+  used from Rust only and grants the frontend no permission.
 - Treat profile templates as data. Resolve placeholders once, percent-encode URI
   components correctly, reject malformed/unknown placeholders and executable schemes,
   and never inject resulting links or filenames as raw HTML. Validation and

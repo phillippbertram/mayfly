@@ -56,6 +56,10 @@ pub enum BackendEvent {
     QuitRequested {
         active_shares: usize,
     },
+    /// The app or tray menu asked for the settings.
+    OpenSettings,
+    /// The app menu asked for FileHop's About dialog.
+    ShowAbout,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]

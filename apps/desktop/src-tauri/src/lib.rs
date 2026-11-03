@@ -3,6 +3,7 @@ mod commands;
 mod config;
 mod export;
 mod lifecycle;
+mod menu;
 mod network;
 mod profiles;
 pub mod server;
@@ -43,6 +44,8 @@ pub fn run() -> tauri::Result<()> {
             );
             app.manage(state.clone());
             lifecycle::setup_tray(app.handle());
+            #[cfg(target_os = "macos")]
+            app.set_menu(menu::app_menu(app.handle())?)?;
 
             tauri::async_runtime::spawn({
                 let state = state.clone();
@@ -75,6 +78,7 @@ pub fn run() -> tauri::Result<()> {
             });
             Ok(())
         })
+        .on_menu_event(|app, event| menu::on_menu_event(app, event.id.as_ref()))
         .on_window_event(|window, event| match event {
             WindowEvent::DragDrop(DragDropEvent::Drop { paths, .. }) => {
                 window.state::<Arc<App>>().record_drop(paths.clone());
@@ -116,6 +120,7 @@ pub fn run() -> tauri::Result<()> {
             commands::save_png,
             commands::hide_window,
             commands::quit_app,
+            commands::open_link,
         ])
         .build(tauri::generate_context!())?;
 
