@@ -1,6 +1,6 @@
 [package]
 name = "mayfly"
-version = "0.8.0"
+version = "0.15.0"
 description = "Temporary local file sharing for your desktop"
 authors = ["Phillipp Bertram"]
 license = "Apache-2.0"
