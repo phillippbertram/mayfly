@@ -48,8 +48,14 @@ Delete the draft first to rebuild a tag.
 
 Download the draft's assets, check them on each platform, edit the notes
 (supported platforms, installation guidance, limitations, signing status), and
-select **Publish release**. Builds are not yet signed or notarized: macOS asks
-users to confirm the first launch, and Windows SmartScreen shows a warning.
+select **Publish release**. Builds are not yet signed or notarized (#14), and
+Windows SmartScreen shows a warning. macOS bundles are ad-hoc signed
+(`bundle.macOS.signingIdentity: "-"`) so that the bundle carries a complete,
+sealed signature; without it, Apple Silicon reports a downloaded app as
+"damaged" and offers no way to open it. An ad-hoc signed download is still
+blocked on first launch: users allow it under **System Settings → Privacy &
+Security → Open Anyway** (macOS 15 removed the Control-click shortcut), or remove
+the quarantine attribute with `xattr -dr com.apple.quarantine /Applications/FileHop.app`.
 
 Declared minimum systems: macOS 11 (`bundle.macOS.minimumSystemVersion`),
 Windows 10, and Ubuntu 22.04/Debian 12 or equivalent for Linux. They are build
