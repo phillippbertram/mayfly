@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUpRight, Check, Command, Monitor, Terminal } from "luci
 import Link from "next/link";
 import { useState } from "react";
 import type { Release } from "@/lib/release";
+import { assetLabel, releaseDate, releasesUrl } from "@/lib/release-labels";
 
 const systems = [
   { id: "macos", label: "macOS", icon: Command },
@@ -52,21 +53,14 @@ export function Downloads({ release }: { release: Release | null }) {
         </fieldset>
         {release && assets.length ? (
           <div className="download-options">
-            <span className="release-label">Mayfly {release.version} · stable</span>
+            <span className="release-label">
+              Mayfly {release.version} · stable · {releaseDate(release.publishedAt)}
+            </span>
             {assets.map((item) => (
               <div className="download-asset" key={`${item.target}-${item.format}`}>
                 <a className="button button-primary" href={item.url}>
                   <ArrowDown size={16} />
-                  {item.target === "macos-arm64"
-                    ? "Apple Silicon"
-                    : item.target === "macos-x64"
-                      ? "Intel Mac"
-                      : item.format === "deb"
-                        ? "Debian & Ubuntu"
-                        : item.format === "AppImage"
-                          ? "Linux AppImage"
-                          : "Windows x64"}{" "}
-                  <span>.{item.format}</span>
+                  {assetLabel(item)} <span>.{item.format}</span>
                 </a>
                 <small>Requires {item.minimumOs}</small>
                 <details>
@@ -75,9 +69,14 @@ export function Downloads({ release }: { release: Release | null }) {
                 </details>
               </div>
             ))}
-            <a className="text-link" href={release.notesUrl}>
-              All downloads & release notes <ArrowUpRight size={14} />
-            </a>
+            <div className="release-links">
+              <a className="text-link" href={release.notesUrl}>
+                Release notes & checksums <ArrowUpRight size={14} />
+              </a>
+              <a className="text-link" href={releasesUrl}>
+                All releases <ArrowUpRight size={14} />
+              </a>
+            </div>
           </div>
         ) : (
           <div className="download-unavailable">
@@ -94,7 +93,7 @@ export function Downloads({ release }: { release: Release | null }) {
             <p>
               {release
                 ? "A verified installer for this platform is not available in this release."
-                : "Public installers aren’t ready yet. With source access, run the desktop development build with real local sharing. Platform acceptance is still pending."}
+                : "No stable release is published yet. Run the desktop development build from source, with real local sharing. Platform acceptance is still pending."}
             </p>
             <button className="button unavailable-button" type="button" disabled>
               <ArrowDown size={16} />

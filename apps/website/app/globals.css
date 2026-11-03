@@ -1116,6 +1116,11 @@ summary {
   color: var(--color-fd-muted-foreground);
 }
 
+.release-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
 .system-figures {
   display: flex;
   flex-wrap: wrap;

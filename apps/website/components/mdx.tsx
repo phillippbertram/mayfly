@@ -8,6 +8,7 @@ import {
   RecipientPaths,
   RecipientUpdates,
 } from "./recipient-schematic";
+import { ReleaseSummary } from "./release-summary";
 import { Screenshot } from "./screenshot";
 import { SystemScreenshot } from "./system-screenshot";
 
@@ -21,6 +22,7 @@ export function getMDXComponents(): MDXComponents {
     RecipientPassword,
     RecipientPaths,
     RecipientUpdates,
+    ReleaseSummary,
     Screenshot,
     SystemScreenshot,
   };
