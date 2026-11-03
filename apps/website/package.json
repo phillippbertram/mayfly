@@ -5,8 +5,8 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/prepare-release.mjs && node scripts/prepare-demo.mjs && next dev --hostname 127.0.0.1 --port 3037",
-    "build": "node scripts/prepare-release.mjs && node scripts/prepare-demo.mjs && next build",
+    "dev": "node ../../scripts/licenses.mjs prepare-website && node scripts/prepare-release.mjs && node scripts/prepare-demo.mjs && next dev --hostname 127.0.0.1 --port 3037",
+    "build": "node ../../scripts/licenses.mjs prepare-website && node scripts/prepare-release.mjs && node scripts/prepare-demo.mjs && next build",
     "postinstall": "fumadocs-mdx",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "node --test scripts/release.test.mjs",

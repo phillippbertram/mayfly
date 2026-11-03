@@ -24,6 +24,12 @@ no companion app. When you stop sharing, the link is gone.
 > development build. Public installers, signed bundles, and acceptance on phones
 > and every platform are still open. See [Status](#status) for what is verified.
 
+> [!WARNING]
+> **Current test packages have no verified publisher signature.** macOS uses
+> ad-hoc signing without notarization; Windows installers are unsigned. Read
+> [Installation and first launch](docs/installation.md) for checksum verification
+> and the per-app macOS **Privacy & Security → Open Anyway** exception or Windows
+> **More info → Run anyway**, when offered.
 
 ## How it works
 
@@ -122,7 +128,8 @@ Still open:
 - Developer ID signing, macOS notarization, and Windows signing (#14). macOS
   bundles are currently ad-hoc signed.
 - Public website deployment and signed-out installer downloads (#13, #15, #17).
-- Third-party license notices for shipped bundles (#13).
+- Actual platform-added library and installer-component license review (#13, #16);
+  dependency notices are included in website exports and application resources.
 
 Resumable downloads, receiving files, a management API, a CLI, a cloud relay, and
 in-app updates are separate follow-up issues. Universal Links and public HTTPS
@@ -228,6 +235,8 @@ not publicly deployed yet. It never hosts shared files. See the
 - [Design concept](docs/design.md): interface, brand, and tone.
 - [Development guide](docs/development.md): commands, tests, CI, and verification status.
 - [Releasing](docs/releasing.md): versioning, the release workflow, and website downloads.
+- [Installation](docs/installation.md): packages, signing warnings, and first launch.
+- [Third-party licensing](docs/licensing.md): notices, source availability, and bundle review.
 - [Decisions](docs/decisions/): architecture decision records.
 - [Roadmap](docs/roadmap.md): index of the GitHub issue backlog.
 - [Agent workflow](docs/agent-workflow.md): shared instructions across coding tools.
@@ -243,7 +252,8 @@ keeps this small utility moving toward its first release. Thank you! ☕
 ## License
 
 Mayfly is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE)
-and [ADR 0015](docs/decisions/0015-apache-license.md).
+and [ADR 0015](docs/decisions/0015-apache-license.md). Dependencies retain their own
+terms; see [third-party notices](licenses/THIRD_PARTY_NOTICES.txt).
 
 Mayfly was called FileHop before its first release; see
 [ADR 0014](docs/decisions/0014-rename-to-mayfly.md).

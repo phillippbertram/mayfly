@@ -44,21 +44,22 @@ participate in desktop-to-phone sharing. See [ADR 0003](decisions/0003-static-pr
 │   ├── agent-workflow.md
 │   └── roadmap.md
 ├── biome.json                # Shared formatting, lint, and import rules
-├── tsconfig.base.json        # Strict TypeScript defaults for future app configs
+├── licenses/                 # Reviewed dependency notices and provenance
+├── tsconfig.base.json        # Shared strict TypeScript defaults
 ├── pnpm-workspace.yaml       # Workspace package discovery
 └── apps/
-    └── desktop/              # @mayfly/desktop
-        ├── src/              # React start screen, styles, typed IPC adapter
-        └── src-tauri/        # Native window, app-info command, configuration/icons
+    ├── desktop/              # @mayfly/desktop
+    │   ├── src/              # React dashboard, features, typed IPC, demo
+    │   └── src-tauri/        # Rust sharing, HTTP, configuration, native lifecycle
+    └── website/              # Static Next.js/Fumadocs product site and manual
 ```
 
-Future frontend modules under `apps/desktop/src/`: `components/`, `features/shares/`, `features/settings/`,
-`features/profiles/`, and `lib/` for typed IPC and utilities. Add modules when they
-have a responsibility, not as empty scaffolding.
+Frontend modules under `apps/desktop/src/` include `components/`, `features/shares/`,
+`features/settings/`, `features/profiles/`, `lib/`, and the website's `demo/` scenes.
 
-Future Rust modules under `apps/desktop/src-tauri/src/`: `shares`, `server`, `network`, `settings`, `profiles`,
-`commands`, and application lifecycle wiring. Start with modules in a single crate;
-extract crates only if a real boundary requires it.
+Rust modules under `apps/desktop/src-tauri/src/` include `shares`, `server`, `network`,
+`settings`, `profiles`, `commands`, and application lifecycle wiring. Keep services
+in one crate; extract crates only if a real boundary requires it.
 
 ## Component boundaries
 
@@ -144,6 +145,7 @@ supported source files, JSON, Markdown, and YAML; rustfmt handles Rust. Tooling
 dependencies live at the workspace root; application dependencies belong to the
 desktop package. Use `workspace:` references if shared packages become necessary.
 
-Add native packaging CI only after the application has real buildable targets.
-Verify macOS ARM64/Intel, Windows, and Linux separately. A cross-compiled artifact
-does not establish runtime behavior on its target platform.
+Tag-driven CI builds native packages for macOS ARM64/Intel, Windows x64, and Linux x64.
+Verify each separately; compilation does not establish runtime behavior on the target.
+The desktop bundles and website export carry the reviewed dependency notices
+described in [Third-party licensing](licensing.md).

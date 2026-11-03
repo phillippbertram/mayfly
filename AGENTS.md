@@ -7,9 +7,10 @@ rules here; tool-specific entry points should only reference this file.
 
 - Write all code, comments, documentation, issues, commit messages, and PR text in English.
 - Never add `Co-Authored-By:` trailers or other agent attribution lines to commit messages.
-- The current app is a minimal, runnable Tauri/React starter. Implement only the
-  functionality authorized by the current task; sharing, HTTP, tray, and profiles
-  remain separate implementation issues.
+- The app includes Rust LAN sharing, HTTP downloads, QR actions, settings, profiles,
+  passwords, and a tray lifecycle. A separate workspace exports the product website.
+  Implement only the functionality authorized by the current task; implementation
+  does not establish packaged-platform, device, or public-release acceptance.
 - Read `README.md`, `docs/architecture.md`, and the relevant GitHub issue before work.
 - Treat GitHub Issues as the source of truth for tasks and acceptance criteria.
   Use `docs/roadmap.md` as an issue index, not a duplicate task database.
@@ -42,6 +43,8 @@ rules here; tool-specific entry points should only reference this file.
 - Keep Rust services independent of Tauri commands and UI state. Commands are thin
   adapters; transport DTOs must not expose internal file paths.
 - Use strict TypeScript and clear IPC types. Avoid unnecessary abstractions and dependencies.
+- Preserve upstream license/copyright notices. Refresh and review the snapshot with
+  `pnpm licenses:generate` after dependency changes; see `docs/licensing.md`.
 - Share files by streaming their original contents. Never use mock data for production
   functionality or copy entire files into memory.
 - Persist settings and profiles only. Shares and access tokens must be memory-only

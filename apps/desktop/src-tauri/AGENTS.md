@@ -1,7 +1,8 @@
 # Backend instructions
 
 Read the root `AGENTS.md`, `apps/desktop/AGENTS.md`, and `docs/security.md` first.
-This directory contains the Rust/Tauri application and a read-only app-info command.
+This directory contains the Rust services, Axum handlers, thin Tauri commands,
+configuration persistence, and native lifecycle integrations.
 
 For backend changes:
 

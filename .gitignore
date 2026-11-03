@@ -3,6 +3,7 @@ node_modules/
 dist/
 dist-demo/
 apps/website/public/demo/
+apps/website/public/licenses/
 target/
 apps/desktop/src-tauri/gen/
 coverage/

@@ -37,6 +37,11 @@
     "active": true,
     "targets": "all",
     "copyright": "Copyright © 2026 Phillipp Bertram",
+    "resources": {
+      "../../../LICENSE": "licenses/LICENSE.txt",
+      "../../../NOTICE": "licenses/NOTICE.txt",
+      "../../../licenses/THIRD_PARTY_NOTICES.txt": "licenses/THIRD_PARTY_NOTICES.txt"
+    },
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": "-"

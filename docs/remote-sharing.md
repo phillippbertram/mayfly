@@ -2,9 +2,9 @@
 
 ## Availability
 
-Mayfly's planned default is direct sharing over a trusted local network, without
-an account or cloud service. The current desktop starter does not implement file
-sharing yet. Remote access, external URL configuration, and tunnel-aware QR codes
+Mayfly's default is direct sharing over a trusted local network, without
+an account or cloud service. Local file sharing is implemented in the native app.
+Remote access, external URL configuration, and tunnel-aware QR codes
 are not implemented or tested. This guide explains optional approaches to evaluate
 after the local sharing workflow is complete; it is not a working setup tutorial
 for the current app.

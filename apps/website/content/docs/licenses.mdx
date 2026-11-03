@@ -1,0 +1,40 @@
+---
+title: Licenses and notices
+description: Mayfly's license, upstream acknowledgements, and third-party source availability.
+---
+
+import { asset } from "../../lib/paths";
+
+Mayfly is licensed under Apache License 2.0. Its dependencies retain their own
+copyrights and license terms. The product website and installers include:
+
+- <a href={asset("/licenses/LICENSE.txt")}>Mayfly's Apache License 2.0</a>.
+- <a href={asset("/licenses/NOTICE.txt")}>Mayfly's copyright notice</a>.
+- <a href={asset("/licenses/THIRD_PARTY_NOTICES.txt")}>Full third-party component inventory, copyright notices, and license texts</a>.
+
+The combined notice file covers the desktop app, this static website, the embedded
+interface demo, and the self-hosted **Bricolage Grotesque** font. The font is
+copyright 2022 The Bricolage Grotesque Project Authors and distributed under the
+SIL Open Font License 1.1; its original copyright and full terms are included.
+The screenshots and demo use sample data from the actual Mayfly interface.
+
+## Third-party source code
+
+Every listed component includes a link to its published source distribution.
+For MPL-2.0 components, those links provide the corresponding Source Code Form.
+Mayfly does not edit those third-party source files. Some build dependencies and
+crates for other target platforms are included for completeness; a listing does
+not mean every component is present in a particular installer or in browser code.
+
+## Installed copies
+
+Installers include the three files in the app's `licenses/` resource directory.
+On macOS, choose **Show Package Contents** on Mayfly.app, then open
+**Contents → Resources → licenses**. On Windows, open `licenses` beside the
+installed executable. On Linux, look in the application's resource directory
+under `usr/lib`, including inside the AppImage's `usr/lib` tree.
+
+The same documents accompany release assets for review before installation.
+Platform libraries and installer-added components are reviewed against each actual
+bundle before public distribution; see the repository's
+[licensing process](https://github.com/phillippbertram/mayfly/blob/main/docs/licensing.md).

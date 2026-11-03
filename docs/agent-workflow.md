@@ -40,8 +40,9 @@ Agent credentials, personal settings, session logs, and machine paths stay outsi
 version control. This setup adds no automatic execution hooks, external agent
 services, permission overrides, MCP servers, or global configuration changes.
 
-All code and documentation remain in English. A minimal desktop starter is now
-implemented; further application features require authorization in the current task.
+All code and documentation remain in English. The desktop sharing services and
+static website are implemented; further features require authorization in the
+current task. Passing local checks does not establish platform/device acceptance.
 
 ## Instruction format references
 

@@ -14,7 +14,7 @@
     "build:macos:x64": "tauri build --target x86_64-apple-darwin --bundles app,dmg -- --locked",
     "build:windows": "tauri build --target x86_64-pc-windows-msvc --bundles nsis -- --locked",
     "build:linux": "tauri build --target x86_64-unknown-linux-gnu --bundles appimage,deb -- --locked",
-    "build:web": "tsc --noEmit && vite build",
+    "build:web": "node ../../scripts/licenses.mjs check && tsc --noEmit && vite build",
     "build:demo": "tsc --noEmit && vite build --mode demo",
     "typecheck": "tsc --noEmit",
     "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings",

@@ -10,9 +10,9 @@ the expected user behavior, scope, acceptance criteria, verification, and depend
 Use the feature form for implementation work and the bug form for defects. Keep
 security reports private as described in [SECURITY.md](SECURITY.md).
 
-The repository currently contains a minimal runnable desktop starter. The
-application foundation issue tracks its remaining work. Do not start all MVP phases
-as part of a repository-maintenance task.
+The repository contains an implemented desktop app and static product website.
+Platform/device acceptance and release promotion have their own issues. Keep each
+change within the task's authorized scope.
 
 ## Prepare changes
 
@@ -45,8 +45,14 @@ when the corresponding packages exist. Explain new dependencies and keep runtime
 dependencies small. Pin GitHub Actions to commit SHAs and give workflows the minimum
 permissions they need.
 
-Application packaging, signing, notarization, and release publishing will be added
-through their own issues.
+Release tooling builds draft packages; public promotion, signing/notarization,
+and installed-bundle acceptance remain separate gates. See [Releasing](docs/releasing.md)
+and [Installation](docs/installation.md) for the current signing limitations.
+
+After changing dependencies, run `pnpm licenses:generate`, review the component
+inventory and upstream texts, and commit the updated snapshot with the lockfiles.
+Builds reject a stale snapshot. See [Third-party licensing](docs/licensing.md)
+for source availability and platform-bundle review.
 
 ## License
 

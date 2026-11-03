@@ -372,6 +372,7 @@ export default function Home() {
         <nav aria-label="Footer">
           <Link href="/docs/">User manual</Link>
           <Link href="/docs/security/">Privacy & security</Link>
+          <Link href="/docs/licenses/">Licenses & notices</Link>
           <a href="https://github.com/phillippbertram/mayfly">
             GitHub <ArrowUpRight size={12} />
           </a>

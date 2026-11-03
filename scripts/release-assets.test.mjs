@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { assetName, assets } from "./release-assets.mjs";
+import { assetName, assets, releaseDocuments } from "./release-assets.mjs";
 
 const script = fileURLToPath(new URL("release-assets.mjs", import.meta.url));
 const run = (...args) => execFileSync("node", [script, ...args], { stdio: "pipe" });
@@ -41,7 +41,13 @@ test("finalize writes checksums and a manifest the website accepts", () => {
   const dir = assetDir("0.9.0");
   run("finalize", dir, "0.9.0", "owner/repo");
   const sums = readFileSync(join(dir, "SHA256SUMS"), "utf8").trim().split("\n");
-  assert.equal(sums.length, assets.length);
+  assert.equal(sums.length, assets.length + releaseDocuments.length);
+  for (const document of releaseDocuments) {
+    const content = readFileSync(join(dir, document.name));
+    assert.ok(sums.includes(`${createHash("sha256").update(content).digest("hex")}  ${document.name}`));
+  }
+  assert.match(readFileSync(join(dir, "INSTALLATION.md"), "utf8"), /Open Anyway/);
+  assert.match(readFileSync(join(dir, "THIRD_PARTY_NOTICES.txt"), "utf8"), /Bricolage/);
   const manifest = JSON.parse(readFileSync(join(dir, "mayfly-release.json"), "utf8"));
   assert.equal(manifest.release.version, "0.9.0");
   assert.equal(manifest.release.notesUrl, "https://github.com/owner/repo/releases/tag/v0.9.0");
@@ -68,5 +74,6 @@ test("pre-releases get checksums but no website manifest", () => {
   run("finalize", dir, "0.9.0-beta.1", "owner/repo");
   const names = readdirSync(dir);
   assert.ok(names.includes("SHA256SUMS"));
+  assert.ok(names.includes("THIRD_PARTY_NOTICES.txt"));
   assert.ok(!names.includes("mayfly-release.json"));
 });

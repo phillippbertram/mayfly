@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateRelease } from "../apps/website/scripts/release.mjs";
 
@@ -32,6 +32,14 @@ export const assets = [
 export function assetName(version, target, format) {
   return `Mayfly-${version}-${target}.${format}`;
 }
+
+export const releaseDocuments = [
+  { source: "LICENSE", name: "LICENSE.txt" },
+  { source: "NOTICE", name: "NOTICE.txt" },
+  { source: "licenses/THIRD_PARTY_NOTICES.txt", name: "THIRD_PARTY_NOTICES.txt" },
+  { source: "docs/installation.md", name: "INSTALLATION.md" },
+];
+const repository = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 
 export function isStable(version) {
   return !version.includes("-");
@@ -74,9 +82,16 @@ async function finalize(assetDir, version, repository) {
   }
   if (present.size !== entries.length) throw new Error("Unexpected files in the asset directory.");
 
+  const checksums = entries.map(({ sha256, name }) => `${sha256}  ${name}\n`);
+  for (const document of releaseDocuments) {
+    const destination = join(assetDir, document.name);
+    await copyFile(join(repository, document.source), destination);
+    checksums.push(`${await sha256(destination)}  ${document.name}\n`);
+  }
+
   await writeFile(
     join(assetDir, "SHA256SUMS"),
-    entries.map(({ sha256, name }) => `${sha256}  ${name}\n`).join(""),
+    checksums.join(""),
   );
   // The website only lists stable releases; pre-releases ship without a manifest.
   if (!isStable(version)) return;

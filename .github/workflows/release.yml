@@ -144,4 +144,5 @@ jobs:
             --draft \
             "${prerelease[@]}" \
             --title "Mayfly $version" \
+            --notes-file docs/release-notes.md \
             --generate-notes
