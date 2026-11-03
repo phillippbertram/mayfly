@@ -1097,7 +1097,7 @@ summary {
 .not-found p {
   color: #929a95;
 }
-#main-content:has(> #nd-page) {
+#main-content:has(#nd-page) {
   display: contents;
 }
 .prose .product-figure {
