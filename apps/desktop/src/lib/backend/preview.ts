@@ -583,7 +583,7 @@ export function createPreviewBackend(): Backend {
     takeNotice: async () => null,
     hideWindow: async () => {},
     quit: async () => {},
-    getAppInfo: async () => ({ name: "FileHop", version: tauriConfig.version }),
+    getAppInfo: async () => ({ name: "FileHop", version: tauriConfig.version, build: "preview" }),
     async openLink(link) {
       window.open(LINKS[link], "_blank", "noopener");
     },

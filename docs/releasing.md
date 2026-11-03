@@ -36,6 +36,10 @@ The tag starts `.github/workflows/release.yml`:
    a **draft** release with generated notes. Versions with a pre-release suffix
    (`-beta.1`) become GitHub pre-releases without a website manifest.
 
+Every binary embeds the short commit hash it was built from (`GITHUB_SHA` in CI,
+`git rev-parse` locally; see `src-tauri/build.rs`). The About dialog shows it next
+to the version and copies both for bug reports.
+
 An incomplete matrix never produces a release. A failed run can be re-run; once a
 draft exists, a new run for the same tag fails instead of overwriting assets.
 Delete the draft first to rebuild a tag.

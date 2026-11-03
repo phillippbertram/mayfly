@@ -33,7 +33,11 @@ const BackendEventSchema: z.ZodType<BackendEvent> = z.discriminatedUnion("kind",
   z.object({ kind: z.literal("showAbout") }),
 ]);
 
-const AppInfoSchema = z.object({ name: z.string(), version: z.string() });
+const AppInfoSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  build: z.string().nullable(),
+});
 
 /**
  * Invokes a Rust command and validates its result. Rust errors are already

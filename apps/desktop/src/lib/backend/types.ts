@@ -40,6 +40,8 @@ export type ExternalLink = "repository" | "issues" | "website" | "author";
 export interface AppInfo {
   name: string;
   version: string;
+  /** Short commit hash the app was built from; null when unknown. */
+  build: string | null;
 }
 
 export type DroppedFiles =

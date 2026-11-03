@@ -1,9 +1,10 @@
-import { ArrowUpRight, BookOpen, Bug, Heart, type LucideIcon, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, Bug, Copy, Heart, type LucideIcon, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { BrandMark } from "../../components/brand-mark";
 import { IconButton } from "../../components/ui/icon-button";
 import { Modal } from "../../components/ui/modal";
 import { useToast } from "../../components/ui/toast";
+import { Tooltip } from "../../components/ui/tooltip";
 import { useBackend } from "../../hooks/use-backend";
 import type { ExternalLink } from "../../lib/backend";
 import { errorMessage, useAppInfo } from "../../lib/queries";
@@ -40,6 +41,19 @@ export function AboutDialog() {
   const visit = (link: ExternalLink) =>
     backend.openLink(link).catch((error) => toast(errorMessage(error)));
 
+  // One line for bug reports: the version plus the commit it was built from.
+  const copyVersion = async () => {
+    if (!info) return;
+    try {
+      await navigator.clipboard.writeText(
+        `FileHop ${info.version}${info.build ? ` (build ${info.build})` : ""}`,
+      );
+      toast("Version copied.", "success");
+    } catch {
+      toast("The version couldn't be copied.", "error");
+    }
+  };
+
   return (
     <Modal open={open} onClose={close} labelledBy="about-title" className="w-[400px] p-6">
       <div className="absolute top-3 right-3">
@@ -53,9 +67,33 @@ export function AboutDialog() {
         >
           FileHop
         </h2>
-        <span className="mt-1 rounded-full bg-surface-muted px-2 py-0.5 font-mono text-[11px] text-muted tabular-nums">
-          {info ? `Version ${info.version}` : "Version …"}
-        </span>
+        <Tooltip label="Copy version and build">
+          <button
+            type="button"
+            onClick={copyVersion}
+            disabled={!info}
+            aria-label={
+              info
+                ? `Copy version ${info.version}${info.build ? `, build ${info.build}` : ""}`
+                : undefined
+            }
+            className="group mt-1 flex items-center gap-1.5 rounded-full bg-surface-muted px-2 py-0.5 font-mono text-[11px] text-muted tabular-nums transition-colors hover:text-fg focus-visible:text-fg"
+          >
+            {info ? `Version ${info.version}` : "Version …"}
+            {info?.build && (
+              <>
+                <span aria-hidden="true">·</span>
+                {`Build ${info.build}`}
+              </>
+            )}
+            <Copy
+              aria-hidden="true"
+              size={11}
+              strokeWidth={1.8}
+              className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+            />
+          </button>
+        </Tooltip>
         <p className="mt-4 text-[14px] font-medium">Your files. Just a hop away.</p>
         <p className="mt-1.5 max-w-[300px] text-[12.5px] leading-5 text-muted">
           Temporary file sharing from your desktop to any browser on the same network. No cloud, no

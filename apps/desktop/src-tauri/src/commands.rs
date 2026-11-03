@@ -21,6 +21,8 @@ type AppState<'a> = State<'a, Arc<App>>;
 pub struct AppInfo {
     name: String,
     version: String,
+    /// Short commit hash the app was built from, if known.
+    build: Option<&'static str>,
 }
 
 #[tauri::command]
@@ -28,6 +30,7 @@ pub fn get_app_info(app: AppHandle) -> AppInfo {
     AppInfo {
         name: app.package_info().name.clone(),
         version: app.package_info().version.to_string(),
+        build: Some(env!("FILEHOP_BUILD_COMMIT")).filter(|commit| !commit.is_empty()),
     }
 }
 
@@ -264,4 +267,20 @@ pub fn quit_app(app: AppHandle) {
 pub fn open_link(link: ExternalLink) -> Result<(), String> {
     tauri_plugin_opener::open_url(link.url(), None::<&str>)
         .map_err(|_| "FileHop couldn't open your browser.".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn build_commit_is_a_short_hash_or_empty() {
+        let commit = env!("FILEHOP_BUILD_COMMIT");
+        assert!(
+            commit.is_empty()
+                || (commit.len() == 7
+                    && commit
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))),
+            "unexpected build commit {commit:?}"
+        );
+    }
 }
