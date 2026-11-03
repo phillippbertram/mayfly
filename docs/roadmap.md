@@ -95,6 +95,7 @@ order is provisional, with no release dates assigned.
 - [#19: CLI for terminal and scripted sharing](https://github.com/phillippbertram/filehop/issues/19).
 - [#20: Optional password protection per share](https://github.com/phillippbertram/filehop/issues/20).
 - [#21: Cloudflare relay proof of concept](https://github.com/phillippbertram/filehop/issues/21).
+- [#29: Detect and install application updates in the app](https://github.com/phillippbertram/filehop/issues/29).
 
 ## Distribution decisions
 
