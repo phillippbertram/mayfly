@@ -1,4 +1,4 @@
-# ADR 0014: Rename FileHop to Mayfly
+# ADR 0014: Product name and brand
 
 - Status: Accepted
 - Date: 2026-11-03
@@ -6,10 +6,8 @@
 
 ## Context
 
-The project started as "FileHop". Another, actively developed desktop file app
-already uses that exact name, in the same category, so the name could not carry
-a public release, store listings, or search. No release has been published yet:
-`v0.8.0` exists only as a draft, so a rename costs no user migration.
+The product needs a name that can carry a public release, store listings, and
+search, and that no other desktop file app in the same category already uses.
 
 A name check (web, app stores, package registries, US trademark search results)
 found no file-sharing product or software trademark named "Mayfly". The short
@@ -32,16 +30,10 @@ available.
   bundle identifier `de.phillippbertram.mayfly`, the `mayfly://event` channel,
   the `mayfly_unlock` cookie, `MAYFLY_*` build and repository variables, the
   `mayfly-release.json` manifest, and GitHub and Pages paths under `mayfly`.
-  Earlier ADRs were updated to the new names instead of keeping stale identifiers.
 
 ## Consequences
 
-- The new bundle identifier means a new app config directory. Settings and link
-  profiles saved by FileHop development builds are not migrated; developers can
-  copy the old `de.phillippbertram.filehop` directory by hand.
-- The GitHub repository, its `MAYFLY_PAGES_ENABLED` and `MAYFLY_RELEASE_REPOSITORY`
-  variables, issue and milestone titles, and the draft release must be renamed or
-  recreated on GitHub. Until the repository is renamed, links to
-  `phillippbertram/mayfly` and the `/mayfly` Pages path do not resolve.
-- Screenshots and the live demo must be recaptured whenever they still show the
-  old name.
+- The bundle identifier determines the app config directory. Changing it later
+  would leave saved settings and link profiles behind, so it stays fixed.
+- Screenshots and the live demo must show the current brand; recapture them when
+  the mark, colors, or wordmark change.

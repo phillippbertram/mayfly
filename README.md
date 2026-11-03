@@ -261,6 +261,3 @@ keeps this small utility moving toward its first release. Thank you! ☕
 Mayfly is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE)
 and [ADR 0015](docs/decisions/0015-apache-license.md). Dependencies retain their own
 terms; see [third-party notices](licenses/THIRD_PARTY_NOTICES.txt).
-
-Mayfly was called FileHop before its first release; see
-[ADR 0014](docs/decisions/0014-rename-to-mayfly.md).

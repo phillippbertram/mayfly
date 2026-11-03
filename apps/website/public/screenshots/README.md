@@ -1,7 +1,7 @@
 # Screenshot provenance
 
 These JPEG images were refreshed from the actual Mayfly browser-preview interface
-on 2026-11-03, after the rename from FileHop, at a 1440 × 960 desktop viewport in
+on 2026-11-03 at a 1440 × 960 desktop viewport in
 dark mode. They are screenshots, not generated
 mockups or evidence of a completed transfer.
 
