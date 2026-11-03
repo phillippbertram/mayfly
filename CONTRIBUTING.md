@@ -46,4 +46,11 @@ dependencies small. Pin GitHub Actions to commit SHAs and give workflows the min
 permissions they need.
 
 Application packaging, signing, notarization, and release publishing will be added
-through their own issues. A distribution license must be selected before release.
+through their own issues.
+
+## License
+
+Mayfly is licensed under the [Apache License 2.0](LICENSE). Unless you state
+otherwise, any contribution you submit is licensed under the same terms, as
+described in section 5 of the license. Do not add code or assets whose license
+is incompatible with Apache-2.0.

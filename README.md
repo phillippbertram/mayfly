@@ -201,4 +201,9 @@ or installing external applications. See the [product specification](docs/produc
 - No file-sharing or phone end-to-end testing has been performed.
 - A draft release pipeline exists; signing identities and notarization are not configured.
 - Universal Links and public HTTPS infrastructure are outside the MVP.
-- A distribution license has not been selected. Do not assume an open-source license.
+- Third-party license notices for the shipped bundles are not yet compiled (#13).
+
+## License
+
+Mayfly is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE)
+and [ADR 0015](docs/decisions/0015-apache-license.md).

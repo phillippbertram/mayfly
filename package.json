@@ -2,6 +2,7 @@
   "name": "mayfly",
   "version": "0.8.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Mayfly desktop application workspace",
   "packageManager": "pnpm@11.15.1",
   "engines": {

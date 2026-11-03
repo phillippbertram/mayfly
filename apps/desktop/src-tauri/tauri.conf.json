@@ -36,6 +36,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "copyright": "Copyright © 2026 Phillipp Bertram",
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": "-"
