@@ -339,8 +339,10 @@ Layout, top to bottom: a small Mayfly wordmark, a file-type glyph, the escaped
 filename in large type with word breaking allowed, the formatted size and type, a
 full-width 52-point "Download" button pointing to `/d/{token}/{file}`, the remaining time
 and downloads, and a footer line "Shared temporarily from a computer on your
-network." with a short trusted-network note. Nothing on the page identifies the
-computer, its path, or its user. The content sits on a card at most 560 points
+network." with a short trusted-network note and "Mayfly · © year Phillipp
+Bertram", where "Mayfly" links to the public website. The page sends no referrer,
+so following that link never passes the share URL on. Nothing on the page
+identifies the computer, its path, or its user. The content sits on a card at most 560 points
 wide, so the same page reads well when the link is opened on another computer.
 
 A bundle (several files behind one link) shows a stacked-files glyph, "N files"

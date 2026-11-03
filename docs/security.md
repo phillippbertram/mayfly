@@ -130,6 +130,9 @@ Optional per share ([ADR 0011](decisions/0011-share-passwords.md)):
 - Use `Cache-Control: no-store`, `Referrer-Policy: no-referrer`,
   `X-Content-Type-Options: nosniff`, and a restrictive page CSP.
 - Download active content as an attachment. Avoid externally fetched page assets.
+  The page footer's only outbound link is the fixed Mayfly website URL, with
+  `rel="noopener noreferrer"` on top of the no-referrer policy, so the token never
+  leaves the LAN through it.
 - Limit request sizes, constrain methods, and return appropriate sanitized errors
   for invalid, unavailable, expired, revoked, or exhausted shares.
 - Do not log tokens, URL paths containing tokens, private filenames, or absolute

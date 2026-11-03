@@ -21,12 +21,17 @@ function GitHubMark({ size = 15 }: { size?: number }) {
 
 const LINKS: { link: ExternalLink; label: string; detail: string; icon: LucideIcon | null }[] = [
   {
+    link: "website",
+    label: "Website & user manual",
+    detail: "phillippbertram.github.io/mayfly",
+    icon: BookOpen,
+  },
+  {
     link: "repository",
     label: "Source code",
     detail: "github.com/phillippbertram/mayfly",
     icon: null,
   },
-  { link: "website", label: "Website & user manual", detail: "How Mayfly works", icon: BookOpen },
   { link: "issues", label: "Report an issue", detail: "Bugs, ideas, and questions", icon: Bug },
 ];
 
@@ -109,7 +114,7 @@ export function AboutDialog() {
               label={item.label}
               detail={item.detail}
               onClick={() => visit(item.link)}
-              autoFocus={item.link === "repository"}
+              autoFocus={item.link === "website"}
             />
           </li>
         ))}

@@ -29,7 +29,7 @@ impl ExternalLink {
         match self {
             Self::Repository => "https://github.com/phillippbertram/mayfly",
             Self::Issues => "https://github.com/phillippbertram/mayfly/issues",
-            Self::Website => "https://phillippbertram.github.io/mayfly/",
+            Self::Website => crate::server::WEBSITE_URL,
             Self::Author => "https://github.com/phillippbertram",
         }
     }

@@ -4,7 +4,7 @@
 
 use std::fmt::Write;
 use std::sync::LazyLock;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
@@ -12,6 +12,9 @@ use sha2::{Digest, Sha256};
 
 use crate::shares::password::MAX_PASSWORD_CHARS;
 use crate::shares::{FileKind, PageView, Unavailable};
+
+/// Mayfly's public website, linked from every page footer and the About dialog.
+pub const WEBSITE_URL: &str = "https://phillippbertram.github.io/mayfly/";
 
 /// Content-Security-Policy for every HTML page.
 pub static PAGE_CSP: LazyLock<String> = LazyLock::new(|| {
@@ -226,16 +229,34 @@ fn document(title: &str, body: &str) -> String {
 </head>
 <body>
 <main>
-<header class="brand"><span class="mark">{MARK_ICON}</span>mayfly</header>
+<header class="brand"><span class="mark">{MARK_ICON}</span><span class="word">mayfly</span></header>
 <section class="card">
 {body}
 </section>
-<footer>Shared for a moment from a computer on your network. No account, no cloud.<br>This page uses unencrypted HTTP. Only use it on networks you trust.</footer>
+<footer>Shared for a moment from a computer on your network. No account, no cloud.<br>This page uses unencrypted HTTP. Only use it on networks you trust.<br><a href="{WEBSITE_URL}" rel="noopener noreferrer">Mayfly</a> · © {year} Phillipp Bertram</footer>
 </main>
 </body>
 </html>
-"#
+"#,
+        year = year(SystemTime::now()),
     )
+}
+
+/// The UTC calendar year of `time` (proleptic Gregorian; Howard Hinnant's
+/// civil-from-days), so the footer needs no date library.
+fn year(time: SystemTime) -> i64 {
+    let days = time
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| since.as_secs() / 86_400) as i64;
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let day_of_era = z - era * 146_097;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_index = (5 * day_of_year + 2) / 153;
+    // Month indices 10 and 11 are January and February of the following year.
+    year_of_era + era * 400 + i64::from(month_index >= 10)
 }
 
 fn availability(remaining: Option<Duration>, downloads_left: Option<u32>) -> String {
@@ -346,7 +367,7 @@ const BUNDLE_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d
 const DOWNLOAD_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>"#;
 const ALERT_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>"#;
 const LOCK_ICON: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>"#;
-const MARK_ICON: &str = r#"<svg viewBox="6 2 58 46" aria-hidden="true"><path class="w" d="M24 37C21 25 25 13 35 5C38 16 36 28 31 37Z"/><path d="M10 43C20 37 33 36 44 32"/></svg>"#;
+const MARK_ICON: &str = r#"<svg viewBox="6 2 58 46" aria-hidden="true"><g class="wing"><path class="w" d="M24 37C21 25 25 13 35 5C38 16 36 28 31 37Z"/></g><path class="body" pathLength="1" d="M10 43C20 37 33 36 44 32"/></svg>"#;
 
 const CSS: &str = r#":root{--bg:#f5f8f7;--surface:#fff;--muted-bg:#eef3f1;--border:#dfe7e4;--text:#142326;--muted:#4b5957;--faint:#626f6d;--accent:#0e7c66;--accent-hover:#0b6a57;--accent-fg:#fff;--image:#7c5cd6;--document:#3f6fd1;--archive:#a2641a;--audio:#c2437b;--video:#c24a3a;--shadow:0 1px 2px rgb(15 26 28/.06),0 8px 24px rgb(15 26 28/.06)}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1a1c;--surface:#152224;--muted-bg:#1c2b2e;--border:#26373a;--text:#e8efed;--muted:#a3b3b0;--faint:#869794;--accent:#3dd6a8;--accent-hover:#5fe0b9;--accent-fg:#0b1f19;--image:#b7a4f5;--document:#8fb0f2;--archive:#e8b06a;--audio:#f19ac0;--video:#f2998c;--shadow:0 1px 2px rgb(0 0 0/.3),0 8px 24px rgb(0 0 0/.25)}}
@@ -358,6 +379,19 @@ main{max-width:560px;margin:0 auto;padding:28px 16px 32px;display:flex;flex-dire
 .mark{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--accent-fg)}
 .mark svg{width:17px;height:17px;stroke-width:5.5}
 .mark .w{fill:currentColor;stroke:none}
+.mark{animation:mark-in .5s cubic-bezier(.34,1.56,.64,1) both}
+.mark svg{transition:transform .18s ease-out}
+.mark .body{stroke-dasharray:1;animation:draw .4s .15s ease-out both}
+.mark .wing,.mark .w{transform-box:fill-box;transform-origin:35% 100%}
+.mark .w{animation:wing-in .45s .3s cubic-bezier(.34,1.56,.64,1) both}
+.word{animation:word-in .35s .25s ease-out both}
+.brand:hover .mark svg{transform:translateY(-1.5px) rotate(-6deg)}
+.brand:hover .wing{animation:flutter .22s ease-in-out 3}
+@keyframes mark-in{from{opacity:0;transform:scale(.5) rotate(-20deg)}}
+@keyframes draw{from{stroke-dashoffset:1}}
+@keyframes wing-in{from{transform:scaleY(0)}}
+@keyframes word-in{from{opacity:0;transform:translateX(-4px)}}
+@keyframes flutter{50%{transform:rotate(-14deg) scaleX(.7)}}
 svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 24px 24px;box-shadow:var(--shadow);text-align:center}
 .glyph{display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:0 auto 18px;border-radius:16px;background:var(--muted-bg);color:var(--muted)}
@@ -393,8 +427,10 @@ h1{margin:0;font-size:22px;line-height:28px;font-weight:600;letter-spacing:-.015
 .error{margin:8px 0 0;color:var(--video);font-size:13px}
 button.button{width:100%;border:0;font:inherit;font-size:17px;font-weight:600;cursor:pointer}
 footer{margin-top:auto;padding-top:28px;color:var(--faint);font-size:12px;line-height:1.6;text-align:center}
+footer a{color:inherit;font-weight:500;text-underline-offset:2px}
+footer a:hover{color:var(--muted)}
 @media (min-width:600px){main{padding-top:64px}.card{padding:40px 36px 28px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}"#;
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}"#;
 
 #[cfg(test)]
 mod tests {
@@ -524,6 +560,34 @@ mod tests {
         assert!(PAGE_CSP.contains("style-src 'sha256-"));
         assert!(!PAGE_CSP.contains("unsafe"));
         assert!(!CSS.contains("</style"));
+    }
+
+    #[test]
+    fn every_page_credits_mayfly_without_leaking_the_share_url() {
+        let footer = format!(
+            r#"<a href="{WEBSITE_URL}" rel="noopener noreferrer">Mayfly</a> · © {} Phillipp Bertram</footer>"#,
+            year(SystemTime::now())
+        );
+        let pages = [
+            locked("TOKEN", None),
+            locked_download("TOKEN"),
+            error(Unavailable::Expired),
+        ];
+        for html in &pages {
+            assert!(html.contains(&footer), "{html}");
+            assert!(html.contains(r#"<meta name="referrer" content="no-referrer">"#));
+        }
+    }
+
+    #[test]
+    fn computes_the_utc_year() {
+        let at = |seconds: u64| year(UNIX_EPOCH + Duration::from_secs(seconds));
+        assert_eq!(at(0), 1970);
+        assert_eq!(at(951_782_399), 2000); // 2000-02-28 23:59:59
+        assert_eq!(at(951_868_800), 2000); // 2000-03-01, after a leap day
+        assert_eq!(at(1_767_225_599), 2025); // 2025-12-31 23:59:59
+        assert_eq!(at(1_767_225_600), 2026); // 2026-01-01 00:00:00
+        assert_eq!(at(1_793_664_000), 2026); // 2026-11-03
     }
 
     #[test]
