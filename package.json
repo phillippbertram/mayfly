@@ -23,7 +23,10 @@
     "build:web": "pnpm --filter @filehop/desktop build:web",
     "typecheck": "pnpm --filter @filehop/desktop typecheck && pnpm --filter @filehop/website typecheck",
     "check:rust": "pnpm --filter @filehop/desktop check:rust",
-    "check": "biome ci --error-on-warnings . && pnpm typecheck",
+    "check": "biome ci --error-on-warnings . && pnpm typecheck && pnpm version:check && pnpm test:scripts",
+    "version:check": "node scripts/version.mjs check",
+    "test:scripts": "node --test scripts/*.test.mjs",
+    "release": "node scripts/version.mjs release",
     "lint": "biome lint --error-on-warnings .",
     "format": "biome format --write .",
     "format:check": "biome format ."

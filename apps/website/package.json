@@ -9,6 +9,7 @@
     "postinstall": "fumadocs-mdx",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "node --test scripts/release.test.mjs",
+    "release:pull": "node scripts/pull-release.mjs",
     "check:export": "python3 scripts/check-export.py",
     "preview": "python3 scripts/serve-export.py"
   },

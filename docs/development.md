@@ -194,8 +194,9 @@ write under `apps/desktop/src-tauri/target/<target>/release/bundle/`:
 - `nsis/*-setup.exe` on Windows.
 - `appimage/*.AppImage` and `deb/*.deb` on Linux.
 
-Outputs remain in the ignored Tauri target directory. No command uploads artifacts,
-creates releases, configures signing identities, or notarizes the app. macOS may
+Outputs remain in the ignored Tauri target directory. These commands do not upload
+artifacts or create releases; the [release workflow](releasing.md) does that from a
+version tag. Nothing configures signing identities or notarizes the app. macOS may
 apply an ad hoc signature for local execution; this is not Developer ID signing
 or notarization.
 
@@ -244,6 +245,6 @@ The initial `Repository checks` workflow installs the locked development tools a
 runs the same repository checks as local development. It uses read-only repository
 permissions, pinned action commits, a timeout, and cancels superseded runs.
 
-Native build matrices and releases are a separate backlog item. Do not create
-empty Cargo/Tauri packages just to make a premature matrix green. Keep publishing
-and signing credentials out of pull-request workflows.
+The `Release` workflow builds the native matrix from `vX.Y.Z` tags and creates a
+draft GitHub release; see [Releasing](releasing.md). Keep publishing and signing
+credentials out of pull-request workflows.

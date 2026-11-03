@@ -130,9 +130,9 @@ Without an explicit target, bundles live under
 `apps/desktop/src-tauri/target/release/bundle/`; architecture-specific commands use
 `apps/desktop/src-tauri/target/<target>/release/bundle/`. See
 [Local platform builds](docs/development.md#local-platform-builds) for target names,
-prerequisites, and verification status. Native build CI, release publishing,
-Developer ID signing, and notarization remain separate tasks; these are local
-development artifacts. The desktop package lives at `apps/desktop`; shared
+prerequisites, and verification status. Tagged releases are built by GitHub
+Actions into draft GitHub releases; see [Releasing](docs/releasing.md). Developer ID
+signing and notarization remain separate tasks. The desktop package lives at `apps/desktop`; shared
 packages will be introduced only when needed.
 
 ## Product website and user manual
@@ -187,6 +187,7 @@ or installing external applications. See the [product specification](docs/produc
 - [Security model](docs/security.md): requirements and validation cases.
 - [Design concept](docs/design.md): desktop and mobile-page interface concept.
 - [Development guide](docs/development.md): current tooling and future quality gates.
+- [Releasing](docs/releasing.md): versioning, the release workflow, and website downloads.
 - [Agent workflow](docs/agent-workflow.md): shared instructions across coding tools.
 - [Roadmap](docs/roadmap.md): links to the GitHub issue backlog.
 - [Contributing](CONTRIBUTING.md): issue and pull request workflow.
@@ -196,6 +197,6 @@ or installing external applications. See the [product specification](docs/produc
 - File-sharing features remain unimplemented, including sharing, QR generation,
   profile persistence, the tray, and the optional management API.
 - No file-sharing or phone end-to-end testing has been performed.
-- Native bundle configuration exists; signing identities and a release pipeline are not configured.
+- A draft release pipeline exists; signing identities and notarization are not configured.
 - Universal Links and public HTTPS infrastructure are outside the MVP.
 - A distribution license has not been selected. Do not assume an open-source license.

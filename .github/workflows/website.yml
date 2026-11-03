@@ -2,8 +2,7 @@ name: Website
 
 on:
   pull_request:
-    paths:
-      [
+    paths: [
         "apps/website/**",
         "package.json",
         "pnpm-lock.yaml",
@@ -14,8 +13,7 @@ on:
       ]
   push:
     branches: [main]
-    paths:
-      [
+    paths: [
         "apps/website/**",
         "package.json",
         "pnpm-lock.yaml",
@@ -31,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish to GitHub Pages after the hosting/distribution prerequisites are approved
+        description: Publish to GitHub Pages (requires the FILEHOP_PAGES_ENABLED repository variable)
         type: boolean
         default: false
 
@@ -43,7 +41,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A published release refreshes the site through a manual-style run on the default
+  # branch, so deployment always happens from main and stays behind the same gate.
+  refresh-after-release:
+    if: github.event_name == 'release' && vars.FILEHOP_PAGES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Request a publishing run on the default branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run website.yml --repo "$GITHUB_REPOSITORY" --ref "$DEFAULT_BRANCH" -f publish=true
+
   build:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -74,7 +88,9 @@ jobs:
           path: apps/website/out
 
   deploy:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    # GitHub Pages stays disabled until the repository is public and
+    # FILEHOP_PAGES_ENABLED is set to "true".
+    if: vars.FILEHOP_PAGES_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

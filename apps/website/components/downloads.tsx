@@ -54,7 +54,11 @@ export function Downloads({ release }: { release: Release | null }) {
                     ? "Apple Silicon"
                     : item.target === "macos-x64"
                       ? "Intel Mac"
-                      : item.format}{" "}
+                      : item.format === "deb"
+                        ? "Debian & Ubuntu"
+                        : item.format === "AppImage"
+                          ? "Any distribution"
+                          : "Windows x64"}{" "}
                   <span>.{item.format}</span>
                 </a>
                 <small>Requires {item.minimumOs}</small>

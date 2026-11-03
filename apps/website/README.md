@@ -72,6 +72,11 @@ Without verified public release assets, the website shows a clear unavailable st
 and source-development instructions. It never invents installer URLs or minimum OS
 versions. macOS Apple Silicon/Intel and all platform choices remain visible.
 
+While the source repository is private, `pnpm --filter @filehop/website
+release:pull [tag]` downloads a release's manifest with your own GitHub CLI session
+into `.release/pulled-manifest.json` for a local preview with
+`FILEHOP_RELEASE_MANIFEST`. Never use it in CI or for a public build.
+
 The build accepts either:
 
 - `FILEHOP_RELEASE_MANIFEST`: a local, validated manifest file for build-time input.
@@ -104,8 +109,9 @@ An available manifest has this structure (illustrative only):
 ```
 
 Supported targets: `macos-arm64`, `macos-x64`, `windows-x64`, and `linux-x64`.
-Checksums must be real SHA-256 values. The release pipeline in issue #15 must
-produce this file and publish the approved assets. Tests use fixtures; they are
+Checksums must be real SHA-256 values. The release workflow
+(`scripts/release-assets.mjs`, see [Releasing](../../docs/releasing.md)) produces
+this file for every stable release. Tests use fixtures; they are
 never shipped as production download data. Public unauthenticated access and binary
 integrity still require signed-out acceptance testing before release promotion.
 
@@ -118,15 +124,19 @@ For a separate public release repository, its release workflow can dispatch that
 event to this source repository using a suitably scoped credential stored there.
 The browser never needs that credential.
 
-Deployment is a separate job, executed only by a manual run on `main` with the
-`publish` input selected. The default is build-only. To enable publication later:
+Deployment is a separate job. It is disabled until the repository variable
+`FILEHOP_PAGES_ENABLED` is `true`, and then runs only on `main`, from a manual run
+with the `publish` input selected. A published release requests such a run
+automatically, so release-triggered deployments also come from `main`. To enable
+publication later:
 
 1. Resolve issue #13's repository visibility/public distribution decision and verify
    that the account plan supports Pages for the selected source repository.
 2. Configure GitHub Pages to use GitHub Actions and the `github-pages` environment.
 3. Configure the approved `FILEHOP_RELEASE_REPOSITORY` repository variable, if ready.
-4. Review the built artifact, then run the workflow with publication explicitly enabled.
-5. Check the deployed `/filehop/` site, manual, static search, and signed-out downloads.
+4. Set `FILEHOP_PAGES_ENABLED` to `true`.
+5. Review the built artifact, then run the workflow with publication explicitly enabled.
+6. Check the deployed `/filehop/` site, manual, static search, and signed-out downloads.
 
 After future releases, publish a newly validated build to refresh the public site.
 To roll back site changes, revert the relevant website change on `main`, build it
