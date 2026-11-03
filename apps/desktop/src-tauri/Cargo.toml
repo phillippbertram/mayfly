@@ -1,6 +1,6 @@
 [package]
 name = "filehop"
-version = "0.0.0"
+version = "0.8.0"
 description = "Temporary local file sharing for your desktop"
 authors = ["Phillipp Bertram"]
 edition = "2021"

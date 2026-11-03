@@ -101,4 +101,6 @@ order is provisional, with no release dates assigned.
 
 License and public distribution decisions are tracked in #13, signing/notarization
 in #14, and release publishing in #15. They are planned work, not configured services.
+Versions follow [ADR 0012](decisions/0012-versioning-scheme.md): SemVer `0.x` before
+the first stable release, then `YY.M.N`.
 Any future Universal Links infrastructure requires a separate decision.
