@@ -4,6 +4,12 @@ on:
   pull_request:
     paths: [
         "apps/website/**",
+        # The product page embeds the desktop interface's demo build.
+        "apps/desktop/src/**",
+        "apps/desktop/demo.html",
+        "apps/desktop/package.json",
+        "apps/desktop/vite.config.ts",
+        "apps/desktop/src-tauri/tauri.conf.json",
         "package.json",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
@@ -15,6 +21,12 @@ on:
     branches: [main]
     paths: [
         "apps/website/**",
+        # The product page embeds the desktop interface's demo build.
+        "apps/desktop/src/**",
+        "apps/desktop/demo.html",
+        "apps/desktop/package.json",
+        "apps/desktop/vite.config.ts",
+        "apps/desktop/src-tauri/tauri.conf.json",
         "package.json",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",

@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/prepare-release.mjs && next dev --hostname 127.0.0.1 --port 3037",
-    "build": "node scripts/prepare-release.mjs && next build",
+    "dev": "node scripts/prepare-release.mjs && node scripts/prepare-demo.mjs && next dev --hostname 127.0.0.1 --port 3037",
+    "build": "node scripts/prepare-release.mjs && node scripts/prepare-demo.mjs && next build",
     "postinstall": "fumadocs-mdx",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "node --test scripts/release.test.mjs",

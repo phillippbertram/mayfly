@@ -31,8 +31,9 @@ import { displayOrder } from "./lib/format";
 import { useBackendSync, useServer, useSettings, useShares } from "./lib/queries";
 import { useUi } from "./store/ui";
 
-export function App() {
-  const [backend, setBackend] = useState<Backend | null>(null);
+/** `backend` is for scripted demos; the app normally picks Rust or the preview itself. */
+export function App({ backend: provided }: { backend?: Backend } = {}) {
+  const [backend, setBackend] = useState<Backend | null>(provided ?? null);
   const [client] = useState(
     () =>
       new QueryClient({
@@ -49,6 +50,7 @@ export function App() {
   );
 
   useEffect(() => {
+    if (provided) return;
     let active = true;
     createBackend().then((created) => {
       if (active) setBackend(created);
@@ -56,7 +58,7 @@ export function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [provided]);
 
   if (!backend) return null;
 

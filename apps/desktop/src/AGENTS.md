@@ -18,3 +18,5 @@ For frontend changes:
 - Provide keyboard access, visible focus, accessible names, and light/dark themes.
 - Never render untrusted filenames or templates as raw HTML.
 - Do not introduce frontend file reads or local-path display to support QR actions.
+- The website's live demo (`demo/`, ADR 0013) drives controls by accessible name.
+  When you rename a control a scene in `demo/scenes.ts` uses, update the scene.

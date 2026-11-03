@@ -1,0 +1,37 @@
+.demo-cursor,
+.demo-click {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 2147483647;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: none;
+}
+
+.demo-cursor {
+  margin: -3px 0 0 -4px;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+  transition: opacity 200ms ease;
+}
+
+.demo-click {
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 2px solid rgb(255 255 255 / 0.75);
+  border-radius: 999px;
+  animation: demo-click 520ms ease-out forwards;
+}
+
+@keyframes demo-click {
+  from {
+    opacity: 1;
+    scale: 0.3;
+  }
+  to {
+    opacity: 0;
+    scale: 1.3;
+  }
+}

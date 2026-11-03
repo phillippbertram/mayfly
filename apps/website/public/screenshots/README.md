@@ -25,11 +25,14 @@ Never capture real active URLs, QR credentials, or private files.
 
 ## Animation
 
-`components/product-tour.tsx` crossfades the four unedited screenshots `file-drop`,
-`file-qr`, `share-options`, and `settings`. The tour runs once while in view, offers
-pause/play and manual selection, and disables autoplay and transitions for reduced
-motion. Every feature description and the first screenshot render without JavaScript.
-This is an animated screenshot tour, not a transfer recording or a GIF.
+The hero and the product tour play the live interface demo
+([ADR 0013](../../../../docs/decisions/0013-live-interface-demo.md)) over these
+screenshots. Each tour step plays its scene (`bundle`, `qr`, `share`, `settings`)
+and advances when the scene ends; the hero loops `share`. The screenshots remain the
+content without JavaScript, before the demo loads, and for reduced motion, where the
+tour falls back to crossfading the four unedited screenshots `file-drop`, `file-qr`,
+`share-options`, and `settings` without autoplay. This is the actual interface on
+sample data, not a transfer recording or a GIF.
 
 The separate transfer story is a code-native illustration of the choose, scan,
 and download workflow, with pause/replay, manual selection, and reduced-motion support.

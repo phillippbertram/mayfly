@@ -59,8 +59,10 @@ export default function Home() {
             <div className="hero-glow" />
             <Screenshot
               name="dashboard"
+              demo="share"
               priority
               alt="The current FileHop dashboard preview showing sample shares and a three-file link with a QR code and ZIP download action"
+              caption="The actual FileHop interface, running in your browser with sample data. No files are transferred."
             />
           </Reveal>
           <div className="hero-footnote">

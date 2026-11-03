@@ -144,6 +144,17 @@ again, and explicitly run the publish workflow. Do not weaken checks to deploy a
 broken export. This task prepares the pipeline; it does not enable Pages, change
 repository visibility, publish a website, or claim a successful hosted deployment.
 
+## Live interface demo
+
+The hero and the product tour embed the actual desktop interface, running on its
+sample-data simulator with scripted scenes (`components/live-screen.tsx`,
+`apps/desktop/src/demo/`, [ADR 0013](../../docs/decisions/0013-live-interface-demo.md)).
+`pnpm dev` and `pnpm build` first run `scripts/prepare-demo.mjs`, which builds the
+demo with `pnpm --filter @filehop/desktop build:demo` and copies it to the ignored
+`public/demo/`. To work on scenes, run `pnpm dev:web` and open
+`http://127.0.0.1:1420/demo.html?scene=share` (`bundle`, `qr`, `settings`; add
+`&loop=1` to repeat).
+
 ## Content and media
 
 The manual lives in `content/docs`; navigation is in `meta.json`. It covers the

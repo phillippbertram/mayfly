@@ -11,7 +11,8 @@ persistence, link profiles, and the tray lifecycle are implemented in
 download counting, [ADR 0008](decisions/0008-file-drop.md) for the share model, and
 [ADR 0010](decisions/0010-link-profiles-as-templates.md) for link profiles, and
 [ADR 0011](decisions/0011-share-passwords.md) for share passwords
-(`shares/password.rs`).
+(`shares/password.rs`), and [ADR 0013](decisions/0013-live-interface-demo.md) for
+the website's live interface demo.
 
 FileHop uses a lightweight pnpm workspace with one desktop package at `apps/desktop`
 and root development tooling. React/TypeScript and its Tauri Rust crate stay together

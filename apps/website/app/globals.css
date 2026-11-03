@@ -294,6 +294,21 @@ summary {
   margin: 0;
   border-radius: 0;
 }
+.live-screen {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #111417;
+}
+.live-screen iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
 .product-figure figcaption {
   color: #818b87;
   font-size: 10px;

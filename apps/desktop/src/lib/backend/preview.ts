@@ -120,12 +120,35 @@ interface Entry {
   token: string;
 }
 
-export function createPreviewBackend(): Backend {
+/** Extra controls for scripted product demos (`src/demo/`). */
+export interface PreviewControls {
+  /** A "phone" downloads the newest active share. */
+  simulateDownload(): void;
+  /** Stops the simulator's timers. */
+  dispose(): void;
+}
+
+/**
+ * `scripted` makes the simulator deterministic for demos: dark theme, no random
+ * downloads, and downloads only through `simulateDownload`.
+ */
+export function createPreviewBackend({ scripted = false } = {}): Backend & PreviewControls {
   const events = createEmitter();
   const changed = (...topics: Topic[]) => events.emit({ kind: "changed", topics });
 
-  let server: ServerState = { kind: "starting" };
-  let settings: Settings = { ...DEFAULT_SETTINGS, interfaceId: "en0" };
+  const online: ServerState = {
+    kind: "online",
+    address: "192.168.1.24",
+    port: 8765,
+    interfaceName: "Wi‑Fi (en0)",
+  };
+  // Scripted demos start online so no change notification races the first render.
+  let server: ServerState = scripted ? online : { kind: "starting" };
+  let settings: Settings = {
+    ...DEFAULT_SETTINGS,
+    interfaceId: "en0",
+    ...(scripted ? { theme: "dark" as const } : {}),
+  };
   let profiles: LinkProfile[] = [
     HTTP_PROFILE,
     {
@@ -269,32 +292,44 @@ export function createPreviewBackend(): Backend {
     }),
   ];
 
-  setTimeout(() => {
-    server = { kind: "online", address: "192.168.1.24", port: 8765, interfaceName: "Wi‑Fi (en0)" };
-    changed("server", "shares");
-  }, 900);
+  const timers: ReturnType<typeof setTimeout>[] = [];
+  if (!scripted)
+    timers.push(
+      setTimeout(() => {
+        server = online;
+        changed("server", "shares");
+      }, 900),
+    );
 
   // Expiration is enforced by the backend; the UI only renders the result.
-  setInterval(() => {
-    const t = Date.now();
-    let dirty = false;
-    entries = entries.map((entry) => {
-      const { share } = entry;
-      if (share.status === "active" && share.expiresAt !== null && share.expiresAt <= t) {
-        dirty = true;
-        return { ...entry, share: { ...share, status: "expired", endedAt: share.expiresAt } };
-      }
-      return entry;
-    });
-    if (dirty) changed("shares");
-  }, 500);
+  timers.push(
+    setInterval(() => {
+      const t = Date.now();
+      let dirty = false;
+      entries = entries.map((entry) => {
+        const { share } = entry;
+        if (share.status === "active" && share.expiresAt !== null && share.expiresAt <= t) {
+          dirty = true;
+          return { ...entry, share: { ...share, status: "expired", endedAt: share.expiresAt } };
+        }
+        return entry;
+      });
+      if (dirty) changed("shares");
+    }, 500),
+  );
 
   // Now and then a "phone" downloads the selected sample, so counters move.
-  setInterval(() => {
-    const candidates = entries.filter((e) => e.share.status === "active");
-    const target = candidates[Math.floor(Math.random() * candidates.length)];
-    if (!target || Math.random() < 0.6) return;
-    // Bundles behave as if the phone fetched the ZIP: every file counts once.
+  if (!scripted)
+    timers.push(
+      setInterval(() => {
+        const candidates = entries.filter((e) => e.share.status === "active");
+        const target = candidates[Math.floor(Math.random() * candidates.length)];
+        if (target && Math.random() >= 0.6) download(target);
+      }, 9000),
+    );
+
+  // Bundles behave as if the phone fetched the ZIP: every file counts once.
+  function download(target: Entry) {
     const count = target.share.downloadCount + 1;
     const limitReached = target.share.downloadLimit !== null && count >= target.share.downloadLimit;
     update(target.share.id, {
@@ -302,7 +337,7 @@ export function createPreviewBackend(): Backend {
       files: target.share.files.map((f) => ({ ...f, downloadCount: f.downloadCount + 1 })),
       ...(limitReached ? { status: "limitReached", endedAt: Date.now() } : {}),
     });
-  }, 9000);
+  }
 
   function update(id: string, patch: Partial<Entry["share"]>) {
     entries = entries.map((e) =>
@@ -347,6 +382,14 @@ export function createPreviewBackend(): Backend {
   return {
     mode: "preview",
     subscribe: events.subscribe,
+
+    simulateDownload() {
+      const newest = entries.find((e) => e.share.status === "active");
+      if (newest) download(newest);
+    },
+    dispose() {
+      for (const timer of timers) clearTimeout(timer);
+    },
 
     getServer: async () => server,
     listShares: async () => entries.map(resolve),

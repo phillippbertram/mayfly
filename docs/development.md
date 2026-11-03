@@ -138,6 +138,15 @@ Do not treat a browser preview as verification of native IPC or a desktop build.
 `pnpm dev:web` loads a sample-data simulator for interface review only; the desktop
 build never loads it and reports sharing as unavailable until the Rust services exist.
 
+## Website interface demo
+
+`pnpm --filter @filehop/desktop build:demo` builds `demo.html`: the unchanged
+interface on the scripted sample-data simulator, which the product website embeds
+([ADR 0013](decisions/0013-live-interface-demo.md)). Scenes live in
+`apps/desktop/src/demo/scenes.ts` and find controls by their accessible names; when
+you rename a control a scene uses, update the scene and check it at
+`http://127.0.0.1:1420/demo.html?scene=<name>` while `pnpm dev:web` runs.
+
 ## Local platform builds
 
 Local build commands are available from the repository root and from `apps/desktop`.

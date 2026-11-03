@@ -1,6 +1,8 @@
 # Dependencies and generated application outputs
 node_modules/
 dist/
+dist-demo/
+apps/website/public/demo/
 target/
 apps/desktop/src-tauri/gen/
 coverage/
