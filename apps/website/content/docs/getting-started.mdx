@@ -15,11 +15,71 @@ For installer availability, use the website's [Downloads](../../#download) secti
 Apple Silicon and Intel on macOS, Windows x64, and Linux package choices remain
 visible. Minimum OS versions will accompany verified release assets.
 
+## Install a test package
+
+<Callout title="No verified publisher signature yet" type="warn">
+macOS packages use ad-hoc signing without Apple Developer ID signing or notarization.
+Windows installers are unsigned. Expect operating-system warnings, and continue
+only for an official Mayfly download whose source and checksum you have verified.
+Platform/device acceptance remains pending.
+</Callout>
+
+Download the package for your system from [Downloads](../../#download) or its
+linked release. Compare its SHA-256 with the exact asset's `SHA256SUMS` entry
+before opening it. On macOS, use `shasum -a 256` with the downloaded file; on Linux,
+use `sha256sum`; on Windows, use PowerShell's `Get-FileHash -Algorithm SHA256`.
+A matching hash detects corruption and does not verify the publisher's identity.
+
+### macOS: allow this app's first launch
+
+1. Choose Apple Silicon or Intel to match your Mac, open the `.dmg`, and drag
+   **Mayfly.app** into **Applications**. Eject the disk image.
+2. Try opening Mayfly from Applications once. Dismiss the warning that its
+   developer cannot be verified or Apple cannot check the app.
+3. Open **System Settings → Privacy & Security**, scroll to Security, and select
+   **Open Anyway** beside the message about Mayfly.
+4. Confirm **Open**, and authenticate if asked. This grants an exception to this
+   app; future launches normally use the usual shortcut.
+
+Older macOS versions use **System Preferences → Security & Privacy → General**.
+If the button is absent, try opening the installed app again first. Managed Macs
+may prevent exceptions. See [Apple's first-launch instructions](https://support.apple.com/en-us/102445).
+
+An alert that an app **will damage your computer** or **is damaged** is different
+from the expected unidentified-developer prompt. Stop, check the download again,
+and report a reproducible failure. Keep Gatekeeper and quarantine protections
+enabled rather than using a global bypass or stripping file attributes.
+
+### Windows: unsigned installer
+
+Open the Windows x64 `.exe` after verifying its checksum. If SmartScreen displays
+**Windows protected your PC**, choose **More info → Run anyway**, when offered
+and you trust the verified download. The permission prompt may show **Unknown
+publisher**. Complete the installer and launch Mayfly from the Start menu.
+
+Smart App Control or an organization's policy may block unsigned programs without
+offering that exception. Keep the protection enabled and request an approved build
+or build from source. Do not override a malware detection. Microsoft's
+[distribution guide](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/publish-first-app)
+explains the first-run trust limitations.
+
+### Linux: package or AppImage
+
+Choose the `.deb` for a supported Debian/Ubuntu system, or an AppImage for a
+compatible distribution. Verify the checksum, then use the distribution's package
+installer for the `.deb`. For an AppImage, use its file properties to allow
+execution and open it. FUSE, WebKitGTK, and tray requirements vary by distribution;
+an AppImage does not guarantee compatibility everywhere.
+
+The release also includes `INSTALLATION.md` with the complete platform steps and
+the [license and third-party notices](../licenses/). These instructions describe
+the prepared packages; they do not claim that public installers already exist.
+
 ## Run from source
 
 You need Node.js 24, pnpm 11.15.1, Rust through rustup, and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your operating
-system. The source repository is currently private, so an authorized checkout is required.
+system. Clone the source repository when available, or use an authorized local checkout.
 
 From the repository root:
 

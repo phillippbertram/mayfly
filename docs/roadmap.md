@@ -5,12 +5,10 @@ and verification. This document is an index; keep task progress in the issues.
 
 ## Repository foundation
 
-The initial task creates the pnpm workspace, strict TypeScript base, Biome tooling,
-shared agent instructions, project documents, issue forms, PR template, and
-repository-check workflow. A subsequent task adds a minimal runnable Tauri/React
-starter under `apps/desktop`, including the native window, system-theme styling,
-typed app-info IPC, and working development/build commands. Feature delivery
-continues through the issues below; this starter does not complete the MVP.
+The workspace contains a Tauri/React desktop app with implemented Rust sharing
+services and a static product website. The issues below remain the source of
+truth for acceptance and release work; implementation alone does not complete
+device, installed-bundle, or public-hosting verification.
 
 ## MVP implementation
 
@@ -29,7 +27,7 @@ Milestone: [MVP](https://github.com/phillippbertram/mayfly/milestone/1).
 | 6 — Platform builds     | [#8: Cross-platform build CI and packaging documentation](https://github.com/phillippbertram/mayfly/issues/8)          |
 | Continuous validation   | [#11: TypeScript, frontend, Rust, and HTTP regression checks](https://github.com/phillippbertram/mayfly/issues/11)     |
 
-Begin application implementation with #1. The functional sequence is
+The functional implementation sequence is
 #1 → #2 → #3 → #4 → #5 → #6 → #7. Build infrastructure (#8) can start once #1
 provides actual native targets. A compiled artifact and a platform runtime check
 are separate verification results.
@@ -58,10 +56,10 @@ draft bundles before installation acceptance; promote stable releases only after
 the documented release gates pass. The website consumes actual release metadata
 and provides clear unavailable states until downloads exist.
 
-The source repository is currently private. #13 records the owner-approved public
-distribution arrangement and Pages eligibility before exposing repository content
-or binaries. The public website hosts product information and application installers;
-shared user files continue to travel directly over the local network.
+The source repository's public launch and Pages deployment are prepared locally;
+the owner controls when visibility and hosting change. #13 covers the distribution
+arrangement, dependency notices, and platform-added components. The website hosts
+product information and installer links; shared files travel over the local network.
 
 ## Optional follow-up
 
@@ -100,8 +98,10 @@ order is provisional, with no release dates assigned.
 
 ## Distribution decisions
 
-License and public distribution decisions are tracked in #13, signing/notarization
-in #14, and release publishing in #15. They are planned work, not configured services.
+License and public distribution work is tracked in #13, signing/notarization in
+#14, and release publishing in #15. Apache-2.0 is selected; the dependency notice
+snapshot and draft-release tooling are prepared. Public hosting, actual bundle
+review, and release promotion retain their own acceptance requirements.
 Versions follow [ADR 0012](decisions/0012-versioning-scheme.md): SemVer `0.x` before
 the first stable release, then `YY.M.N`.
 Any future Universal Links infrastructure requires a separate decision.

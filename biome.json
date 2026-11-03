@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!!**/pnpm-lock.yaml", "!!**/Cargo.lock"]
+    "includes": ["**", "!!**/pnpm-lock.yaml", "!!**/Cargo.lock", "!!licenses/manifest.json"]
   },
   "formatter": {
     "enabled": true,

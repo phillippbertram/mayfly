@@ -21,7 +21,7 @@ exceptions; use your organization's approved installation route in that case.
 ## macOS
 
 1. Choose the `.dmg` for **Apple Silicon** or **Intel** to match your Mac.
-2. Verify the download with `shasum -a 256 /path/to/Mayfly-<version>-<target>.dmg`.
+2. Verify the download with `shasum -a 256 "/path/to/Mayfly-<version>-<target>.dmg"`.
 3. Open the disk image and drag **Mayfly.app** into **Applications**. Eject the image.
 4. Open **Mayfly** from Applications once. macOS may say that the developer cannot
    be verified or Apple cannot check the app. Dismiss that first warning.
@@ -64,13 +64,13 @@ compatible distribution. The build baseline is Ubuntu 22.04/Debian 12 or equival
 runtime acceptance on those systems remains pending. An AppImage is not a promise
 of compatibility with every distribution.
 
-Verify the exact download with `sha256sum /path/to/Mayfly-<version>-linux-x64.<format>`.
+Verify the exact download with `sha256sum "/path/to/Mayfly-<version>-linux-x64.<format>"`.
 Then use your distribution's package installer for the `.deb`, or mark the
 AppImage executable in the file manager and open it. From a terminal:
 
 ```sh
-chmod u+x /path/to/Mayfly-<version>-linux-x64.AppImage
-/path/to/Mayfly-<version>-linux-x64.AppImage
+chmod u+x "/path/to/Mayfly-<version>-linux-x64.AppImage"
+"/path/to/Mayfly-<version>-linux-x64.AppImage"
 ```
 
 Replace the example paths/version/format with the actual asset; do not paste the
@@ -91,4 +91,5 @@ The installed app carries `LICENSE.txt`, `NOTICE.txt`, and
 `THIRD_PARTY_NOTICES.txt` in its `licenses/` resource directory. On macOS, choose
 **Show Package Contents** on Mayfly.app and open **Contents → Resources → licenses**.
 On Windows, open `licenses` in the installation directory. Linux packages carry
-it in the app's resource directory under `usr/lib`; see [Third-party licensing](licensing.md).
+it in the app's resource directory under `usr/lib`; see the repository's
+[licensing process](https://github.com/phillippbertram/mayfly/blob/main/docs/licensing.md).

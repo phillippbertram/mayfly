@@ -44,7 +44,9 @@ test("finalize writes checksums and a manifest the website accepts", () => {
   assert.equal(sums.length, assets.length + releaseDocuments.length);
   for (const document of releaseDocuments) {
     const content = readFileSync(join(dir, document.name));
-    assert.ok(sums.includes(`${createHash("sha256").update(content).digest("hex")}  ${document.name}`));
+    assert.ok(
+      sums.includes(`${createHash("sha256").update(content).digest("hex")}  ${document.name}`),
+    );
   }
   assert.match(readFileSync(join(dir, "INSTALLATION.md"), "utf8"), /Open Anyway/);
   assert.match(readFileSync(join(dir, "THIRD_PARTY_NOTICES.txt"), "utf8"), /Bricolage/);

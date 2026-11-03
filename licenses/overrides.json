@@ -9,12 +9,20 @@
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:dispatch2@0.3.1": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:dlopen2@0.8.2": [
@@ -83,102 +91,170 @@
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-cloud-kit@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-core-data@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-core-foundation@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-core-graphics@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-core-image@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-core-location@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-core-text@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-encode@4.1.0": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-exception-helper@0.1.1": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-foundation@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-io-surface@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-quartz-core@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-ui-kit@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-user-notifications@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2-web-kit@0.3.2": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:objc2@0.6.5": [
     {
       "file": "overrides/madsmtm-objc2-7f976f7e9cb2.txt",
       "source": "https://raw.githubusercontent.com/madsmtm/objc2/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md"
+    },
+    {
+      "file": "overrides/objc2-MIT-terms.txt",
+      "source": "https://api.github.com/repos/spdx/license-list-data/git/blobs/d817195dad53ec992418c28ffca5fbd1cd86502a"
     }
   ],
   "crate:selectors@0.38.0": [
@@ -217,6 +293,68 @@
     {
       "file": "overrides/wravery-webview2-rs-0dcf41516e60.txt",
       "source": "https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE"
+    }
+  ],
+  "crate:winapi-i686-pc-windows-gnu@0.4.0": [
+    {
+      "file": "overrides/winapi-LICENSE-APACHE.txt",
+      "source": "https://crates.io/api/v1/crates/winapi/0.3.9/download#LICENSE-APACHE"
+    },
+    {
+      "file": "overrides/winapi-LICENSE-MIT.txt",
+      "source": "https://crates.io/api/v1/crates/winapi/0.3.9/download#LICENSE-MIT"
+    }
+  ],
+  "crate:winapi-x86_64-pc-windows-gnu@0.4.0": [
+    {
+      "file": "overrides/winapi-LICENSE-APACHE.txt",
+      "source": "https://crates.io/api/v1/crates/winapi/0.3.9/download#LICENSE-APACHE"
+    },
+    {
+      "file": "overrides/winapi-LICENSE-MIT.txt",
+      "source": "https://crates.io/api/v1/crates/winapi/0.3.9/download#LICENSE-MIT"
+    }
+  ],
+  "npm:@next/env@16.4.3": [
+    {
+      "file": "overrides/next-16.4.3-LICENSE.txt",
+      "source": "https://registry.npmjs.org/next/-/next-16.4.3.tgz#license.md"
+    }
+  ],
+  "npm:@yuku-toolchain/types@0.19.0": [
+    {
+      "file": "overrides/yuku-toolchain-yuku-8ac8d8d1663c.txt",
+      "source": "https://api.github.com/repos/yuku-toolchain/yuku/git/blobs/2904c90621f4439118ab41378148563f116ab47e"
+    }
+  ],
+  "npm:client-only@0.0.1": [
+    {
+      "file": "overrides/react-19.3.1-LICENSE.txt",
+      "source": "https://registry.npmjs.org/react/-/react-19.3.1.tgz#LICENSE"
+    }
+  ],
+  "npm:react-remove-scroll-bar@2.3.8": [
+    {
+      "file": "overrides/theKashey-react-remove-scroll-bar-a79aae0c0f21.txt",
+      "source": "https://api.github.com/repos/theKashey/react-remove-scroll-bar/git/blobs/7c08c3990396ecefd90f99ff5d9a34f26f5b5616"
+    }
+  ],
+  "npm:yuku-analyzer@0.19.0": [
+    {
+      "file": "overrides/yuku-toolchain-yuku-8ac8d8d1663c.txt",
+      "source": "https://api.github.com/repos/yuku-toolchain/yuku/git/blobs/2904c90621f4439118ab41378148563f116ab47e"
+    }
+  ],
+  "npm:yuku-ast@0.19.0": [
+    {
+      "file": "overrides/yuku-toolchain-yuku-8ac8d8d1663c.txt",
+      "source": "https://api.github.com/repos/yuku-toolchain/yuku/git/blobs/2904c90621f4439118ab41378148563f116ab47e"
+    }
+  ],
+  "npm:yuku-core@0.19.0": [
+    {
+      "file": "overrides/yuku-toolchain-yuku-8ac8d8d1663c.txt",
+      "source": "https://api.github.com/repos/yuku-toolchain/yuku/git/blobs/2904c90621f4439118ab41378148563f116ab47e"
     }
   ]
 }

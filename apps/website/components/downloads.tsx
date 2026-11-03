@@ -31,9 +31,11 @@ export function Downloads({ release }: { release: Release | null }) {
       </div>
       <div className="download-card">
         <p className="release-target">
-          Current packages have no verified publisher signature: macOS uses ad-hoc signing
-          without notarization; Windows is unsigned.{" "}
-          <Link href="/docs/getting-started/#install-a-test-package">Installation & first launch</Link>
+          Current packages have no verified publisher signature: macOS uses ad-hoc signing without
+          notarization; Windows is unsigned.{" "}
+          <Link href="/docs/getting-started/#install-a-test-package">
+            Installation & first launch
+          </Link>
         </p>
         <fieldset className="system-selector" aria-label="Operating system">
           {systems.map(({ id, label, icon: Icon }) => (

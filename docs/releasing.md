@@ -31,9 +31,12 @@ The tag starts `.github/workflows/release.yml`:
    for macOS arm64 and x64 (both on an Apple Silicon runner), Windows x64 (NSIS),
    and Linux x64 (AppImage and `.deb` on Ubuntu 22.04). Bundles are renamed to
    `Mayfly-<version>-<target>.<ext>` and stored as workflow artifacts.
-3. **draft** runs only after every build succeeds. It writes `SHA256SUMS` and,
+3. **draft** runs only after every build succeeds. It attaches the license texts,
+   third-party notices, and `INSTALLATION.md`, writes their and the packages'
+   `SHA256SUMS` entries and,
    for stable versions, the website manifest `mayfly-release.json`, then creates
-   a **draft** release with generated notes. Versions with a pre-release suffix
+   a **draft** release with the signing/installation warning from
+   `docs/release-notes.md` followed by generated notes. Versions with a pre-release suffix
    (`-beta.1`) become GitHub pre-releases without a website manifest.
 
 Every binary embeds the short commit hash it was built from (`GITHUB_SHA` in CI,
@@ -48,14 +51,28 @@ Delete the draft first to rebuild a tag.
 
 Download the draft's assets, check them on each platform, edit the notes
 (supported platforms, installation guidance, limitations, signing status), and
-select **Publish release**. Builds are not yet signed or notarized (#14), and
-Windows SmartScreen shows a warning. macOS bundles are ad-hoc signed
-(`bundle.macOS.signingIdentity: "-"`) so that the bundle carries a complete,
-sealed signature; without it, Apple Silicon reports a downloaded app as
-"damaged" and offers no way to open it. An ad-hoc signed download is still
-blocked on first launch: users allow it under **System Settings → Privacy &
-Security → Open Anyway** (macOS 15 removed the Control-click shortcut), or remove
-the quarantine attribute with `xattr -dr com.apple.quarantine /Applications/Mayfly.app`.
+select **Publish release** only after the applicable promotion gates pass.
+Current test packages have no verified publisher signature (#14): macOS uses
+ad-hoc signing (`bundle.macOS.signingIdentity: "-"`) without Developer ID signing
+or notarization, and Windows installers are unsigned. Ad-hoc signing seals bundle
+contents; it does not identify the developer or establish notarization.
+
+Keep the signing warning in the release notes and point to the attached
+`INSTALLATION.md` and [installation guide](installation.md). macOS users first try
+opening the installed app, then choose **System Settings → Privacy & Security →
+Open Anyway** and confirm **Open**. Windows SmartScreen may offer **More info →
+Run anyway** for an unrecognized app. These are explicit exceptions for a verified
+download the user trusts; do not recommend disabling Gatekeeper/SmartScreen,
+stripping quarantine, or overriding malware/damaged-app warnings. Managed devices
+may prohibit the exception entirely. Test the exact downloaded artifacts on each
+target before describing that installation experience as verified.
+
+`pnpm licenses:check` verifies the reviewed dependency snapshot before builds.
+The documents are included in Tauri resources and release attachments, but native
+packagers can add components outside the npm/Cargo graphs. Complete the actual
+bundle inventory and applicable notices/source review from
+[Third-party licensing](licensing.md#review-the-actual-platform-packages-before-distribution)
+before public binary promotion.
 
 Declared minimum systems: macOS 11 (`bundle.macOS.minimumSystemVersion`),
 Windows 10, and Ubuntu 22.04/Debian 12 or equivalent for Linux. They are build

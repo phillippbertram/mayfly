@@ -43,3 +43,8 @@ selected Apache-2.0.
   The copyright holder is not bound by section 4, but redistributors are, so the
   bundles should ship `LICENSE` and `NOTICE` together with the third-party
   notices from #13.
+
+Implementation update: [ADR 0016](0016-bundled-license-notices.md) records the
+reviewed dependency notice snapshot and its inclusion in app resources, the
+website, and release attachments. Actual platform-added components and public
+distribution acceptance remain part of #13/#16.

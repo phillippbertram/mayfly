@@ -3,6 +3,15 @@ title: Troubleshooting
 description: Find the missing connection, one small check at a time.
 ---
 
+## macOS or Windows blocks the downloaded app
+
+Current macOS test packages are ad-hoc signed without notarization; Windows
+installers are unsigned. Follow the [first-launch instructions](../getting-started/#install-a-test-package)
+to verify the download and, when offered, approve this app through macOS
+**Privacy & Security → Open Anyway** or Windows SmartScreen's **More info → Run anyway**.
+Malware/damaged-app alerts and managed-device policy blocks are different from an
+unrecognized-publisher warning. Do not disable system protections to bypass them.
+
 ## The app is offline or cannot start its server
 
 Check the server status in the header and open **Settings → Network**. Select an

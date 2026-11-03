@@ -1,7 +1,7 @@
 // Refs #13: collect upstream notices once; builds verify and ship the reviewed snapshot offline.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,13 +14,18 @@ const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 // These are native compiler/image-processing tools, never copied into either static frontend.
 // Keep their JS wrappers in the inventory; no .node binaries or Node runtime are distributed.
-const nativeBuildTool = /^(?:@esbuild\/|@rolldown\/binding-|@yuku-core\/binding-|@tailwindcss\/oxide-|@next\/swc-|@img\/|lightningcss-|@emnapi\/)/;
+const nativeBuildTool =
+  /^(?:@esbuild\/|@rolldown\/binding-|@yuku-core\/binding-|@tailwindcss\/oxide-|@next\/swc-|@img\/|lightningcss-|@emnapi\/)/;
 const noticeName = /^(?:licen[cs]es?|notice|copying|copyright|authors)(?:[._-]|$)/i;
 
 export function inputHashes(root) {
   const files = [
     "pnpm-lock.yaml",
+    "package.json",
+    "apps/desktop/package.json",
+    "apps/website/package.json",
     "apps/desktop/src-tauri/Cargo.lock",
+    "apps/desktop/src-tauri/Cargo.toml",
     "scripts/licenses.mjs",
     "licenses/overrides.json",
     ...readdirSync(join(root, "licenses/overrides")).map((name) => `licenses/overrides/${name}`),
@@ -28,12 +33,23 @@ export function inputHashes(root) {
   return Object.fromEntries(
     files.map((name) => {
       let content = readFileSync(join(root, name), "utf8");
+      if (name.endsWith("package.json")) {
+        const pkg = JSON.parse(content);
+        content = JSON.stringify({
+          dependencies: pkg.dependencies,
+          devDependencies: pkg.devDependencies,
+          optionalDependencies: pkg.optionalDependencies,
+          peerDependencies: pkg.peerDependencies,
+        });
+      }
       // A release changes the first-party version, not its third-party dependencies.
       if (name.endsWith("Cargo.lock"))
         content = content.replace(
           /(\[\[package\]\]\r?\nname = "mayfly"\r?\nversion = ")[^"]+("\r?\n)/,
           "$1<application-version>$2",
         );
+      if (name.endsWith("Cargo.toml"))
+        content = content.replace(/^(version\s*=\s*")[^"]+(".*)$/m, "$1<application-version>$2");
       return [name, digest(content)];
     }),
   );
@@ -46,7 +62,9 @@ export function checkSnapshot(root = repository) {
     JSON.stringify(manifest.inputs) !== JSON.stringify(inputHashes(root)) ||
     manifest.noticeSha256 !== digest(readFileSync(join(root, noticePath)))
   ) {
-    throw new Error("Third-party notices are stale or modified. Run pnpm licenses:generate and review the changes.");
+    throw new Error(
+      "Third-party notices are stale or modified. Run pnpm licenses:generate and review the changes.",
+    );
   }
   return manifest;
 }
@@ -72,7 +90,8 @@ function licenseFiles(root) {
       const selected = noticeName.test(entry.name);
       if (entry.isDirectory()) walk(path, insideLicenses || selected);
       else if (entry.isFile() && (selected || insideLicenses)) {
-        const text = readFileSync(path, "utf8");
+        // Match the repository's LF checkout policy so snapshot hashes survive Git checkout.
+        const text = readFileSync(path, "utf8").replaceAll("\r\n", "\n");
         if (text.trim() && !text.includes("\0"))
           files.push({ file: relative(root, path).replaceAll("\\", "/"), text });
       }
@@ -138,7 +157,15 @@ export function generate(root = repository) {
           if (!existsSync(path)) missing.push(`npm:${name}@${dependency.version}: not installed`);
           else {
             const pkg = json(path);
-            add("npm", name, pkg.version, pkg.license, dependency.resolved, dependency.path, scopes);
+            add(
+              "npm",
+              name,
+              pkg.version,
+              pkg.license,
+              dependency.resolved,
+              dependency.path,
+              scopes,
+            );
           }
         }
         visit(dependency.dependencies);
@@ -153,17 +180,35 @@ export function generate(root = repository) {
   const cargo = JSON.parse(
     execFileSync(
       "cargo",
-      ["metadata", "--manifest-path", "apps/desktop/src-tauri/Cargo.toml", "--locked", "--format-version", "1"],
-      { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "inherit"] },
+      [
+        "metadata",
+        "--manifest-path",
+        "apps/desktop/src-tauri/Cargo.toml",
+        "--locked",
+        "--format-version",
+        "1",
+      ],
+      {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 32 * 1024 * 1024,
+        stdio: ["ignore", "pipe", "inherit"],
+      },
     ),
   );
   for (const pkg of cargo.packages.filter((pkg) => pkg.source)) {
     if (!pkg.source.startsWith("registry+https://github.com/rust-lang/crates.io-index"))
-      throw new Error(`Review the source and licensing of ${pkg.name} before adding a non-crates.io dependency.`);
+      throw new Error(
+        `Review the source and licensing of ${pkg.name} before adding a non-crates.io dependency.`,
+      );
     add(
-      "crate", pkg.name, pkg.version, pkg.license,
+      "crate",
+      pkg.name,
+      pkg.version,
+      pkg.license,
       `https://crates.io/api/v1/crates/${pkg.name}/${pkg.version}/download`,
-      dirname(pkg.manifest_path), ["desktop"],
+      dirname(pkg.manifest_path),
+      ["desktop"],
     );
   }
   if (missing.length) throw new Error([...new Set(missing)].sort(compare).join("\n"));
@@ -176,15 +221,19 @@ export function generate(root = repository) {
   text += "dependencies and crates for other platforms; listing does not imply all are shipped.\n";
   text += "Native npm build tools are excluded: their executables are not distributed.\n\n";
   text += "Package source links below provide the original published source distributions.\n";
-  text += "Third-party source files are used without local modifications. For MPL-2.0 components,\n";
+  text +=
+    "Third-party source files are used without local modifications. For MPL-2.0 components,\n";
   text += "the corresponding Source Code Form is available from each component's source link.\n";
   text += "OS frameworks, system libraries, and installer-added components require a separate\n";
-  text += "artifact inventory before distribution; see docs/licensing.md in the source repository.\n\n";
+  text +=
+    "artifact inventory before distribution; see docs/licensing.md in the source repository.\n\n";
   text += "COMPONENT INVENTORY\n===================\n\n";
   for (const entry of entries)
     text += `${entry.id}\nLicense: ${entry.license}\nUsed by: ${entry.scopes.join(", ")}\nSource: ${entry.source}\n\n`;
   text += "UPSTREAM COPYRIGHT AND LICENSE TEXTS\n====================================\n";
-  const sortedDocuments = [...documents.values()].sort((a, b) => compare(a.uses[0].id, b.uses[0].id));
+  const sortedDocuments = [...documents.values()].sort((a, b) =>
+    compare(a.uses[0].id, b.uses[0].id),
+  );
   for (const document of sortedDocuments) {
     text += "\n-------------------------------------------------------------------------------\n";
     for (const use of document.uses.sort((a, b) => compare(a.id + a.file, b.id + b.file)))
@@ -199,7 +248,9 @@ export function generate(root = repository) {
     packages: entries,
   };
   writeFileSync(join(root, manifestPath), `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(`Collected ${entries.length} components and ${documents.size} upstream notice texts.`);
+  console.log(
+    `Collected ${entries.length} components and ${documents.size} upstream notice texts.`,
+  );
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

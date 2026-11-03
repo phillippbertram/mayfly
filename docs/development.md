@@ -25,17 +25,17 @@ pnpm check
 pnpm format
 ```
 
-| Command                            | Current behavior                                                             |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
-| `pnpm check`                       | Run Biome, desktop/website TypeScript, version consistency, and script tests |
-| `pnpm lint`                        | Run Biome lint checks; warnings fail                                         |
-| `pnpm format:check`                | Check formatting with Biome                                                  |
-| `pnpm format`                      | Apply Biome formatting                                                       |
-| `pnpm version:check`               | Check that desktop/workspace/Cargo versions agree                            |
-| `pnpm licenses:check`              | Reject stale or modified dependency notice snapshots                         |
-| `pnpm licenses:generate`           | Collect locked dependency license texts for review                            |
-| `pnpm test:scripts`                | Test version tooling and release-asset collection/manifests                  |
-| `pnpm list --recursive --depth -1` | List the workspace root, desktop, and website packages                       |
+| Command                            | Current behavior                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm check`                       | Run Biome, desktop/website TypeScript, version/notice checks, and script tests |
+| `pnpm lint`                        | Run Biome lint checks; warnings fail                                           |
+| `pnpm format:check`                | Check formatting with Biome                                                    |
+| `pnpm format`                      | Apply Biome formatting                                                         |
+| `pnpm version:check`               | Check that desktop/workspace/Cargo versions agree                              |
+| `pnpm licenses:check`              | Reject stale or modified dependency notice snapshots                           |
+| `pnpm licenses:generate`           | Collect locked dependency license texts for review                             |
+| `pnpm test:scripts`                | Test version tooling and release-asset collection/manifests                    |
+| `pnpm list --recursive --depth -1` | List the workspace root, desktop, and website packages                         |
 
 Biome warnings fail `pnpm check`. That command does not run Rust checks, build the
 desktop frontend, or run desktop interaction tests. Application commands:
@@ -278,6 +278,13 @@ artifacts or create releases; the [release workflow](releasing.md) does that fro
 version tag. The Tauri configuration explicitly selects ad-hoc signing (`-`) for
 macOS bundles. Developer ID signing, notarization, and Windows signing are not
 configured; ad-hoc signing does not establish public distribution trust (#14).
+Read [Installation and first launch](installation.md) for the documented per-app
+exceptions and checksum checks. Those instructions do not establish downloaded
+bundle acceptance on any platform.
+
+The build checks the dependency notice snapshot before compiling the frontend.
+Tauri includes the project license, copyright notice, and full third-party notices
+as `licenses/` resources in every configured bundle; see [Third-party licensing](licensing.md).
 
 The platform aliases are fixed release commands. For debug builds or custom Tauri flags,
 invoke the CLI directly, placing Cargo arguments after `--`, for example:

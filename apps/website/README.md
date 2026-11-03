@@ -29,6 +29,17 @@ server-side search request, or runtime environment secret after export. Search i
 pre-rendered into `search-index.json` and runs in the browser. All public assets use
 the configured project base path; Next.js handles internal route prefixes.
 
+Website preparation checks the reviewed dependency notice snapshot and copies
+`LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_NOTICES.txt` into `public/licenses/`
+before export. The footer and manual link to them under the same base path. Run
+`pnpm licenses:generate` after dependency changes and review the resulting texts;
+see [Third-party licensing](../../docs/licensing.md).
+
+The download area and installation manual explain that current macOS packages are
+ad-hoc signed without notarization and Windows installers are unsigned. Keep those
+warnings and first-launch instructions accurate until signing is actually enabled
+and verified. They do not claim that public installers already exist.
+
 Set `NEXT_PUBLIC_BASE_PATH` to an empty string for a root/custom-domain site, or a
 single path such as `/mayfly` for a GitHub project site. `NEXT_PUBLIC_SITE_URL`
 sets the canonical origin (default `https://phillippbertram.github.io`). Do not

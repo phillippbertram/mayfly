@@ -39,7 +39,7 @@ export const releaseDocuments = [
   { source: "licenses/THIRD_PARTY_NOTICES.txt", name: "THIRD_PARTY_NOTICES.txt" },
   { source: "docs/installation.md", name: "INSTALLATION.md" },
 ];
-const repository = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
+const repositoryRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 
 export function isStable(version) {
   return !version.includes("-");
@@ -85,14 +85,11 @@ async function finalize(assetDir, version, repository) {
   const checksums = entries.map(({ sha256, name }) => `${sha256}  ${name}\n`);
   for (const document of releaseDocuments) {
     const destination = join(assetDir, document.name);
-    await copyFile(join(repository, document.source), destination);
+    await copyFile(join(repositoryRoot, document.source), destination);
     checksums.push(`${await sha256(destination)}  ${document.name}\n`);
   }
 
-  await writeFile(
-    join(assetDir, "SHA256SUMS"),
-    checksums.join(""),
-  );
+  await writeFile(join(assetDir, "SHA256SUMS"), checksums.join(""));
   // The website only lists stable releases; pre-releases ship without a manifest.
   if (!isStable(version)) return;
   const base = `https://github.com/${repository}/releases`;
