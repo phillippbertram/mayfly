@@ -9,6 +9,7 @@ import {
   RecipientUpdates,
 } from "./recipient-schematic";
 import { Screenshot } from "./screenshot";
+import { SystemScreenshot } from "./system-screenshot";
 
 export function getMDXComponents(): MDXComponents {
   return {
@@ -21,5 +22,6 @@ export function getMDXComponents(): MDXComponents {
     RecipientPaths,
     RecipientUpdates,
     Screenshot,
+    SystemScreenshot,
   };
 }

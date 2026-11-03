@@ -18,6 +18,17 @@ captions. These QR codes do not grant access to real files. Screenshots were cap
 through the browser screenshot API without compositing or editing app content.
 The website adds decorative window chrome separately.
 
+Two PNGs show macOS itself, not the Mayfly interface. They were captured in dark
+mode on 2026-11-03 while opening the ad-hoc signed `v0.15.0` test package, with
+capture metadata removed. The manual and `docs/installation.md` use them for the
+first-launch steps.
+
+- `macos-not-opened.png`: the Gatekeeper dialog “Mayfly” Not Opened.
+- `macos-open-anyway.png`: Privacy & Security with **Open Anyway** for Mayfly.
+
+Recapture them when Apple changes the wording, or drop them once Developer ID
+signing and notarization (#14) remove the warning.
+
 To refresh: run `pnpm dev:web`, open an isolated browser tab, wait for the initial
 preview state and transitions to settle, and capture the relevant panel as JPEG.
 Confirm the sample-data label. For the file-drop sequence, open the three-file

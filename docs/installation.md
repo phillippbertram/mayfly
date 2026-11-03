@@ -23,12 +23,19 @@ exceptions; use your organization's approved installation route in that case.
 1. Choose the `.dmg` for **Apple Silicon** or **Intel** to match your Mac.
 2. Verify the download with `shasum -a 256 "/path/to/Mayfly-<version>-<target>.dmg"`.
 3. Open the disk image and drag **Mayfly.app** into **Applications**. Eject the image.
-4. Open **Mayfly** from Applications once. macOS may say that the developer cannot
-   be verified or Apple cannot check the app. Dismiss that first warning.
+4. Open **Mayfly** from Applications once. Recent macOS versions show **“Mayfly”
+   Not Opened** because Apple could not verify the app; older versions say that the
+   developer cannot be verified. Select **Done** to dismiss that first warning.
 5. Open **System Settings → Privacy & Security**. Scroll to the Security section
-   and select **Open Anyway** next to the message about Mayfly.
+   and select **Open Anyway** next to **“Mayfly” was blocked to protect your Mac.**
 6. Confirm **Open** and authenticate if requested. This creates an exception for
    this app; subsequent launches normally use the usual application shortcut.
+
+<!-- Absolute URLs: this file also ships as INSTALLATION.md with each release. -->
+<p>
+  <img src="https://phillippbertram.github.io/mayfly/screenshots/macos-not-opened.png" width="280" alt="macOS dialog titled “Mayfly” Not Opened, saying Apple could not verify that Mayfly is free of malware, with a Done button">
+  <img src="https://phillippbertram.github.io/mayfly/screenshots/macos-open-anyway.png" width="420" alt="Privacy &amp; Security settings with the message “Mayfly” was blocked to protect your Mac and an Open Anyway button">
+</p>
 
 Older macOS versions call System Settings **System Preferences** and may place the
 exception in **Security & Privacy → General**. If the button is missing, try opening

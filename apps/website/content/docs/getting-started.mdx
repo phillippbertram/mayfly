@@ -34,12 +34,29 @@ A matching hash detects corruption and does not verify the publisher's identity.
 
 1. Choose Apple Silicon or Intel to match your Mac, open the `.dmg`, and drag
    **Mayfly.app** into **Applications**. Eject the disk image.
-2. Try opening Mayfly from Applications once. Dismiss the warning that its
-   developer cannot be verified or Apple cannot check the app.
+2. Try opening Mayfly from Applications once. Recent macOS versions show
+   **“Mayfly” Not Opened** because Apple could not verify the app. Select **Done**.
 3. Open **System Settings → Privacy & Security**, scroll to Security, and select
-   **Open Anyway** beside the message about Mayfly.
+   **Open Anyway** beside **“Mayfly” was blocked to protect your Mac.**
 4. Confirm **Open**, and authenticate if asked. This grants an exception to this
    app; future launches normally use the usual shortcut.
+
+<div className="system-figures">
+  <SystemScreenshot
+    name="macos-not-opened"
+    width={372}
+    height={346}
+    alt="macOS dialog titled “Mayfly” Not Opened, saying Apple could not verify that Mayfly is free of malware, with a Done button"
+    caption="Step 2: the first launch is blocked. Select Done."
+  />
+  <SystemScreenshot
+    name="macos-open-anyway"
+    width={467}
+    height={183}
+    alt="Privacy & Security settings, Security section, with the message “Mayfly” was blocked to protect your Mac and an Open Anyway button"
+    caption="Step 3: Privacy & Security offers Open Anyway."
+  />
+</div>
 
 Older macOS versions use **System Preferences → Security & Privacy → General**.
 If the button is absent, try opening the installed app again first. Managed Macs

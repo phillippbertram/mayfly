@@ -1116,6 +1116,31 @@ summary {
   color: var(--color-fd-muted-foreground);
 }
 
+.system-figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 24px;
+  margin: 24px 0;
+}
+.system-figure {
+  margin: 0;
+  max-width: 100%;
+}
+.system-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+}
+.system-figure figcaption {
+  margin-top: 8px;
+  color: var(--color-fd-muted-foreground);
+  font-size: 12px;
+  text-align: center;
+}
+
 /* Recipient schematics: the desktop app's share-page palette, scaled down. */
 .rs {
   --rs-bg: #f5f8f7;
