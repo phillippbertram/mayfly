@@ -437,14 +437,16 @@ so rows do not jitter.
 
 ### Motion
 
-| Interaction               | Duration | Behavior                                         |
-| ------------------------- | -------- | ------------------------------------------------ |
-| Button and row hover      | 120 ms   | Background color only                            |
-| Share row appears         | 160 ms   | Fade in and 4-point slide down                   |
-| Inspector opens or closes | 180 ms   | Slide from the right, no bounce                  |
-| Drag enters the window    | 120 ms   | Border and tint change                           |
-| Copy confirmation         | 1.5 s    | Button label swaps to "Copied" with a check icon |
-| Share expires             | 240 ms   | Row and QR fade to the muted state               |
+| Interaction               | Duration | Behavior                                                  |
+| ------------------------- | -------- | --------------------------------------------------------- |
+| Button and row hover      | 120 ms   | Background color only                                     |
+| Share row appears         | 160 ms   | Fade in and 4-point slide down                            |
+| Inspector opens or closes | 180 ms   | Slide from the right, no bounce                           |
+| Drag enters the window    | 120 ms   | Border and tint change                                    |
+| Copy confirmation         | 1.5 s    | Button label swaps to "Copied" with a check icon          |
+| Share expires             | 240 ms   | Row and QR fade to the muted state                        |
+| Download page loads       | 750 ms   | Mark pops in, body draws, wing unfolds, wordmark fades in |
+| Download page mark hover  | 600 ms   | Mark hops 4 points and tilts, wing beats five times       |
 
 Countdowns update once per second but render only when the visible text changes.
 With reduced motion enabled, transitions are replaced by immediate state changes.

@@ -375,23 +375,24 @@ const CSS: &str = r#":root{--bg:#f5f8f7;--surface:#fff;--muted-bg:#eef3f1;--bord
 html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
 main{max-width:560px;margin:0 auto;padding:28px 16px 32px;display:flex;flex-direction:column;min-height:100vh}
-.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:-.01em;margin:0 4px 20px}
+.brand{position:relative;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:-.01em;margin:0 4px 20px}
+.brand::before{content:"";position:absolute;left:3px;top:25px;width:16px;height:3px;border-radius:50%;background:#000;opacity:0;transition:opacity .26s,transform .26s}
 .mark{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--accent-fg)}
 .mark svg{width:17px;height:17px;stroke-width:5.5}
 .mark .w{fill:currentColor;stroke:none}
-.mark{animation:mark-in .5s cubic-bezier(.34,1.56,.64,1) both}
-.mark svg{transition:transform .18s ease-out}
+.mark{animation:mark-in .5s cubic-bezier(.34,1.56,.64,1) backwards;transition:transform .26s cubic-bezier(.34,1.56,.64,1)}
 .mark .body{stroke-dasharray:1;animation:draw .4s .15s ease-out both}
 .mark .wing,.mark .w{transform-box:fill-box;transform-origin:35% 100%}
 .mark .w{animation:wing-in .45s .3s cubic-bezier(.34,1.56,.64,1) both}
 .word{animation:word-in .35s .25s ease-out both}
-.brand:hover .mark svg{transform:translateY(-1.5px) rotate(-6deg)}
-.brand:hover .wing{animation:flutter .22s ease-in-out 3}
+.brand:hover .mark{transform:translateY(-4px) rotate(-8deg)}
+.brand:hover::before{opacity:.3;transform:scaleX(.6)}
+.brand:hover .wing{animation:flutter .12s ease-in-out 5}
 @keyframes mark-in{from{opacity:0;transform:scale(.5) rotate(-20deg)}}
 @keyframes draw{from{stroke-dashoffset:1}}
 @keyframes wing-in{from{transform:scaleY(0)}}
 @keyframes word-in{from{opacity:0;transform:translateX(-4px)}}
-@keyframes flutter{50%{transform:rotate(-14deg) scaleX(.7)}}
+@keyframes flutter{50%{transform:rotate(-18deg) scaleX(.55)}}
 svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 24px 24px;box-shadow:var(--shadow);text-align:center}
 .glyph{display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:0 auto 18px;border-radius:16px;background:var(--muted-bg);color:var(--muted)}
@@ -430,7 +431,7 @@ footer{margin-top:auto;padding-top:28px;color:var(--faint);font-size:12px;line-h
 footer a{color:inherit;font-weight:500;text-underline-offset:2px}
 footer a:hover{color:var(--muted)}
 @media (min-width:600px){main{padding-top:64px}.card{padding:40px 36px 28px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}"#;
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.brand:hover .mark{transform:none}.brand::before{display:none}}"#;
 
 #[cfg(test)]
 mod tests {
