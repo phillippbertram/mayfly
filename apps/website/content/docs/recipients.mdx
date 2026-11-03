@@ -1,0 +1,95 @@
+---
+title: On the other device
+description: What the person who scans the code sees, and how they download.
+---
+
+The person receiving your files needs a browser, the link or QR code, and a
+connection to the same trusted network as your computer. No app, no account, no
+sign-up. Files come straight from your computer, so keep it awake and Mayfly running
+until they're done.
+
+<Callout title="Development build" type="info">
+These pages are served by the desktop development build and have been checked in a
+browser on the same Mac. Phone and second-device acceptance are still pending. The
+illustrations on this page are schematics with sample data, not screenshots of a
+transfer.
+</Callout>
+
+## Three ways in
+
+Every share has three kinds of links, and each QR code encodes one of them.
+
+<RecipientPaths />
+
+- **The share link** is what the QR code opens by default. It shows a page with the
+  share's title, every file and its size, how long the link still lives, and
+  **Download all** for a ZIP. Each file has its own download button. Opening or
+  reloading the page never counts as a download.
+- **A file link** downloads one file right away, without a page. You get it from the
+  file list in the share details, or by showing that file's QR code.
+- **The ZIP link** downloads every file as one `.zip`, assembled while it downloads.
+  You get it from **Copy ZIP link**.
+
+A share with a single file shows just that file and one **Download** button. A share
+with no files yet shows **No files yet** and a **Refresh** link, so you can hand over
+a link before you've chosen what goes behind it.
+
+Chat apps and some QR scanners fetch a link to show a preview. For a file or ZIP
+link, that fetch is a download, so with a download limit, prefer sending the share
+link.
+
+## Download limits on the page
+
+A download limit applies to each file. The page says so, for example "Each file can
+be downloaded once." When a file reaches its limit, its button changes to **Limit
+reached**, and **Download all** turns grey, because the ZIP would be incomplete. The
+other files stay available one by one.
+
+See [Expiration and limits](../expiration/) for when a download counts.
+
+## Protected shares
+
+<RecipientPassword />
+
+A protected share first shows **Password required** and a password field. The page
+doesn't reveal the title or any file names until the password is right. After
+**Unlock**, the browser can open the page and its downloads for up to an hour.
+
+A file or ZIP link of a protected share doesn't start a download on its own. It
+shows **Password required** with **Enter password**, which leads to the share page.
+Too many wrong attempts pause the form for a few seconds.
+
+Send the password another way than the link, for example by telling it. On plain
+HTTP, the password is visible to someone watching the network, just like the files.
+
+## When you add or remove files
+
+<RecipientUpdates />
+
+You can change what a share holds while it's live: **Add files…** in the share
+details, drop files onto the share, or remove a file with the button next to it. The
+link and its QR code stay the same.
+
+The page doesn't update by itself. It has no scripts, so the recipient reloads it,
+or selects **Refresh**, to see the new list. Once you've changed a share, its page
+says "The owner may add or remove files."
+
+- **Added files** appear for everyone who has the link. Use separate links for
+  different people.
+- **Removed files** disappear from the page. Their running downloads stop, and an
+  old file link shows **File removed**.
+
+## When a link ends
+
+<RecipientEndings />
+
+When a link's time runs out or you select **Stop sharing**, its page says so in
+plain words instead of a technical error. A file link that reached its download
+limit shows **Download limit reached**.
+
+When you quit Mayfly, your computer stops answering altogether, so the browser
+reports that it can't reach the page. Restarting Mayfly never brings an old link
+back: it shows **Nothing here**. Share again for a new link.
+
+If the page doesn't load at all, the devices probably can't reach each other. See
+[Troubleshooting](../troubleshooting/).
