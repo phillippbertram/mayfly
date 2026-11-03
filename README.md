@@ -10,6 +10,12 @@
   One file or a few. One link. One quick QR scan.
 </p>
 
+<p align="center">
+  <a href="https://phillippbertram.github.io/mayfly/"><strong>Website</strong></a> ·
+  <a href="https://phillippbertram.github.io/mayfly/docs/">User manual</a> ·
+  <a href="https://phillippbertram.github.io/mayfly/#download">Downloads</a>
+</p>
+
 Mayfly is a small desktop utility for macOS, Windows, and Linux. Drop in a few
 files, scan the QR code with your phone, and download them in its browser,
 directly from your computer over your local network. No cloud upload, no account,
@@ -127,7 +133,7 @@ Still open:
   audit (#7, #16).
 - Developer ID signing, macOS notarization, and Windows signing (#14). macOS
   bundles are currently ad-hoc signed.
-- Public website deployment and signed-out installer downloads (#13, #15, #17).
+- Public installer downloads from the website (#13, #15, #17).
 - Actual platform-added library and installer-component license review (#13, #16);
   dependency notices are included in website exports and application resources.
 
@@ -221,10 +227,11 @@ Motion, and shadcn-style components on Radix primitives. The desktop app lives i
 
 ### Website and manual
 
-The product website and English user manual (Next.js and Fumadocs) live in
-`apps/website`. Run `pnpm dev:website`, or `pnpm build:website` for a static
-export. The site is prepared for product information and installer links, but is
-not publicly deployed yet. It never hosts shared files. See the
+The [product website and user manual](https://phillippbertram.github.io/mayfly/)
+(Next.js and Fumadocs) live in `apps/website` and are deployed to GitHub Pages.
+Run `pnpm dev:website`, or `pnpm build:website` for a static export. Every manual
+page links to its source with **Edit on GitHub**. The site lists installers once a
+stable release exists, and it never hosts shared files. See the
 [website guide](apps/website/README.md).
 
 ## Documentation

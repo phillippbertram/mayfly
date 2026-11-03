@@ -204,8 +204,8 @@ cargo test --release --manifest-path apps/desktop/src-tauri/Cargo.toml --locked 
 There is no desktop frontend interaction/IPC test suite yet. Strict TypeScript,
 the frontend build, Rust service tests, and the website's metadata tests cover
 different boundaries. Native selection/drop, QR decoding/clipboard/save, tray,
-and phone downloads still need their own recorded smoke/acceptance tests (#3–#7,
-#16, #20). Follow [the security model](security.md) when changing these boundaries.
+and phone downloads still need their own recorded smoke/acceptance tests (#7,
+#16). Follow [the security model](security.md) when changing these boundaries.
 
 ## Website interface demo
 
@@ -330,10 +330,12 @@ publicly accessible downloads currently exist.
 
 Installed-bundle checks on all supported systems, complete native selection/drop,
 QR image clipboard/save, close-to-tray/reopen, and the real iPhone Safari flow
-remain outstanding (#3–#7, #16, #20). Windows, Linux, and Intel macOS runtime
-behavior is not established by CI compilation. Final security hardening,
-Developer ID signing, notarization, Windows signing, and public website/download
-acceptance remain open. A locally bound listener does not prove phone reachability.
+remain outstanding. #16 collects these checks, including those moved from the
+closed implementation issues #3–#6 and #20; the final security audit is #7.
+Windows, Linux, and Intel macOS runtime behavior is not established by CI
+compilation. Developer ID signing, notarization, Windows signing, and public
+download acceptance remain open. The website is deployed to GitHub Pages, but it
+lists no public installer yet. A locally bound listener does not prove phone reachability.
 
 ## Quality gates
 
