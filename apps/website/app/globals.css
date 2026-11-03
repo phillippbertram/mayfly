@@ -123,6 +123,15 @@ summary {
 .desktop-nav a:hover {
   color: #fff;
 }
+.nav-github {
+  padding: 4px;
+  margin: -4px;
+}
+.mobile-github {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
 .nav-cta {
   border-radius: 7px;
   background: #f1f2f1;

@@ -1,7 +1,8 @@
-import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
+import { DocsBody, DocsDescription, DocsPage, DocsTitle, EditOnGitHub } from "fumadocs-ui/page";
 import { notFound } from "next/navigation";
 import { getMDXComponents } from "@/components/mdx";
 import { basePath } from "@/lib/paths";
+import { manualEditUrl } from "@/lib/repository";
 import { source } from "@/lib/source";
 
 export function generateStaticParams() {
@@ -32,6 +33,7 @@ export default async function ManualPage({ params }: { params: Promise<{ slug?: 
       <DocsBody>
         <Content components={getMDXComponents()} />
       </DocsBody>
+      <EditOnGitHub href={manualEditUrl(page.path)} className="w-fit" />
     </DocsPage>
   );
 }
