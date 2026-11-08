@@ -13,7 +13,8 @@ import { useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import { FileGlyph } from "./file-glyph";
 import { FileName } from "./file-name";
-import { PasswordField, passwordProblem } from "./password-field";
+import { passwordProblem } from "./password";
+import { PasswordField } from "./password-field";
 import { LifetimeField, LimitField } from "./share-options";
 import type { ShareActions } from "./use-share-actions";
 

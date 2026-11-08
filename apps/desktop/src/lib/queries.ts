@@ -1,7 +1,7 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useToast } from "../components/ui/toast";
 import { useBackend } from "../hooks/use-backend";
+import { useToast } from "../hooks/use-toast";
 import { useUi } from "../store/ui";
 import { DEFAULT_SETTINGS } from "./backend/defaults";
 import type { Settings, Topic } from "./backend/types";

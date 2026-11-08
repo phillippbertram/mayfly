@@ -22,7 +22,7 @@ import { InspectorBody, InspectorPanel } from "./features/shares/inspector";
 import { ShareList } from "./features/shares/share-list";
 import { StopAllDialog } from "./features/shares/stop-all-dialog";
 import { useShareActions } from "./features/shares/use-share-actions";
-import { BackendProvider, useBackend } from "./hooks/use-backend";
+import { BackendContext, useBackend } from "./hooks/use-backend";
 import { useFileDrop } from "./hooks/use-file-drop";
 import { useMediaQuery } from "./hooks/use-media-query";
 import { useTheme } from "./hooks/use-theme";
@@ -63,7 +63,7 @@ export function App({ backend: provided }: { backend?: Backend } = {}) {
   if (!backend) return null;
 
   return (
-    <BackendProvider backend={backend}>
+    <BackendContext value={backend}>
       <QueryClientProvider client={client}>
         <HotkeysProvider defaultOptions={{ hotkey: { conflictBehavior: "allow" } }}>
           <MotionConfig reducedMotion="user">
@@ -75,7 +75,7 @@ export function App({ backend: provided }: { backend?: Backend } = {}) {
           </MotionConfig>
         </HotkeysProvider>
       </QueryClientProvider>
-    </BackendProvider>
+    </BackendContext>
   );
 }
 

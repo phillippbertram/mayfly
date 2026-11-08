@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import type { Share } from "../../lib/backend";
-import { PasswordField, passwordProblem } from "./password-field";
+import { passwordProblem } from "./password";
+import { PasswordField } from "./password-field";
 import type { ShareActions } from "./use-share-actions";
 
 /**

@@ -4,7 +4,7 @@ import { DropdownMenu as M } from "radix-ui";
 import { type ReactNode, useContext } from "react";
 import { cn } from "../../lib/cn";
 import { hotkeyLabel } from "../../lib/hotkeys";
-import { PortalContainer } from "./modal";
+import { PortalContainer } from "./portal-container";
 
 export const MenuRoot = M.Root;
 export const MenuTrigger = M.Trigger;

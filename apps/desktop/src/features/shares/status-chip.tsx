@@ -1,7 +1,7 @@
 import { Ban, CircleStop, Clock, TimerOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "../../lib/cn";
-import type { DisplayStatus } from "../../lib/format";
+import { type DisplayStatus, STATUS_LABEL } from "../../lib/format";
 
 const STYLE: Record<DisplayStatus, string> = {
   active: "bg-accent-soft text-accent-strong",
@@ -9,14 +9,6 @@ const STYLE: Record<DisplayStatus, string> = {
   expired: "bg-surface-muted text-muted",
   stopped: "bg-surface-muted text-muted",
   limitReached: "bg-danger-soft text-danger-strong",
-};
-
-export const STATUS_LABEL: Record<DisplayStatus, string> = {
-  active: "Live",
-  expiring: "Fading",
-  expired: "Gone",
-  stopped: "Stopped",
-  limitReached: "Limit reached",
 };
 
 const ICON = {

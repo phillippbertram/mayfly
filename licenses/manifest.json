@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "inputs": {
-    "apps/desktop/package.json": "e50f817927a2bd1f9ebcb7b1d81deefe7063ddecbdb80b17dc8266f4df66bc26",
+    "apps/desktop/package.json": "776db3f643b77c58c3b836dd540d865b865a7a2ec289f337aea8bcb279e60398",
     "apps/desktop/src-tauri/Cargo.lock": "03431c1253e683d169ad85e8c4fd9040ff1f3085704d60385644979d42a956f2",
     "apps/desktop/src-tauri/Cargo.toml": "25991fedf66c5b008bbcbcde6affdf65283782431f16560cc4cdd29dae1ff03d",
     "apps/website/package.json": "12798d867284972d66dad4f6d3468d6c8639b54a66295b863915997a774b0d37",
@@ -30,7 +30,7 @@
     "licenses/overrides/wravery-webview2-rs-0dcf41516e60.txt": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73",
     "licenses/overrides/yuku-toolchain-yuku-8ac8d8d1663c.txt": "8ac8d8d1663cc193ccb3fde7494ccb8e41d63de07047c20c6778c24ca09bc37f",
     "package.json": "3902e86034da6b6c15fa0fd52d3c2c91d1231ad103159e21662cb7561171d809",
-    "pnpm-lock.yaml": "56aece76a39a9dfc4cddf9b5c31d914fba73c105e5104f68d32ee894a5539e2c",
+    "pnpm-lock.yaml": "f705b00c2aaa6774fe43a6f884feff2e4d597b321976609e054140df3880a269",
     "scripts/licenses.mjs": "97419ccdb20f407ea65e71e58b72d6edfc3e240eecdb166a7e36bf398534e4bd"
   },
   "noticeSha256": "b0adc6ad1d48726e70f335aefc7c2d6c4fd48826499b1eb9e58472d12fadbc75",

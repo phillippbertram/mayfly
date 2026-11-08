@@ -8,16 +8,8 @@ import {
   useTransform,
 } from "motion/react";
 import { useRef } from "react";
-import { MARK } from "../../components/brand-mark";
-
-/** Receiving devices, cycled once per flight. `cx`/`cy` is the screen centre. */
-export const DEVICES = [
-  { id: "phone", label: "phone", cx: 266, cy: 86 },
-  { id: "tablet", label: "tablet", cx: 265, cy: 89 },
-  { id: "laptop", label: "laptop", cx: 266, cy: 86 },
-  { id: "monitor", label: "computer", cx: 266, cy: 80 },
-] as const;
-export type DeviceId = (typeof DEVICES)[number]["id"];
+import { MARK } from "../../lib/brand-mark";
+import { DEVICES, type DeviceId } from "./flight-devices";
 
 const P0 = { x: 112, y: 62 };
 const P1 = { x: 150, y: -6 };

@@ -8,7 +8,7 @@ type LimitChoice = "none" | "1" | "3" | "5" | "custom";
 
 const LIMIT_PRESETS = [1, 3, 5] as const;
 
-export function lifetimeText(minutes: number | null): string {
+function lifetimeText(minutes: number | null): string {
   if (minutes === null) return "Until stopped";
   if (minutes % 60 === 0) return `${minutes / 60} h`;
   return minutes > 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`;

@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useToast } from "../../components/ui/toast";
 import { useBackend } from "../../hooks/use-backend";
+import { useToast } from "../../hooks/use-toast";
 import type { DroppedFiles, Share, ShareFile, ShareOptions, StagedFiles } from "../../lib/backend";
 import { splitFileName } from "../../lib/format";
 import { copyQrImage, qrPng } from "../../lib/qr";

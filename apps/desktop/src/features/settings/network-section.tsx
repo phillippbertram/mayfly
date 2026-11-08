@@ -13,7 +13,8 @@ import {
   useSettings,
   useUpdateSettings,
 } from "../../lib/queries";
-import { Field, InlineMessage, inputClass, SectionHeader } from "./field";
+import { Field, InlineMessage, SectionHeader } from "./field";
+import { inputClass } from "./input-class";
 
 function statusLine(server: ServerState): {
   tone: "ok" | "warn" | "error" | "muted";

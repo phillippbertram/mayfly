@@ -31,6 +31,14 @@ export const EXPIRING_THRESHOLD_MS = 2 * MINUTE;
 
 export type DisplayStatus = "active" | "expiring" | "expired" | "stopped" | "limitReached";
 
+export const STATUS_LABEL: Record<DisplayStatus, string> = {
+  active: "Live",
+  expiring: "Fading",
+  expired: "Gone",
+  stopped: "Stopped",
+  limitReached: "Limit reached",
+};
+
 export function displayStatus(share: Share, now: number): DisplayStatus {
   if (share.status !== "active") return share.status;
   if (share.expiresAt !== null && share.expiresAt - now < EXPIRING_THRESHOLD_MS) return "expiring";

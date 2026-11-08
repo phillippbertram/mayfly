@@ -25,26 +25,27 @@ pnpm check
 pnpm format
 ```
 
-| Command                            | Current behavior                                                               |
-| ---------------------------------- | ------------------------------------------------------------------------------ |
-| `pnpm check`                       | Run Biome, desktop/website TypeScript, version/notice checks, and script tests |
-| `pnpm lint`                        | Run Biome lint checks; warnings fail                                           |
-| `pnpm format:check`                | Check formatting with Biome                                                    |
-| `pnpm format`                      | Apply Biome formatting                                                         |
-| `pnpm version:check`               | Check that desktop/workspace/Cargo versions agree                              |
-| `pnpm licenses:check`              | Reject stale or modified dependency notice snapshots                           |
-| `pnpm licenses:generate`           | Collect locked dependency license texts for review                             |
-| `pnpm test:scripts`                | Test version tooling and release-asset collection/manifests                    |
-| `pnpm list --recursive --depth -1` | List the workspace root, desktop, and website packages                         |
+| Command                            | Current behavior                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                       | Run Biome, desktop/website TypeScript, version/notice checks, script tests, and frontend behavior tests |
+| `pnpm lint`                        | Run Biome lint checks; warnings fail                                                                    |
+| `pnpm format:check`                | Check formatting with Biome                                                                             |
+| `pnpm format`                      | Apply Biome formatting                                                                                  |
+| `pnpm version:check`               | Check that desktop/workspace/Cargo versions agree                                                       |
+| `pnpm licenses:check`              | Reject stale or modified dependency notice snapshots                                                    |
+| `pnpm licenses:generate`           | Collect locked dependency license texts for review                                                      |
+| `pnpm test:scripts`                | Test version tooling and release-asset collection/manifests                                             |
+| `pnpm list --recursive --depth -1` | List the workspace root, desktop, and website packages                                                  |
 
-Biome warnings fail `pnpm check`. That command does not run Rust checks, build the
-desktop frontend, or run desktop interaction tests. Application commands:
+Biome warnings fail `pnpm check`. That command includes desktop interaction/IPC
+tests, but does not run Rust checks or build the desktop frontend. Application commands:
 
 | Command              | Behavior                                                                         |
 | -------------------- | -------------------------------------------------------------------------------- |
 | `pnpm dev`           | Start Vite and the native Tauri app                                              |
 | `pnpm dev:web`       | Serve a browser-only preview at `http://127.0.0.1:1420`                          |
 | `pnpm typecheck`     | Check strict TypeScript for both desktop and website                             |
+| `pnpm test:frontend` | Run desktop IPC, native-drop adapter, and React behavior tests in jsdom          |
 | `pnpm build:web`     | Type-check and build frontend assets                                             |
 | `pnpm check:rust`    | Check rustfmt and run Clippy with `--all-targets` and `-D warnings` for the host |
 | `pnpm build`         | Build and package the desktop app for the current host                           |
@@ -201,11 +202,28 @@ than 4 GiB into a ZIP and needs over 4 GiB of temporary output space:
 cargo test --release --manifest-path apps/desktop/src-tauri/Cargo.toml --locked -- --ignored zip64
 ```
 
-There is no desktop frontend interaction/IPC test suite yet. Strict TypeScript,
-the frontend build, Rust service tests, and the website's metadata tests cover
+The desktop frontend suite uses Vitest and React Testing Library with the real
+desktop adapter, schema validation, query cache, and components. Its Tauri
+transport receives synthetic responses and events; it does not use the preview
+backend. Browser primitives missing from jsdom are shimmed in `src/test/setup.ts`.
+See [ADR 0017](decisions/0017-frontend-behavior-tests.md).
+
+| Boundary           | Regression coverage                                                                                                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IPC adapter        | Native paths versus browser metadata, staged handles, cancelled picker, malformed DTOs, extra internal fields, safe errors, validated events, Rust-owned settings and template results                                                 |
+| React flows        | Picker confirmation/cancellation, native drops into new/existing shares, rejected items, creation failures, share-state events, stop/copy, clipboard errors, profile selection, unavailable backend, settings validation/rebind errors |
+| Drop subscription  | Enter/leave/drop handling, empty drops, latest callback, asynchronous listener cleanup                                                                                                                                                 |
+| Rust services/HTTP | Tokens, file authorization/replacement, expiration, atomic limits, streaming, headers/errors, passwords, Unicode and one-pass template substitution                                                                                    |
+
+Run `pnpm test:frontend` alone for UI work, or
+`pnpm --filter @mayfly/desktop exec vitest run src/App.test.tsx` for the main flows.
+Tests use accessible controls and state-based waits. Empty suites fail; `CI=true`
+also rejects `.only` tests. Test fixtures contain no live tokens or user files.
+
+Strict TypeScript, frontend builds, service tests, and website metadata tests cover
 different boundaries. Native selection/drop, QR decoding/clipboard/save, tray,
-and phone downloads still need their own recorded smoke/acceptance tests (#7,
-#16). Follow [the security model](security.md) when changing these boundaries.
+and phone downloads still need recorded smoke/acceptance tests (#7/#16). Follow
+[the security model](security.md) when changing these boundaries.
 
 ## Website interface demo
 
@@ -295,6 +313,24 @@ pnpm --filter @mayfly/desktop tauri build --debug --bundles app -- --locked
 
 ## Current verification
 
+### Application validation — 2026-11-08
+
+On macOS Apple Silicon, `pnpm install --frozen-lockfile`, `pnpm check`,
+`pnpm build:web`, `pnpm check:rust`, and the locked Cargo test command passed.
+The frontend suite reported **27 passed**, repository scripts **13 passed**, and
+Rust **112 passed, 0 failed, 1 ignored** (the optional ZIP64 test). The frontend
+build retained its existing non-fatal bundle-size warning. Regenerated dependency
+notices still cover 805 components; only the input hashes changed for test tooling.
+
+A temporary invalid TypeScript assignment inside `src/test` was rejected by the
+desktop type check with a nonzero exit code; the probe was removed afterwards.
+[Repository checks run 42488313390](https://github.com/phillippbertram/mayfly/actions/runs/42488313390)
+passed on Ubuntu 22.04 for commit `c3396a326d4fcf62454b1f1ecdad6a30035ff5ee`
+on `chore/11-application-checks`. The hosted job passed the same 27 frontend,
+13 script, and 112 Rust tests (one optional ZIP64 test ignored), the frontend
+production build, rustfmt, and Clippy. Rust cache upload also succeeded. These
+checks do not establish installed-bundle, native clipboard/drop, or phone acceptance.
+
 ### Local automated checks — 2026-11-03
 
 On macOS Apple Silicon, `pnpm check`, `pnpm build:web`, `pnpm check:rust`, and
@@ -354,18 +390,25 @@ Do not claim verification on an OS that was not tested.
 
 ## GitHub Actions
 
-`Repository checks` runs on pushes and pull requests, installs locked pnpm
-dependencies, and runs `pnpm check`: Biome, both TypeScript projects, version
-consistency, and release/version script tests. It uses read-only repository
-permissions, pinned action commits, a timeout, and cancels superseded runs. It
-does not currently run Rust tests/Clippy or a desktop frontend production build.
+`Repository checks` runs on pushes, pull requests, and manual dispatch. Its
+`Application checks` job installs locked pnpm dependencies and Linux native
+prerequisites, then runs `pnpm check`, `pnpm build:web`, `pnpm check:rust`, and
+`cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --locked`, in that
+order. `pnpm check` includes strict TypeScript, Biome, version/notice checks,
+release/version script tests, and frontend behavior tests. The frontend must exist
+before Tauri's Rust checks can embed it.
+
+The job uses read-only repository permissions, pinned action commits, a 30-minute
+timeout, pnpm caching, and a Rust cache keyed by OS/architecture, compiler,
+manifests/lockfile, and revision. Superseded runs are cancelled. It has no signing,
+publishing, or application credentials and does not upload runtime state or logs.
 
 `Release` runs quality gates (including the frontend build, rustfmt, Clippy, and
 Rust tests) on version tags, builds the four-target native matrix, and creates a
 draft release only after all builds succeed; see [Releasing](releasing.md).
-These tag-only gates do not replace continuous application validation (#11) or
-native PR artifact builds (#8). Keep publishing and signing credentials out of
-pull-request workflows.
+The push/PR job supplies continuous application validation (#11); native PR
+artifact builds remain separate (#8). Keep publishing and signing credentials
+out of pull-request workflows.
 
 `Website` type-checks, tests release metadata, builds the live demo/static site,
 checks exported links, and uploads a Pages artifact. Public deployment is gated

@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
 import { Switch } from "../../components/ui/switch";
-import { useToast } from "../../components/ui/toast";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useBackend } from "../../hooks/use-backend";
+import { useToast } from "../../hooks/use-toast";
 import type { LinkProfile, TemplatePreview } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { errorMessage, useProfiles, useSettings, useUpdateSettings } from "../../lib/queries";
-import { Field, InlineMessage, inputClass, SectionHeader } from "./field";
+import { Field, InlineMessage, SectionHeader } from "./field";
+import { inputClass } from "./input-class";
 
 const PLACEHOLDERS = ["{url}", "{encodedUrl}", "{filename}", "{encodedFilename}", "{token}"];
 

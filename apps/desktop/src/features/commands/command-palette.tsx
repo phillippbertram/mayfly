@@ -5,11 +5,10 @@ import { Kbd } from "../../components/ui/kbd";
 import { Modal } from "../../components/ui/modal";
 import { useNow } from "../../hooks/use-now";
 import type { Share } from "../../lib/backend";
-import { displayStatus, formatBytes } from "../../lib/format";
+import { displayStatus, formatBytes, STATUS_LABEL } from "../../lib/format";
 import { appHotkeys } from "../../lib/hotkeys";
 import { useUi } from "../../store/ui";
 import { FileGlyph } from "../shares/file-glyph";
-import { STATUS_LABEL } from "../shares/status-chip";
 import type { AppCommand } from "./use-commands";
 
 /** Matches every search word against the visible label and keywords, ignoring hidden ids. */

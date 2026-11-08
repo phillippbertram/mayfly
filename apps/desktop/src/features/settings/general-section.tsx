@@ -1,5 +1,5 @@
 import { Switch } from "../../components/ui/switch";
-import { useToast } from "../../components/ui/toast";
+import { useToast } from "../../hooks/use-toast";
 import type { Settings } from "../../lib/backend";
 import { errorMessage, useSettings, useUpdateSettings } from "../../lib/queries";
 import { useUi } from "../../store/ui";

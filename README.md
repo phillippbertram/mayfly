@@ -195,7 +195,8 @@ IPC, and shares nothing.
 ### Check and build
 
 ```sh
-pnpm check        # Biome and strict TypeScript
+pnpm check        # Biome, strict TypeScript, and script/frontend behavior tests
+pnpm test:frontend # Desktop IPC and React behavior tests only
 pnpm format       # Apply Biome formatting
 pnpm build:web    # Type-check and build the frontend
 pnpm check:rust   # rustfmt and Clippy
