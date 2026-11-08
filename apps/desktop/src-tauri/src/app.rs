@@ -762,7 +762,91 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shares::FileSnapshot;
+    use crate::shares::{FileSnapshot, ManualClock};
+
+    #[tokio::test]
+    async fn staging_drops_requires_fresh_native_paths_and_hides_them_from_dtos() {
+        let clock = ManualClock::new();
+        let app = App::with_clock(clock.clone(), Arc::new(|_| {}), Vec::new(), None);
+        let dir = tempfile::tempdir().unwrap();
+        let selected = dir.path().join("selected.txt");
+        let other = dir.path().join("other.txt");
+        std::fs::write(&selected, b"selected").unwrap();
+        std::fs::write(&other, b"not selected").unwrap();
+
+        app.record_drop(vec![selected.clone()]);
+        let staged = app
+            .stage_dropped(vec![selected.clone(), other])
+            .await
+            .unwrap();
+        assert!(staged.rejected.is_empty());
+        assert_eq!(staged.files.len(), 1);
+        assert_eq!(staged.files[0].file_name, "selected.txt");
+        assert!(!serde_json::to_string(&staged)
+            .unwrap()
+            .contains(dir.path().to_str().unwrap()));
+        let shares = app
+            .create_shares(
+                &[staged.files[0].stage_id.clone()],
+                &app.settings().default_options(),
+                false,
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(!serde_json::to_string(&shares)
+            .unwrap()
+            .contains(dir.path().to_str().unwrap()));
+        assert!(app.stage_dropped(vec![selected.clone()]).await.is_err());
+
+        app.record_drop(vec![selected.clone()]);
+        clock.advance(DROP_TTL);
+        assert!(app.stage_dropped(vec![selected]).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn network_changes_refresh_links_and_shutdown_revokes_and_stops_serving() {
+        let app = App::with_clock(Arc::new(SystemClock), Arc::new(|_| {}), Vec::new(), None);
+        app.bind(0).await.unwrap();
+        let ServerState::NoAddress { port } = app.server_state() else {
+            panic!("no interface is available to advertise");
+        };
+        let share = app
+            .registry
+            .create_empty(&app.settings().default_options())
+            .unwrap();
+        assert!(app.list_shares()[0].link.is_none());
+
+        for address in ["192.0.2.1", "192.0.2.2"] {
+            app.set_interfaces(vec![NetworkInterface {
+                id: "test".into(),
+                name: "Test".into(),
+                address: address.into(),
+            }]);
+            let expected = format!("http://{address}:{port}/s/{}", share.token);
+            assert_eq!(
+                app.list_shares()[0].link.as_deref(),
+                Some(expected.as_str())
+            );
+        }
+        app.set_interfaces(Vec::new());
+        assert_eq!(app.server_state(), ServerState::NoAddress { port });
+        assert!(app.list_shares()[0].link.is_none());
+
+        let client = reqwest::Client::new();
+        let url = format!("http://127.0.0.1:{port}/s/{}", share.token);
+        assert_eq!(
+            client.get(&url).send().await.unwrap().status(),
+            reqwest::StatusCode::OK
+        );
+        app.shutdown().await;
+        assert_eq!(app.server_state(), ServerState::Stopping);
+        assert_eq!(
+            app.registry.get(&share.id).unwrap().status,
+            ShareStatus::Stopped
+        );
+        assert!(client.get(&url).send().await.is_err());
+    }
 
     fn snapshot(files: usize) -> ShareSnapshot {
         ShareSnapshot {

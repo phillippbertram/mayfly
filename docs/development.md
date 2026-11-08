@@ -313,6 +313,36 @@ pnpm --filter @mayfly/desktop tauri build --debug --bundles app -- --locked
 
 ## Current verification
 
+### Local MVP security audit — 2026-11-08
+
+The #7 audit reviewed file selection and handles, public routes, token and
+password checks, HTML and attachment headers, IPC DTOs, logging, CSP,
+capabilities, and listener shutdown. On macOS 26.6.2 (Apple Silicon), the Rust
+suite passed 117 tests, with the optional ZIP64 test ignored. The local checks
+covered replacement during file opening, native drop authorization and path
+redaction at the app service, port conflicts, address changes, and HTTP refusal
+after expiry and revocation, including HEAD and Range requests. In a race
+between file and ZIP downloads, only one request won the shared limit.
+
+A separate loopback run downloaded a 128 MiB fixture directly and inside a ZIP.
+Both SHA-256 digests matched the original. The test process, which hosted both
+client and server, peaked at 16.52 MiB RSS on this host. This measurement covers
+the streaming paths in that test.
+
+The locked frontend build, repository checks, website metadata tests, rustfmt,
+and Clippy passed. The local arm64 release `.app` built and passed strict
+ad-hoc signature verification. In the native window, a synthetic file passed
+through the picker, the QR exported as a 1024 × 1024 PNG, and the UI marked
+the share stopped after revocation. Cmd+Q closed the window and the listener
+refused subsequent loopback connections. DMG creation failed with
+`hdiutil: create failed - Device not configured`.
+
+Same-network iPhone Safari, OS drag and drop, QR clipboard, tray behavior
+during a transfer, and opening a compatible profile on a phone still need
+manual evidence. Windows pre-open file identity comparison is also open
+([security model](security.md#file-access)). See the
+[end-to-end acceptance flow](product.md#end-to-end-acceptance) and [#7](https://github.com/phillippbertram/mayfly/issues/7).
+
 ### Application validation — 2026-11-08
 
 On macOS Apple Silicon, `pnpm install --frozen-lockfile`, `pnpm check`,
