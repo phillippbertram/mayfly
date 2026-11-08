@@ -88,6 +88,8 @@ order is provisional, with no release dates assigned.
 | Sharing defaults      | [#26: Reusable lifetime and download-limit presets](https://github.com/phillippbertram/mayfly/issues/26)                        |
 | Receiving files       | [#27: Opt-in browser-to-desktop file receiving per share](https://github.com/phillippbertram/mayfly/issues/27)                  |
 | Interrupted downloads | [#28: Resumable file downloads with explicit range and counting semantics](https://github.com/phillippbertram/mayfly/issues/28) |
+| Typeable links        | [#31: Typeable short links and optional custom slugs](https://github.com/phillippbertram/mayfly/issues/31)                      |
+| External base URL     | [#32: Temporary external base URL behind tunnels](https://github.com/phillippbertram/mayfly/issues/32)                          |
 
 ### Related optional work
 
