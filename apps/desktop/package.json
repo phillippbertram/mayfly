@@ -17,6 +17,7 @@
     "build:web": "node ../../scripts/licenses.mjs check && tsc --noEmit && vite build",
     "build:demo": "tsc --noEmit && vite build --mode demo",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings",
     "tauri": "tauri"
   },
@@ -39,11 +40,17 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/cli": "2.12.4",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.0",
+    "jsdom": "31.0.0",
     "tailwindcss": "4.3.3",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "vitest": "4.1.12"
   }
 }
