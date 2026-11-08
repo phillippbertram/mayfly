@@ -25,11 +25,16 @@ untrusted. A malicious website running in a local browser must not create shares
 - Define a symlink policy and defend against replacement between validation and
   opening. Prefer a handle to the validated file or equivalent identity checking
   rather than following a newly substituted path to another file.
-  Implemented policy: a selected path (including a symlink) is resolved once at
-  selection, opened without blocking, and re-checked through the opened handle.
-  Every download uses positional reads on that pinned handle; replacing or
+  A selected symlink is resolved at selection. On macOS and Linux, Mayfly opens
+  the resolved path without following a replacement final symlink or blocking
+  on a pipe, then compares the opened handle's device and inode to the checked
+  file. Windows checks that the opened handle is regular. Comparing its identity
+  with the pre-open file remains an audit item in #7.
+  Every download uses positional reads on the pinned handle. Replacing or
   re-linking the path afterwards has no effect. A size change makes the file
-  unavailable instead of serving content that doesn't match its advertised length.
+  unavailable instead of serving content that doesn't match its advertised
+  length. Edits to the original file that preserve its size can still affect
+  downloads because Mayfly streams the original rather than taking a snapshot.
 - Accept only paths from the native picker (opened by Rust) or from the native
   window drop event. The webview can't submit arbitrary paths for sharing.
 - Saving a QR code PNG is the only write the webview can trigger: it sends the
@@ -98,7 +103,8 @@ Optional per share ([ADR 0011](decisions/0011-share-passwords.md)):
 - Rust hashes passwords with Argon2id (19 MiB, 2 passes, 1 lane, random 16-byte
   salt) and keeps only the verifier in memory. Passwords, verifiers, and unlock
   credentials are never persisted, logged, put in URLs or QR codes, returned in
-  DTOs, or offered to link profiles. Plaintext is wiped when dropped.
+  DTOs, or offered to link profiles. The owned password strings used for hashing
+  and verification are zeroized when dropped.
 - A protected share's page shows only a password form. Every page, HEAD, GET,
   range, and retry request needs the share's unlock cookie: a random 256-bit
   credential scoped by path to that share's `/s`, `/d`, and `/z` routes,

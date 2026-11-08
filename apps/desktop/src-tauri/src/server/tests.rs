@@ -1,11 +1,12 @@
 //! End-to-end checks through real HTTP requests against a bound listener.
 
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::{header, Method, StatusCode};
+use sha2::{Digest, Sha256};
 
 use super::{HttpState, Listener};
 use crate::shares::password::{Password, Verifier};
@@ -294,31 +295,159 @@ async fn download_limit_holds_under_concurrency() {
 }
 
 #[tokio::test]
+async fn file_and_zip_downloads_compete_for_the_same_limit() {
+    let h = Harness::new().await;
+    let share = h.share(&[("a.txt", b"a"), ("b.txt", b"b")], None, Some(1), false);
+    let file = format!("/d/{}/{}", share.token, share.files[0].id);
+    let zip = format!("/z/{}", share.token);
+    let requests = (0..20).map(|index| {
+        let client = h.client.clone();
+        let is_zip = index % 2 == 0;
+        let url = format!("{}{}", h.base, if is_zip { &zip } else { &file });
+        async move {
+            let response = client.get(url).send().await.unwrap();
+            match response.status() {
+                StatusCode::OK => {
+                    assert!(!response.bytes().await.unwrap().is_empty());
+                    Some(is_zip)
+                }
+                StatusCode::GONE => None,
+                status => panic!("unexpected status {status}"),
+            }
+        }
+    });
+    let winners: Vec<_> = futures_util::future::join_all(requests)
+        .await
+        .into_iter()
+        .flatten()
+        .collect();
+    assert_eq!(winners.len(), 1);
+    let snapshot = h.registry.get(&share.id).unwrap();
+    assert_eq!(snapshot.files[0].downloads, 1);
+    assert_eq!(snapshot.files[1].downloads, u32::from(winners[0]));
+    for path in [&file, &zip] {
+        assert_eq!(
+            h.request(Method::HEAD, path).await.status(),
+            StatusCode::GONE
+        );
+    }
+}
+
+#[tokio::test]
 async fn expired_and_stopped_shares_are_gone() {
     let h = Harness::new().await;
-    let expiring = h.share(&[("a.txt", b"a")], Some(5), None, true);
-    let stopped = h.share(&[("b.txt", b"b")], None, None, true);
+    let expiring = h.share(&[("a.txt", b"a"), ("b.txt", b"b")], Some(5), None, false);
+    let stopped = h.share(&[("c.txt", b"c"), ("d.txt", b"d")], None, None, false);
     h.clock.advance(Duration::from_secs(5 * 60));
-    let response = h
-        .get(&format!("/d/{}/{}", expiring.token, expiring.files[0].id))
-        .await;
-    assert_eq!(response.status(), StatusCode::GONE);
-    assert!(response.text().await.unwrap().contains("This link is gone"));
-
     h.registry.stop(&stopped.id).unwrap();
-    let response = h.get(&format!("/s/{}", stopped.token)).await;
-    assert_eq!(response.status(), StatusCode::GONE);
-    assert!(response
-        .text()
-        .await
+    for (share, message) in [
+        (expiring, "This link is gone"),
+        (stopped, "Sharing was stopped"),
+    ] {
+        let page = format!("/s/{}", share.token);
+        let paths = [
+            &page,
+            &format!("/d/{}/{}", share.token, share.files[0].id),
+            &format!("/z/{}", share.token),
+        ];
+        for path in paths {
+            let response = h.get(path).await;
+            assert_eq!(response.status(), StatusCode::GONE);
+            assert!(response.text().await.unwrap().contains(message));
+            let response = h.request(Method::HEAD, path).await;
+            assert_eq!(response.status(), StatusCode::GONE);
+            assert!(response.bytes().await.unwrap().is_empty());
+            let response = h
+                .client
+                .get(format!("{}{path}", h.base))
+                .header(header::RANGE, "bytes=0-1")
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::GONE);
+        }
+        assert_eq!(
+            h.request(Method::POST, &page).await.status(),
+            StatusCode::GONE
+        );
+        assert_eq!(h.downloads(&share.id), 0);
+    }
+}
+
+#[tokio::test]
+async fn large_file_and_zip_stream_the_original_bytes() {
+    const SIZE: u64 = 128 * 1024 * 1024;
+    let h = Harness::new().await;
+    let path = h.dir.path().join("large.bin");
+    {
+        let mut file = std::fs::File::create(&path).unwrap();
+        file.set_len(SIZE - 4).unwrap();
+        file.seek(SeekFrom::End(0)).unwrap();
+        file.write_all(b"tail").unwrap();
+    }
+    let (size, expected) = hash_reader(std::fs::File::open(&path).unwrap());
+    assert_eq!(size, SIZE);
+    let staged = h.registry.stage(vec![path]);
+    assert!(staged.rejected.is_empty());
+    let share = h
+        .registry
+        .create(
+            &[staged.files[0].stage_id.clone()],
+            &test_options(None, None),
+            false,
+            None,
+        )
         .unwrap()
-        .contains("Sharing was stopped"));
-    assert_eq!(
-        h.get(&format!("/d/{}/{}", stopped.token, stopped.files[0].id))
-            .await
-            .status(),
-        StatusCode::GONE
-    );
+        .remove(0);
+
+    let mut response = h
+        .get(&format!("/d/{}/{}", share.token, share.files[0].id))
+        .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.content_length(), Some(SIZE));
+    let mut actual = Sha256::new();
+    let mut received = 0;
+    while let Some(chunk) = response.chunk().await.unwrap() {
+        received += chunk.len() as u64;
+        actual.update(chunk);
+    }
+    assert_eq!(received, SIZE);
+    assert_eq!(<[u8; 32]>::from(actual.finalize()), expected);
+
+    let mut response = h
+        .client
+        .get(format!("{}/z/{}", h.base, share.token))
+        .header(header::RANGE, "bytes=0-1")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(header(&response, header::ACCEPT_RANGES), "none");
+    let length = response.content_length().unwrap();
+    let mut downloaded = tempfile::tempfile_in(h.dir.path()).unwrap();
+    while let Some(chunk) = response.chunk().await.unwrap() {
+        downloaded.write_all(&chunk).unwrap();
+    }
+    assert_eq!(downloaded.metadata().unwrap().len(), length);
+    let mut archive = zip::ZipArchive::new(downloaded).unwrap();
+    assert_eq!(archive.len(), 1);
+    let entry = archive.by_name("large.bin").unwrap();
+    assert_eq!(hash_reader(entry), (SIZE, expected));
+    assert_eq!(h.downloads(&share.id), 2);
+}
+
+fn hash_reader(mut reader: impl Read) -> (u64, [u8; 32]) {
+    let mut hash = Sha256::new();
+    let mut size = 0;
+    let mut buf = [0; 16 * 1024];
+    loop {
+        let count = reader.read(&mut buf).unwrap();
+        if count == 0 {
+            return (size, hash.finalize().into());
+        }
+        hash.update(&buf[..count]);
+        size += count as u64;
+    }
 }
 
 #[tokio::test]

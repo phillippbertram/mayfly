@@ -7,7 +7,7 @@
 //! original file changes size, downloads report it as unavailable instead of
 //! sending content that no longer matches the advertised length.
 
-use std::fs::{File, OpenOptions};
+use std::fs::{File, Metadata, OpenOptions};
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
@@ -73,16 +73,7 @@ impl SharedFile {
         if !metadata.is_file() {
             return Err(Rejection::NotRegular);
         }
-        let handle = open_nonblocking(&canonical).map_err(|_| Rejection::Unreadable)?;
-        // The path may have been swapped between the checks above and opening it;
-        // only the opened handle's own metadata is authoritative.
-        let opened = handle.metadata().map_err(|_| Rejection::Unreadable)?;
-        if opened.is_dir() {
-            return Err(Rejection::Directory);
-        }
-        if !opened.is_file() {
-            return Err(Rejection::NotRegular);
-        }
+        let (handle, opened) = open_validated(&canonical, &metadata)?;
         let media_type = mime_guess::from_path(&name)
             .first_or_octet_stream()
             .essence_str()
@@ -224,16 +215,36 @@ fn display_name(path: &Path) -> String {
     }
 }
 
-/// Opening must never block on a FIFO swapped in after validation.
-fn open_nonblocking(path: &Path) -> io::Result<File> {
+fn open_validated(path: &Path, checked: &Metadata) -> Result<(File, Metadata), Rejection> {
     let mut options = OpenOptions::new();
     options.read(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(libc::O_NONBLOCK);
+        // The selected symlink has already been resolved. Reject a new final
+        // symlink and don't block on a FIFO swapped in after validation.
+        options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
     }
-    options.open(path)
+    let handle = options.open(path).map_err(|_| Rejection::Unreadable)?;
+    let opened = handle.metadata().map_err(|_| Rejection::Unreadable)?;
+    if opened.is_dir() {
+        return Err(Rejection::Directory);
+    }
+    if !opened.is_file() {
+        return Err(Rejection::NotRegular);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        // A different regular file (including via a swapped parent directory)
+        // is still unauthorized. Only the checked file's identity can pass.
+        if checked.dev() != opened.dev() || checked.ino() != opened.ino() {
+            return Err(Rejection::Unreadable);
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = checked;
+    Ok((handle, opened))
 }
 
 fn classify(media_type: &str, name: &str) -> FileKind {
@@ -337,6 +348,31 @@ mod tests {
         let file = SharedFile::open(&link).unwrap();
         assert_eq!(file.name(), "link.txt");
         assert_eq!(file.size(), 8);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn rejects_regular_file_and_symlink_swaps_before_opening() {
+        let dir = tempfile::tempdir().unwrap();
+        let selected = write(dir.path(), "selected.txt", b"original");
+        let replacement = write(dir.path(), "replacement.txt", b"replaced");
+        let checked = std::fs::metadata(&selected).unwrap();
+        let original = dir.path().join("original.txt");
+        std::fs::rename(&selected, &original).unwrap();
+        std::fs::rename(&replacement, &selected).unwrap();
+        assert_eq!(
+            open_validated(&selected, &checked).unwrap_err(),
+            Rejection::Unreadable
+        );
+
+        // Even a final symlink to the original file isn't the resolved path
+        // that was checked. An explicitly selected symlink still works above.
+        std::fs::remove_file(&selected).unwrap();
+        std::os::unix::fs::symlink(original, &selected).unwrap();
+        assert_eq!(
+            open_validated(&selected, &checked).unwrap_err(),
+            Rejection::Unreadable
+        );
     }
 
     #[tokio::test]
