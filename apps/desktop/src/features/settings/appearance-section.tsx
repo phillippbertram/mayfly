@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { motion } from "motion/react";
 import { RadioGroup } from "radix-ui";
-import { useToast } from "../../components/ui/toast";
+import { useToast } from "../../hooks/use-toast";
 import type { ThemePreference } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { errorMessage, useSettings, useUpdateSettings } from "../../lib/queries";

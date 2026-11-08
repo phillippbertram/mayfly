@@ -7,7 +7,8 @@ import { Tooltip } from "../../components/ui/tooltip";
 import type { ServerState } from "../../lib/backend";
 import { cn } from "../../lib/cn";
 import { appHotkeys } from "../../lib/hotkeys";
-import { DEVICES, FlightIllustration } from "./flight-illustration";
+import { DEVICES } from "./flight-devices";
+import { FlightIllustration } from "./flight-illustration";
 
 const stagger: Variants = {
   hidden: {},

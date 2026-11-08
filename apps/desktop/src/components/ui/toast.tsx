@@ -1,21 +1,13 @@
 import { CircleAlert, CircleCheck, Info, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { ToastContext, type ToastTone } from "../../hooks/use-toast";
 import { cn } from "../../lib/cn";
 
-type Tone = "info" | "success" | "error";
 interface ToastItem {
   id: number;
   message: string;
-  tone: Tone;
-}
-
-const ToastContext = createContext<((message: string, tone?: Tone) => void) | null>(null);
-
-export function useToast() {
-  const push = useContext(ToastContext);
-  if (!push) throw new Error("useToast must be used inside ToastProvider.");
-  return push;
+  tone: ToastTone;
 }
 
 const ICONS = { info: Info, success: CircleCheck, error: CircleAlert };
@@ -29,7 +21,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const push = useCallback(
-    (message: string, tone: Tone = "info") => {
+    (message: string, tone: ToastTone = "info") => {
       const id = nextId++;
       setItems((current) =>
         [...current.filter((t) => t.message !== message), { id, message, tone }].slice(-3),

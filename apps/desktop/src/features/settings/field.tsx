@@ -69,6 +69,3 @@ export function InlineMessage({
     </AnimatePresence>
   );
 }
-
-export const inputClass =
-  "h-8 rounded-md border border-line bg-surface px-2.5 text-[13px] text-fg outline-none transition-[border-color,box-shadow] duration-150 hover:border-line-strong focus:border-accent focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_18%,transparent)] aria-[invalid=true]:border-danger aria-[invalid=true]:focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--danger)_18%,transparent)]";

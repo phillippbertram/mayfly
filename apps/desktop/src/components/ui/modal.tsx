@@ -1,14 +1,8 @@
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { AnimatePresence, motion } from "motion/react";
-import { createContext, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn";
-
-/**
- * Where menus and tooltips portal to. A modal <dialog> sits in the browser's top
- * layer and makes the rest of the page inert, so popovers rendered into <body>
- * would be hidden behind it and unclickable; inside a dialog they portal into it.
- */
-export const PortalContainer = createContext<HTMLElement | null>(null);
+import { PortalContainer } from "./portal-container";
 
 /**
  * Native modal <dialog> (focus containment, inert background, Escape) with

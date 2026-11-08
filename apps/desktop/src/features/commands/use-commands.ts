@@ -28,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo } from "react";
-import { useToast } from "../../components/ui/toast";
+import { useToast } from "../../hooks/use-toast";
 import type { Share } from "../../lib/backend";
 import type { AppHotkeyId } from "../../lib/hotkeys";
 import { useServer, useSettings, useUpdateSettings } from "../../lib/queries";
