@@ -324,8 +324,11 @@ notices still cover 805 components; only the input hashes changed for test tooli
 
 A temporary invalid TypeScript assignment inside `src/test` was rejected by the
 desktop type check with a nonzero exit code; the probe was removed afterwards.
-The push/PR workflow changes are locally implemented. A hosted GitHub Actions run
-for this revision is still pending; record its URL in #11 after pushing. These
+[Repository checks run 42488313390](https://github.com/phillippbertram/mayfly/actions/runs/42488313390)
+passed on Ubuntu 22.04 for commit `c3396a326d4fcf62454b1f1ecdad6a30035ff5ee`
+on `chore/11-application-checks`. The hosted job passed the same 27 frontend,
+13 script, and 112 Rust tests (one optional ZIP64 test ignored), the frontend
+production build, rustfmt, and Clippy. Rust cache upload also succeeded. These
 checks do not establish installed-bundle, native clipboard/drop, or phone acceptance.
 
 ### Local automated checks — 2026-11-03
